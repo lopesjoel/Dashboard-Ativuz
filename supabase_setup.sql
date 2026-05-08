@@ -96,3 +96,26 @@ create table if not exists public.usuarios (
 );
 
 alter table public.usuarios disable row level security;
+
+
+-- ── Checklist de Contratos ────────────────────────────────────────────────────
+create table if not exists public.checklist_contratos (
+  id         uuid primary key default gen_random_uuid(),
+  contrato   text not null,
+  placa      text,
+  cliente    text,
+  unidade    text,
+  created_at timestamptz default now()
+);
+
+alter table public.checklist_contratos disable row level security;
+
+create table if not exists public.checklist_itens (
+  id           uuid primary key default gen_random_uuid(),
+  contrato_id  uuid not null references public.checklist_contratos(id) on delete cascade,
+  nome         text not null,
+  marcado      boolean default false,
+  created_at   timestamptz default now()
+);
+
+alter table public.checklist_itens disable row level security;

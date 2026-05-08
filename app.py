@@ -1887,5 +1887,190 @@ def pagina_dre():
     return render_template("dre.html", active="dre")
 
 
+# ── Checklist ─────────────────────────────────────────────────────────────────
+
+def _veiculos_xlsx_path():
+    base = Path(__file__).parent
+    candidates = [
+        base / "data" / "veiculos.xlsx",
+        base / "flask_ativuz" / "uploads" / "VEICULOS POR CONTRATO DE LOCACAO.xlsx",
+    ]
+    return next((p for p in candidates if p.exists()), None)
+
+
+def _ler_veiculos():
+    import openpyxl
+    xlsx_path = _veiculos_xlsx_path()
+    if not xlsx_path:
+        return [], "Planilha de veículos não encontrada. Coloque o arquivo em data/veiculos.xlsx."
+
+    try:
+        wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+
+        if len(rows) <= 4:
+            return [], "Planilha sem dados suficientes (cabeçalho esperado na linha 5)."
+
+        header_row = rows[4]
+
+        def _norm(s):
+            s = unicodedata.normalize("NFD", str(s or "").lower())
+            return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+        headers_norm = [_norm(h) for h in header_row]
+
+        def _ci(keyword):
+            kn = _norm(keyword)
+            return next((i for i, h in enumerate(headers_norm) if kn in h), None)
+
+        i_placa    = _ci("placa")
+        i_modelo   = _ci("modelo")
+        i_cliente  = _ci("razao social cliente") or _ci("razao social") or _ci("cliente")
+        i_contrato = _ci("contrato de locacao") or _ci("contrato")
+        i_unidade  = _ci("unidade do veiculo") or _ci("unidade")
+        i_inicio   = _ci("inicio de contrato") or _ci("inicio")
+        i_termino  = _ci("termino de contrato") or _ci("termino")
+
+        def _v(row, i):
+            if i is None or i >= len(row):
+                return ""
+            v = row[i]
+            if v is None:
+                return ""
+            if hasattr(v, "strftime"):
+                return v.strftime("%d/%m/%Y")
+            return str(v).strip()
+
+        veiculos = []
+        for row in rows[5:]:
+            placa = _v(row, i_placa)
+            if not placa:
+                continue
+            veiculos.append({
+                "placa":    placa,
+                "modelo":   _v(row, i_modelo),
+                "cliente":  _v(row, i_cliente),
+                "contrato": _v(row, i_contrato),
+                "unidade":  _v(row, i_unidade),
+                "inicio":   _v(row, i_inicio),
+                "termino":  _v(row, i_termino),
+            })
+        return veiculos, None
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return [], str(e)
+
+
+@app.route("/checklist")
+def pagina_checklist():
+    veiculos, erro_leitura = _ler_veiculos()
+
+    badge_data = {}
+    sb = _supabase()
+    if sb:
+        try:
+            contratos_res = sb.table("checklist_contratos").select("id, contrato").execute()
+            if contratos_res.data:
+                ids_map = {r["id"]: r["contrato"] for r in contratos_res.data}
+                itens_res = sb.table("checklist_itens").select("contrato_id, marcado").execute()
+                for item in (itens_res.data or []):
+                    cid  = item["contrato_id"]
+                    cnum = ids_map.get(cid)
+                    if cnum:
+                        if cnum not in badge_data:
+                            badge_data[cnum] = {"total": 0, "marcados": 0}
+                        badge_data[cnum]["total"] += 1
+                        if item["marcado"]:
+                            badge_data[cnum]["marcados"] += 1
+        except Exception:
+            pass
+
+    return render_template("checklist.html",
+                           active="checklist",
+                           veiculos=veiculos,
+                           badge_data=badge_data,
+                           erro_leitura=erro_leitura)
+
+
+@app.route("/api/checklist/contrato")
+def api_checklist_get():
+    contrato = request.args.get("contrato", "").strip()
+    placa    = request.args.get("placa", "").strip()
+    cliente  = request.args.get("cliente", "").strip()
+    unidade  = request.args.get("unidade", "").strip()
+
+    if not contrato:
+        return jsonify({"error": "Contrato obrigatório"}), 400
+
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase indisponível"}), 503
+
+    ITENS_PADRAO = ["INDICAÇÃO DE CONDUTOR", "CONTRATO", "NOTA PROMISSÓRIA", "CHAVE RESERVA"]
+
+    res = sb.table("checklist_contratos").select("*").eq("contrato", contrato).execute()
+
+    if res.data:
+        rec        = res.data[0]
+        contrato_id = rec["id"]
+        itens_res  = sb.table("checklist_itens").select("*").eq("contrato_id", contrato_id).order("created_at").execute()
+        itens = itens_res.data or []
+        if not itens:
+            for nome in ITENS_PADRAO:
+                sb.table("checklist_itens").insert({"contrato_id": contrato_id, "nome": nome, "marcado": False}).execute()
+            itens = sb.table("checklist_itens").select("*").eq("contrato_id", contrato_id).order("created_at").execute().data or []
+    else:
+        ins = sb.table("checklist_contratos").insert({
+            "contrato": contrato, "placa": placa, "cliente": cliente, "unidade": unidade,
+        }).execute()
+        rec         = ins.data[0]
+        contrato_id = rec["id"]
+        for nome in ITENS_PADRAO:
+            sb.table("checklist_itens").insert({"contrato_id": contrato_id, "nome": nome, "marcado": False}).execute()
+        itens = sb.table("checklist_itens").select("*").eq("contrato_id", contrato_id).order("created_at").execute().data or []
+
+    return jsonify({
+        "contrato_id": contrato_id,
+        "contrato":    contrato,
+        "placa":       rec.get("placa", placa),
+        "cliente":     rec.get("cliente", cliente),
+        "unidade":     rec.get("unidade", unidade),
+        "itens": [{"id": i["id"], "nome": i["nome"], "marcado": i["marcado"]} for i in itens],
+    })
+
+
+@app.route("/api/checklist/salvar", methods=["POST"])
+def api_checklist_salvar():
+    data        = request.get_json(force=True)
+    contrato_id = data.get("contrato_id")
+    itens       = data.get("itens", [])
+
+    if not contrato_id:
+        return jsonify({"error": "contrato_id obrigatório"}), 400
+
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase indisponível"}), 503
+
+    try:
+        for item in itens:
+            if item.get("is_new"):
+                sb.table("checklist_itens").insert({
+                    "contrato_id": contrato_id,
+                    "nome":        item["nome"],
+                    "marcado":     item.get("marcado", False),
+                }).execute()
+            else:
+                sb.table("checklist_itens").update({
+                    "marcado": bool(item.get("marcado", False))
+                }).eq("id", item["id"]).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
