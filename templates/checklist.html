@@ -100,7 +100,7 @@
   /* ── Card grid ── */
   .ck-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
   }
 
@@ -537,10 +537,8 @@
 
   .ck-save-msg.err { color: #dc2626; }
 
-  @media (max-width: 540px) {
-    .ck-info-grid { grid-template-columns: 1fr; }
-    .ck-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-  }
+  @media (max-width: 900px)  { .ck-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px)  { .ck-grid { grid-template-columns: 1fr; } .ck-info-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
