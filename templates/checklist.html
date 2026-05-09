@@ -574,7 +574,8 @@
         <td>
           {% if v.contrato %}
           <button class="contrato-link"
-                  onclick="abrirModal({{ v | tojson | e }})"
+                  data-v="{{ v | tojson | e }}"
+                  onclick="abrirModal(JSON.parse(this.dataset.v))"
                   title="Ver checklist">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/>
