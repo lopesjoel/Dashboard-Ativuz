@@ -1891,14 +1891,14 @@ def pagina_dre():
 
 def _veiculos_xlsx_path():
     base = Path(__file__).resolve().parent
-    return base / "flask_ativuz" / "uploads" / "VEICULOS POR CONTRATO DE LOCACAO.xlsx"
+    return base / "data" / "veiculos.xlsx"
 
 
 def _ler_veiculos():
     import openpyxl
     xlsx_path = _veiculos_xlsx_path()
     if not xlsx_path.exists():
-        return [], "Planilha não encontrada em flask_ativuz/uploads/VEICULOS POR CONTRATO DE LOCACAO.xlsx."
+        return [], "Planilha não encontrada em data/veiculos.xlsx."
 
     try:
         wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
