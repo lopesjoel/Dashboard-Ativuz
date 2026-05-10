@@ -125,7 +125,7 @@
 
 {# ── Period selector ──────────────────────────────────────────────────────── #}
 <form class="dre-bar" method="get" action="{{ url_for('pagina_dre') }}" id="dre-form">
-  <select name="mes" id="sel-mes" onchange="this.form.submit()">
+  <select name="mes" id="sel-mes">
     {% for (a, m) in meses_disponiveis %}
     <option value="{{ m }}" data-ano="{{ a }}"
       {% if m == mes and a == ano %}selected{% endif %}>
@@ -312,6 +312,7 @@
     selMes.addEventListener('change', function () {
       var opt = selMes.options[selMes.selectedIndex];
       if (opt.dataset.ano) inpAno.value = opt.dataset.ano;
+      selMes.form.submit();
     });
   }
 })();
