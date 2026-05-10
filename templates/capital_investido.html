@@ -149,15 +149,6 @@
 .ci-chart-wrap  { position: relative; height: 260px; }
 .ci-chart-wrap.auto-h { height: auto; }
 
-/* ── Chart legend ── */
-.ci-legend {
-  display: flex; flex-wrap: wrap; gap: 10px 18px;
-  margin-top: 14px; padding-top: 12px;
-  border-top: 1px solid var(--line); justify-content: center;
-}
-.ci-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-2); }
-.ci-legend-line  { width: 26px; height: 0; flex-shrink: 0; }
-
 /* ── Transaction table ── */
 .ci-table-wrap {
   background: var(--surface); border: 1px solid var(--line);
@@ -250,16 +241,11 @@
   <p class="ci-section-title">Evolução Patrimonial</p>
   <div class="ci-charts">
     <div class="ci-chart-card">
-      <div class="ci-chart-title">Capital Real vs. Benchmarks de Rentabilidade</div>
-      <div class="ci-chart-wrap" style="height:320px"><canvas id="chart-line"></canvas></div>
-      <div class="ci-legend" id="chart-line-legend"></div>
-    </div>
-    <div class="ci-chart-card">
       <div class="ci-chart-title">Aportes Mensais por Investidor</div>
       <div class="ci-chart-wrap"><canvas id="chart-bar"></canvas></div>
     </div>
     <div class="ci-chart-card">
-      <div class="ci-chart-title">Capital Real vs. SELIC por Investidor</div>
+      <div class="ci-chart-title">Capital Real vs. Benchmarks de Rentabilidade</div>
       <div class="ci-chart-wrap auto-h"><canvas id="chart-horiz"></canvas></div>
     </div>
     <div class="ci-chart-card">
@@ -487,7 +473,6 @@ async function fetchData() {
 // ── Data calculations ────────────────────────────────────────────────────────
 
 function buildInvestors(rows) {
-  // Separa linhas do pool compartilhado das individuais
   var sharedRows = [], otherRows = [];
   rows.forEach(function (r) {
     if (SHARED_PAIR.indexOf(normName(r.investidor)) >= 0) sharedRows.push(r);
@@ -497,26 +482,36 @@ function buildInvestors(rows) {
   var sharedTotal = sharedRows.reduce(function (s, r) { return s + r.valor; }, 0);
   var sharedSelic = sharedRows.reduce(function (s, r) { return s + r.valor * selicFactor(r.data, TODAY); }, 0);
   var sharedCount = sharedRows.length;
+  var sharedBmkValues = BENCHMARKS.map(function (bmk) {
+    return sharedRows.reduce(function (s, r) {
+      return s + r.valor * bfactor(r.data, TODAY, bmk.rates, bmk.mult, bmk.spread);
+    }, 0);
+  });
 
   var map = {};
 
-  // Cada sócio do par recebe metade do pool
   SHARED_NAMES_DISPLAY.forEach(function (nome) {
     map[nome] = {
       nome: nome, shared: true,
       total: sharedTotal / 2,
       count: sharedCount,
       selic: sharedSelic / 2,
+      bmkValues: sharedBmkValues.map(function (v) { return v / 2; }),
     };
   });
 
-  // Investidores individuais
   otherRows.forEach(function (r) {
-    if (!map[r.investidor]) map[r.investidor] = { nome: r.investidor, shared: false, total: 0, count: 0, selic: 0 };
+    if (!map[r.investidor]) map[r.investidor] = {
+      nome: r.investidor, shared: false, total: 0, count: 0, selic: 0,
+      bmkValues: BENCHMARKS.map(function () { return 0; }),
+    };
     var inv = map[r.investidor];
     inv.total += r.valor;
     inv.count++;
     inv.selic += r.valor * selicFactor(r.data, TODAY);
+    BENCHMARKS.forEach(function (bmk, bi) {
+      inv.bmkValues[bi] += r.valor * bfactor(r.data, TODAY, bmk.rates, bmk.mult, bmk.spread);
+    });
   });
 
   return Object.values(map).sort(function (a, b) { return b.total - a.total; });
@@ -644,123 +639,7 @@ function bfactor(fromDateStr, toDate, rates, mult, spread) {
   return factor;
 }
 
-function generateMonthlyDates(firstDateStr, lastDate) {
-  var dates = [];
-  var d = new Date(firstDateStr + 'T00:00:00');
-  d.setDate(1);
-  var end = lastDate || TODAY;
-  while (d <= end) {
-    dates.push(d.toISOString().slice(0, 10));
-    d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-  }
-  return dates;
-}
-
-function monthLabel2(dateStr) {
-  var parts = dateStr.split('-');
-  var names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  return names[parseInt(parts[1]) - 1] + '/' + parts[0].slice(2);
-}
-
 // ── Render charts ────────────────────────────────────────────────────────────
-
-async function renderLineChart(rows) {
-  var sorted = rows.map(function (r) { return r.data; }).sort();
-  if (!sorted.length) return;
-
-  var mDates = generateMonthlyDates(sorted[0], TODAY);
-
-  // Capital Real acumulado (face value)
-  var capitalReal = mDates.map(function (d) {
-    return rows.filter(function (r) { return r.data <= d; })
-               .reduce(function (s, r) { return s + r.valor; }, 0);
-  });
-
-  var datasets = [{
-    label: 'Capital Real',
-    data: capitalReal,
-    borderColor: '#FF4713', borderWidth: 2.5,
-    fill: false, pointRadius: 0, tension: 0.3,
-  }];
-
-  // Benchmark lines
-  BENCHMARKS.forEach(function (bmk) {
-    var data = mDates.map(function (d) {
-      var dDate = new Date(d + 'T00:00:00');
-      return rows.filter(function (r) { return r.data <= d; })
-                 .reduce(function (s, r) { return s + r.valor * bfactor(r.data, dDate, bmk.rates, bmk.mult, bmk.spread); }, 0);
-    });
-    datasets.push({
-      label: bmk.label, data: data,
-      borderColor: bmk.color, borderDash: [6, 4], borderWidth: 1.5,
-      fill: false, pointRadius: 0, tension: 0.3,
-    });
-  });
-
-  // IBOVESPA (opcional — falha silenciosa)
-  try {
-    var ibovRes = await Promise.race([
-      fetch('https://brapi.dev/api/quote/%5EBVSP?range=5y&interval=1mo'),
-      new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 5000); })
-    ]);
-    if (ibovRes.ok) {
-      var ibovJson = await ibovRes.json();
-      var prices   = (ibovJson.results || [])[0]?.historicalDataPrice || [];
-      if (prices.length) {
-        var ibovPrices = prices
-          .map(function (p) { return { date: new Date(p.date * 1000).toISOString().slice(0, 10), close: p.close }; })
-          .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-
-        function ibovAt(d) {
-          var p = null;
-          for (var i = 0; i < ibovPrices.length; i++) {
-            if (ibovPrices[i].date <= d) p = ibovPrices[i]; else break;
-          }
-          return p ? p.close : null;
-        }
-
-        var ibovLine = mDates.map(function (d) {
-          var pNow = ibovAt(d);
-          if (!pNow) return null;
-          return rows.filter(function (r) { return r.data <= d; })
-                     .reduce(function (s, r) {
-                       var pA = ibovAt(r.data);
-                       return s + r.valor * (pA ? pNow / pA : 1);
-                     }, 0);
-        });
-
-        datasets.push({
-          label: 'IBOVESPA', data: ibovLine,
-          borderColor: '#F39C12', borderDash: [3, 3], borderWidth: 1.5,
-          fill: false, pointRadius: 0, tension: 0.3,
-        });
-      }
-    }
-  } catch (e) { /* silencioso */ }
-
-  new Chart(document.getElementById('chart-line').getContext('2d'), {
-    type: 'line',
-    data: { labels: mDates.map(monthLabel2), datasets: datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': R$ ' + brl(c.parsed.y); } } }
-      },
-      scales: {
-        y: { ticks: { callback: function (v) { return 'R$ ' + brl(v); }, font: { size: 10 } } },
-        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } }
-      }
-    }
-  });
-
-  // Legenda customizada
-  document.getElementById('chart-line-legend').innerHTML = datasets.map(function (ds) {
-    var isDash = ds.borderDash && ds.borderDash.length;
-    var style  = 'border-top: ' + (isDash ? '2px dashed ' : '2.5px solid ') + ds.borderColor + '; width:26px;';
-    return '<div class="ci-legend-item"><div class="ci-legend-line" style="' + style + '"></div><span>' + ds.label + '</span></div>';
-  }).join('');
-}
 
 function renderBarChart(rows, investors) {
   var months = Array.from(new Set(rows.map(function (r) { return monthKey(r.data); }))).sort();
@@ -796,29 +675,35 @@ function renderBarChart(rows, investors) {
 
 function renderHorizChart(investors) {
   var canvas = document.getElementById('chart-horiz');
-  var minH   = Math.max(200, investors.length * 60);
-  canvas.parentElement.style.height = minH + 'px';
+  var numDs  = 1 + BENCHMARKS.length;
+  canvas.parentElement.style.height = Math.max(220, investors.length * numDs * 20 + 80) + 'px';
+
+  var datasets = [{
+    label: 'Capital Real',
+    data: investors.map(function (inv) { return inv.total; }),
+    backgroundColor: '#FF4713cc', borderWidth: 0,
+  }];
+
+  BENCHMARKS.forEach(function (bmk, bi) {
+    datasets.push({
+      label: bmk.label,
+      data: investors.map(function (inv) { return inv.bmkValues[bi]; }),
+      backgroundColor: bmk.color + 'cc', borderWidth: 0,
+    });
+  });
 
   new Chart(canvas.getContext('2d'), {
     type: 'bar',
-    data: {
-      labels: investors.map(function (inv) { return inv.nome; }),
-      datasets: [
-        { label: 'Capital Real',  data: investors.map(function (inv) { return inv.total; }),
-          backgroundColor: PALETTE[0] + 'cc', borderWidth: 0 },
-        { label: 'Capital SELIC', data: investors.map(function (inv) { return inv.selic; }),
-          backgroundColor: PALETTE[1] + 'cc', borderWidth: 0 },
-      ]
-    },
+    data: { labels: investors.map(function (inv) { return inv.nome; }), datasets: datasets },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top', labels: { font: { size: 11 } } },
+        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } },
         tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': R$ ' + brl(c.parsed.x); } } }
       },
       scales: {
         x: { ticks: { callback: function (v) { return 'R$ ' + brl(v); }, font: { size: 10 } } },
-        y: { ticks: { font: { size: 11 } } }
+        y: { ticks: { font: { size: 10 } } }
       }
     }
   });
@@ -887,7 +772,6 @@ async function main() {
     renderHorizChart(investors);
     renderLucroChart(rows, kpis);
     renderTable(rows);
-    await renderLineChart(rows);
 
     loading.style.display = 'none';
     content.style.display = '';
