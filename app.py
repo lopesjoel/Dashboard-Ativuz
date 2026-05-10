@@ -2205,15 +2205,14 @@ def _dre_ler_lancamentos():
             pass
         return registros
 
-    # Deduplicação: chave (data, codigo, valor arredondado)
-    vistos = set()
+    # Deduplicação por nome de arquivo: ignora se o mesmo nome aparecer duas vezes
+    nomes_vistos = set()
     result = []
     for arq in arquivos:
-        for rec in _ler_arquivo(arq):
-            chave = (rec["dt"].date(), rec["codigo"], round(rec["valor"], 2))
-            if chave not in vistos:
-                vistos.add(chave)
-                result.append(rec)
+        if arq.name in nomes_vistos:
+            continue
+        nomes_vistos.add(arq.name)
+        result.extend(_ler_arquivo(arq))
     return result
 
 
