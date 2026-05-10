@@ -92,6 +92,12 @@
   background: #fff0ea; border: 1px solid #ffd4c2;
   border-radius: 4px; padding: 1px 5px; vertical-align: middle;
 }
+.grp-info {
+  display: inline-block; margin-left: 8px;
+  font-size: 10px; font-weight: 400; color: #4a6fa5;
+  background: #eef3fb; border: 1px solid #c8d8ef;
+  border-radius: 4px; padding: 1px 5px; vertical-align: middle;
+}
 
 /* L3 — item */
 .dre-l3 { background: #fafafa; }
@@ -258,7 +264,8 @@
        data-open="false" onclick="dreTog('{{ grp.id }}')">
     <div class="c1">
       <i class="tog">▶</i>{{ grp.label }}
-      {% if grp.note %}<span class="grp-note">{{ grp.note }}</span>{% endif %}
+      {% if grp.highlight and grp.note %}<span class="grp-note">{{ grp.note }}</span>
+      {% elif grp.note %}<span class="grp-info">{{ grp.note }}</span>{% endif %}
     </div>
     <div class="c2 {% if grp.total < 0 %}neg{% endif %}">{{ grp.total | brl }}</div>
     <div class="c3"></div>
@@ -286,7 +293,7 @@
     {{ sub("= Receita Operacional Líquida", dre.receita_liquida, dre_prev.receita_liquida) }}
     {{ sep() }}
   {% elif sec.id == 'custos' %}
-    {{ sub("= Margem de Contribuição", dre.margem, dre_prev.margem,
+    {{ sub("= Lucro Bruto / Margem de Contribuição", dre.margem, dre_prev.margem,
            vpct=dre.pct_margem, ppct=dre_prev.pct_margem) }}
     {{ sep() }}
   {% elif sec.id == 'sga' %}
@@ -298,6 +305,8 @@
            vpct=dre.pct_ebit, ppct=dre_prev.pct_ebit) }}
     {{ sep() }}
   {% elif sec.id == 'rnop' %}
+    {{ sub("= Lucro Antes do IR", dre.lucro_antes_ir, dre_prev.lucro_antes_ir,
+           vpct=dre.pct_lajir, ppct=dre_prev.pct_lajir) }}
     {{ sub("(-) IR / CSLL — Simples Nacional", -dre.ir_csll, -dre_prev.ir_csll) }}
     {{ sub("= Lucro Líquido", dre.lucro_liquido, dre_prev.lucro_liquido, hi=true,
            vpct=dre.pct_ll, ppct=dre_prev.pct_ll) }}

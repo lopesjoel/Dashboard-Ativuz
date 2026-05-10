@@ -1954,7 +1954,8 @@ _DRE_LAYOUT = [
         ]},
     ]},
     {"id": "ded", "label": "(-) Deduções", "grupos": [
-        {"id": "ded-imp",  "label": "Impostos", "sign": -1, "itens": [
+        {"id": "ded-imp",  "label": "Impostos", "sign": -1,
+         "note": "incide sobre o faturamento — Simples Nacional", "itens": [
             ("02.01.01.001", "PIS"),
             ("02.01.01.005", "Simples Nacional"),
             ("02.01.01.006", "Outros Impostos"),
@@ -2243,8 +2244,9 @@ def _dre_calcular(lancamentos):
     ebit   = ebitda        # depreciação = 0
     rfin   = _s("rfin")
     rnop   = _s("rnop")
+    lucro_antes_ir = ebit + rfin + rnop
     ir_csll = _DRE_IR_CSLL
-    ll     = ebit + rfin + rnop - ir_csll
+    ll     = lucro_antes_ir - ir_csll
     inv    = _s("inv")
     financ = _s("financ")
     aporte = _s("aporte")
@@ -2267,6 +2269,8 @@ def _dre_calcular(lancamentos):
         "depreciacao": 0.0,
         "ebit": ebit,           "pct_ebit": ebit / rl if rl else 0,
         "rfin": rfin,           "rnop": rnop,
+        "lucro_antes_ir": lucro_antes_ir,
+        "pct_lajir": lucro_antes_ir / rl if rl else 0,
         "ir_csll": ir_csll,
         "lucro_liquido": ll,    "pct_ll": ll / rl if rl else 0,
         "inv": inv,  "financ": financ,  "aporte": aporte,
