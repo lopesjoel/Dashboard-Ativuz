@@ -149,6 +149,15 @@
 .ci-chart-wrap  { position: relative; height: 260px; }
 .ci-chart-wrap.auto-h { height: auto; }
 
+/* ── Chart legend ── */
+.ci-legend {
+  display: flex; flex-wrap: wrap; gap: 10px 18px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--line); justify-content: center;
+}
+.ci-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-2); }
+.ci-legend-line  { width: 26px; height: 0; flex-shrink: 0; }
+
 /* ── Transaction table ── */
 .ci-table-wrap {
   background: var(--surface); border: 1px solid var(--line);
@@ -181,7 +190,7 @@
 
 <div class="ci-header">
   <h1>CAPITAL INVESTIDO</h1>
-  <p>Página automatizada de acompanhamento de aportes</p>
+  <p>Acompanhamento de aportes · Benchmarks: CDI, SELIC, IPCA, Poupança, Nubank e Mercado Pago · IBOVESPA quando disponível</p>
 </div>
 
 <div class="ci-loading" id="ci-loading">
@@ -241,8 +250,9 @@
   <p class="ci-section-title">Evolução Patrimonial</p>
   <div class="ci-charts">
     <div class="ci-chart-card">
-      <div class="ci-chart-title">Evolução Acumulada por Investidor</div>
-      <div class="ci-chart-wrap"><canvas id="chart-line"></canvas></div>
+      <div class="ci-chart-title">Capital Real vs. Benchmarks de Rentabilidade</div>
+      <div class="ci-chart-wrap" style="height:320px"><canvas id="chart-line"></canvas></div>
+      <div class="ci-legend" id="chart-line-legend"></div>
     </div>
     <div class="ci-chart-card">
       <div class="ci-chart-title">Aportes Mensais por Investidor</div>
@@ -593,57 +603,157 @@ function renderTable(rows) {
   }).join('');
 }
 
+// ── Benchmarks ────────────────────────────────────────────────────────────────
+// ─── EDITE AQUI QUANDO AS TAXAS MUDAREM ───
+var _CDI  = { 2023: 0.1315, 2024: 0.1040, 2025: 0.1475 };
+var _IPCA = { 2023: 0.0462, 2024: 0.0483, 2025: 0.0510 };
+// SELIC já declarada acima — reutilizada aqui como _SELIC_RATES
+var _SELIC_RATES = SELIC;
+
+var BENCHMARKS = [
+  { label: 'Caixinha Nubank',       rates: _CDI,         mult: 1.10, color: '#4A6FA5' },
+  { label: 'Cofrinho Mercado Pago', rates: _CDI,         mult: 1.50, color: '#22a06b' },
+  { label: 'Poupança',              rates: _SELIC_RATES, mult: 0.70, color: '#e6a817' },
+  { label: 'SELIC',                 rates: _SELIC_RATES, mult: 1.00, color: '#9B59B6' },
+  { label: 'IPCA + 6%',             rates: _IPCA,        spread: 0.06, color: '#E74C3C' },
+];
+
+function bfactor(fromDateStr, toDate, rates, mult, spread) {
+  var from = new Date(fromDateStr + 'T00:00:00');
+  if (isNaN(from.getTime()) || from >= toDate) return 1;
+  var factor = 1;
+  var cur = new Date(from);
+  mult   = mult   !== undefined ? mult   : 1;
+  spread = spread !== undefined ? spread : 0;
+  while (cur < toDate) {
+    var yr   = cur.getFullYear();
+    var base = rates[yr] !== undefined ? rates[yr] : 0.1475;
+    var annualRate = base * mult + spread;
+    var yearEnd = new Date(yr + 1, 0, 1);
+    var segEnd  = yearEnd < toDate ? yearEnd : toDate;
+    var days    = (segEnd - cur) / 86400000;
+    factor *= Math.pow(1 + annualRate, days / 365);
+    cur = new Date(segEnd);
+  }
+  return factor;
+}
+
+function generateMonthlyDates(firstDateStr, lastDate) {
+  var dates = [];
+  var d = new Date(firstDateStr + 'T00:00:00');
+  d.setDate(1);
+  var end = lastDate || TODAY;
+  while (d <= end) {
+    dates.push(d.toISOString().slice(0, 10));
+    d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  }
+  return dates;
+}
+
+function monthLabel2(dateStr) {
+  var parts = dateStr.split('-');
+  var names = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return names[parseInt(parts[1]) - 1] + '/' + parts[0].slice(2);
+}
+
 // ── Render charts ────────────────────────────────────────────────────────────
 
-function renderLineChart(rows, investors) {
-  var dates = Array.from(new Set(rows.map(function (r) { return r.data; }))).sort();
+async function renderLineChart(rows) {
+  var sorted = rows.map(function (r) { return r.data; }).sort();
+  if (!sorted.length) return;
 
-  // Aggregate by date+investor
-  var byDate = {};
-  rows.forEach(function (r) {
-    if (!byDate[r.data]) byDate[r.data] = {};
-    byDate[r.data][r.investidor] = (byDate[r.data][r.investidor] || 0) + r.valor;
+  var mDates = generateMonthlyDates(sorted[0], TODAY);
+
+  // Capital Real acumulado (face value)
+  var capitalReal = mDates.map(function (d) {
+    return rows.filter(function (r) { return r.data <= d; })
+               .reduce(function (s, r) { return s + r.valor; }, 0);
   });
 
-  var datasets = investors.map(function (inv, i) {
-    var cum = 0;
-    var data = dates.map(function (d) {
-      cum += (byDate[d] && byDate[d][inv.nome]) ? byDate[d][inv.nome] : 0;
-      return cum;
-    });
-    return {
-      label: inv.nome, data: data,
-      borderColor: PALETTE[i % PALETTE.length],
-      backgroundColor: PALETTE[i % PALETTE.length] + '22',
-      fill: false, tension: 0.3, borderWidth: 2, pointRadius: 3,
-    };
-  });
-
-  // SELIC equivalent line
-  var selicData = dates.map(function (d) {
-    var dDate = new Date(d + 'T00:00:00');
-    return rows
-      .filter(function (r) { return r.data <= d; })
-      .reduce(function (s, r) { return s + r.valor * selicFactor(r.data, dDate); }, 0);
-  });
-  datasets.push({
-    label: 'SELIC Equivalente', data: selicData,
-    borderColor: '#999', borderDash: [6, 4], borderWidth: 1.5,
+  var datasets = [{
+    label: 'Capital Real',
+    data: capitalReal,
+    borderColor: '#FF4713', borderWidth: 2.5,
     fill: false, pointRadius: 0, tension: 0.3,
+  }];
+
+  // Benchmark lines
+  BENCHMARKS.forEach(function (bmk) {
+    var data = mDates.map(function (d) {
+      var dDate = new Date(d + 'T00:00:00');
+      return rows.filter(function (r) { return r.data <= d; })
+                 .reduce(function (s, r) { return s + r.valor * bfactor(r.data, dDate, bmk.rates, bmk.mult, bmk.spread); }, 0);
+    });
+    datasets.push({
+      label: bmk.label, data: data,
+      borderColor: bmk.color, borderDash: [6, 4], borderWidth: 1.5,
+      fill: false, pointRadius: 0, tension: 0.3,
+    });
   });
+
+  // IBOVESPA (opcional — falha silenciosa)
+  try {
+    var ibovRes = await Promise.race([
+      fetch('https://brapi.dev/api/quote/%5EBVSP?range=5y&interval=1mo'),
+      new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, 5000); })
+    ]);
+    if (ibovRes.ok) {
+      var ibovJson = await ibovRes.json();
+      var prices   = (ibovJson.results || [])[0]?.historicalDataPrice || [];
+      if (prices.length) {
+        var ibovPrices = prices
+          .map(function (p) { return { date: new Date(p.date * 1000).toISOString().slice(0, 10), close: p.close }; })
+          .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+
+        function ibovAt(d) {
+          var p = null;
+          for (var i = 0; i < ibovPrices.length; i++) {
+            if (ibovPrices[i].date <= d) p = ibovPrices[i]; else break;
+          }
+          return p ? p.close : null;
+        }
+
+        var ibovLine = mDates.map(function (d) {
+          var pNow = ibovAt(d);
+          if (!pNow) return null;
+          return rows.filter(function (r) { return r.data <= d; })
+                     .reduce(function (s, r) {
+                       var pA = ibovAt(r.data);
+                       return s + r.valor * (pA ? pNow / pA : 1);
+                     }, 0);
+        });
+
+        datasets.push({
+          label: 'IBOVESPA', data: ibovLine,
+          borderColor: '#F39C12', borderDash: [3, 3], borderWidth: 1.5,
+          fill: false, pointRadius: 0, tension: 0.3,
+        });
+      }
+    }
+  } catch (e) { /* silencioso */ }
 
   new Chart(document.getElementById('chart-line').getContext('2d'), {
     type: 'line',
-    data: { labels: dates.map(fmtDate), datasets: datasets },
+    data: { labels: mDates.map(monthLabel2), datasets: datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': R$ ' + brl(c.parsed.y); } } }
+      },
       scales: {
         y: { ticks: { callback: function (v) { return 'R$ ' + brl(v); }, font: { size: 10 } } },
-        x: { ticks: { font: { size: 10 }, maxRotation: 45 } }
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } }
       }
     }
   });
+
+  // Legenda customizada
+  document.getElementById('chart-line-legend').innerHTML = datasets.map(function (ds) {
+    var isDash = ds.borderDash && ds.borderDash.length;
+    var style  = 'border-top: ' + (isDash ? '2px dashed ' : '2.5px solid ') + ds.borderColor + '; width:26px;';
+    return '<div class="ci-legend-item"><div class="ci-legend-line" style="' + style + '"></div><span>' + ds.label + '</span></div>';
+  }).join('');
 }
 
 function renderBarChart(rows, investors) {
@@ -720,10 +830,10 @@ async function main() {
 
     renderKPIs(kpis);
     renderInvestors(investors);
-    renderLineChart(rows, investors);
     renderBarChart(rows, investors);
     renderHorizChart(investors);
     renderTable(rows);
+    await renderLineChart(rows);
 
     loading.style.display = 'none';
     content.style.display = '';
