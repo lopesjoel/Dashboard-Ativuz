@@ -89,6 +89,12 @@
 }
 .ci-inv-prog      { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .ci-inv-prog-fill { height: 100%; border-radius: 2px; }
+.ci-shared-note {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  background: #4A6FA5; color: #fff;
+  border-radius: 4px; padding: 2px 7px; margin: 3px 0;
+}
 
 /* ── Charts ── */
 .ci-charts          { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
@@ -199,6 +205,14 @@ var CSV_ERROR = {{ csv_error | tojson }};
 var PALETTE   = ['#FF4713','#4A6FA5','#22a06b','#e6a817','#9B59B6','#E74C3C','#1ABC9C','#F39C12'];
 var SELIC     = { 2023: 0.1375, 2024: 0.105, 2025: 0.1475 };
 var TODAY     = new Date();
+
+// Nomes do par compartilhado (normalizados sem acento)
+var SHARED_PAIR = ['joel araujo lopes', 'lucas trindade vieira veras diniz'];
+var SHARED_NAMES_DISPLAY = ['Joel Araujo Lopes', 'Lucas Trindade Vieira Veras Diniz'];
+
+function normName(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
 
 // ── Formatters ───────────────────────────────────────────────────────────────
 
@@ -378,14 +392,38 @@ async function fetchData() {
 // ── Data calculations ────────────────────────────────────────────────────────
 
 function buildInvestors(rows) {
-  var map = {};
+  // Separa linhas do pool compartilhado das individuais
+  var sharedRows = [], otherRows = [];
   rows.forEach(function (r) {
-    if (!map[r.investidor]) map[r.investidor] = { nome: r.investidor, total: 0, count: 0, selic: 0 };
+    if (SHARED_PAIR.indexOf(normName(r.investidor)) >= 0) sharedRows.push(r);
+    else otherRows.push(r);
+  });
+
+  var sharedTotal = sharedRows.reduce(function (s, r) { return s + r.valor; }, 0);
+  var sharedSelic = sharedRows.reduce(function (s, r) { return s + r.valor * selicFactor(r.data, TODAY); }, 0);
+  var sharedCount = sharedRows.length;
+
+  var map = {};
+
+  // Cada sócio do par recebe metade do pool
+  SHARED_NAMES_DISPLAY.forEach(function (nome) {
+    map[nome] = {
+      nome: nome, shared: true,
+      total: sharedTotal / 2,
+      count: sharedCount,
+      selic: sharedSelic / 2,
+    };
+  });
+
+  // Investidores individuais
+  otherRows.forEach(function (r) {
+    if (!map[r.investidor]) map[r.investidor] = { nome: r.investidor, shared: false, total: 0, count: 0, selic: 0 };
     var inv = map[r.investidor];
     inv.total += r.valor;
     inv.count++;
     inv.selic += r.valor * selicFactor(r.data, TODAY);
   });
+
   return Object.values(map).sort(function (a, b) { return b.total - a.total; });
 }
 
@@ -431,10 +469,14 @@ function renderInvestors(investors) {
     var share    = grandTotal > 0 ? inv.total / grandTotal : 0;
     var initials = inv.nome.split(' ').slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
     var ticket   = inv.count > 0 ? inv.total / inv.count : 0;
+    var sharedBadge = inv.shared
+      ? '<div class="ci-shared-note">50% do pool compartilhado Joel &amp; Lucas</div>'
+      : '';
     return '<div class="ci-inv-card">' +
       '<div class="ci-inv-head">' +
         '<div class="ci-inv-avatar" style="background:' + color + '">' + initials + '</div>' +
         '<div><div class="ci-inv-name">' + inv.nome + '</div>' +
+        sharedBadge +
         '<div class="ci-inv-pct">' + pctStr(share) + ' do total</div></div>' +
       '</div>' +
       '<div class="ci-inv-stats">' +
