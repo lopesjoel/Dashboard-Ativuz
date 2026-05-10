@@ -82,7 +82,7 @@
       </div>
 
       <!-- ── Insights ── -->
-      {% set grp_insights = active in ['dre'] %}
+      {% set grp_insights = active in ['dre', 'financiamentos'] %}
       <div class="sb-group" id="grp-insights" data-open="{{ 'true' if grp_insights else 'false' }}">
         <button class="sb-group-head" onclick="toggleGroup('grp-insights')"
                 aria-expanded="{{ 'true' if grp_insights else 'false' }}" aria-controls="grp-insights-body">
@@ -104,6 +104,19 @@
                 </svg>
               </span>
               <span class="sb-item-label">DRE</span>
+            </a>
+            <a href="{{ url_for('pagina_financiamentos') }}" class="sb-item"
+               data-active="{{ 'true' if active == 'financiamentos' else 'false' }}"
+               aria-current="{{ 'page' if active == 'financiamentos' else 'false' }}">
+              <span class="sb-item-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/>
+                  <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                  <line x1="12" y1="12" x2="12" y2="16"/>
+                  <line x1="10" y1="14" x2="14" y2="14"/>
+                </svg>
+              </span>
+              <span class="sb-item-label">Financiamentos</span>
             </a>
           </div>
         </div>
@@ -300,6 +313,7 @@
           {% elif active == 'inadimplencia' %}Inadimplência
           {% elif active == 'checklist' %}Checklist
           {% elif active == 'dre' %}DRE
+          {% elif active == 'financiamentos' %}Financiamentos e Consórcios
           {% else %}ATIVUZ
           {% endif %}
         </span>

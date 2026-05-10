@@ -2352,6 +2352,85 @@ def pagina_dre():
     )
 
 
+# ── Financiamentos & Consórcios ───────────────────────────────────────────────
+
+@app.route("/financiamentos")
+def pagina_financiamentos():
+    from math import ceil
+    hoje = datetime.now(_BRT).date()
+
+    sb   = _supabase()
+    rows = sb.table("financiamentos_contratos").select("*").order("created_at").execute().data or []
+
+    def _restante(vcto_str):
+        if not vcto_str:
+            return 0
+        try:
+            vcto = date.fromisoformat(str(vcto_str)[:10])
+        except Exception:
+            return 0
+        dias = (vcto - hoje).days
+        return ceil(dias / 30.44) if dias > 0 else 0
+
+    contratos = []
+    for r in rows:
+        parcelas = int(r["parcelas_total"])
+        parcela  = float(r["valor_parcela"])
+        restante = _restante(r.get("data_vencimento"))
+        pagas    = parcelas - restante
+
+        contratos.append({
+            "operacao":        r["operacao"],
+            "contrato":        r.get("contrato") or "",
+            "placa":           r.get("placa") or "",
+            "data_vencimento": str(r.get("data_vencimento") or "")[:10] or None,
+            "restante":        restante,
+            "parcelas_total":  parcelas,
+            "valor_parcela":   parcela,
+            "total_pago":      pagas * parcela,
+            "total":           parcelas * parcela,
+            "devedor":         restante * parcela,
+            "c_prazo":         min(restante, 12) * parcela,
+            "l_prazo":         max(restante - 12, 0) * parcela,
+            "pct_quitado":     pagas / parcelas if parcelas else 0,
+            "quitado":         restante == 0,
+        })
+
+    contratos.sort(key=lambda x: x["pct_quitado"], reverse=True)
+
+    ativos   = [c for c in contratos if not c["quitado"]]
+    quitados = [c for c in contratos if     c["quitado"]]
+
+    soma_devedor    = sum(c["devedor"]       for c in ativos)
+    soma_total_pago = sum(c["total_pago"]    for c in contratos)
+    soma_c_prazo    = sum(c["c_prazo"]       for c in ativos)
+    soma_l_prazo    = sum(c["l_prazo"]       for c in ativos)
+    soma_mensal     = sum(c["valor_parcela"] for c in ativos)
+    tempo_medio     = sum(c["restante"]      for c in ativos) / len(ativos) if ativos else 0
+
+    ativos_vcto = [c for c in ativos if c["data_vencimento"]]
+    mais_perto  = min(ativos_vcto, key=lambda x: x["data_vencimento"])["operacao"] if ativos_vcto else "—"
+
+    cards = {
+        "saldo_devedor": soma_devedor,
+        "total_pago":    soma_total_pago,
+        "curto_prazo":   soma_c_prazo,
+        "longo_prazo":   soma_l_prazo,
+        "valor_mensal":  soma_mensal,
+        "tempo_medio":   round(tempo_medio, 1),
+        "mais_perto":    mais_perto,
+        "r_quitados":    sum(c["total_pago"] for c in quitados),
+        "pct_cp":        soma_c_prazo / soma_devedor if soma_devedor else 0,
+        "pct_lp":        soma_l_prazo / soma_devedor if soma_devedor else 0,
+    }
+
+    return render_template("financiamentos.html",
+        active="financiamentos",
+        contratos=contratos,
+        cards=cards,
+    )
+
+
 # ── Checklist ─────────────────────────────────────────────────────────────────
 
 def _veiculos_xlsx_path():
