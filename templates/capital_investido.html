@@ -662,19 +662,14 @@ function renderBarChart(rows, investors) {
 
 function renderHorizChart(investors) {
   var canvas = document.getElementById('chart-horiz');
-  var numDs  = 1 + BENCHMARKS.length;
-  canvas.parentElement.style.height = Math.max(220, investors.length * numDs * 20 + 80) + 'px';
+  canvas.parentElement.style.height = Math.max(220, investors.length * BENCHMARKS.length * 20 + 80) + 'px';
 
-  var datasets = [{
-    label: 'Capital Real',
-    data: investors.map(function (inv) { return inv.total; }),
-    backgroundColor: '#FF4713cc', borderWidth: 0,
-  }];
+  var datasets = [];
 
   BENCHMARKS.forEach(function (bmk, bi) {
     datasets.push({
       label: bmk.label,
-      data: investors.map(function (inv) { return inv.bmkValues[bi]; }),
+      data: investors.map(function (inv) { return inv.bmkValues[bi] - inv.total; }),
       backgroundColor: bmk.color + 'cc', borderWidth: 0,
     });
   });
@@ -686,7 +681,7 @@ function renderHorizChart(investors) {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } },
-        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': R$ ' + brl(c.parsed.x); } } }
+        tooltip: { callbacks: { label: function (c) { return 'Ganho ' + c.dataset.label + ': R$ ' + brl(c.parsed.x); } } }
       },
       scales: {
         x: { ticks: { callback: function (v) { return 'R$ ' + brl(v); }, font: { size: 10 } } },
