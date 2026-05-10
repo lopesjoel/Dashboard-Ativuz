@@ -353,8 +353,10 @@ function parseCSV(text) {
     if (cols.length <= need) continue;
     var valor = parseBRL(cols[idx.valor]);
     if (isNaN(valor)) continue;
+    var normData = normalizeDate(cols[idx.data]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normData)) continue; // ignora linhas sem data válida
     rows.push({
-      data:          normalizeDate(cols[idx.data]),
+      data:          normData,
       investidor:    cols[idx.investidor],
       descricao:     cols[idx.descricao],
       banco_origem:  cols[idx.banco_origem],
