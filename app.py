@@ -2012,9 +2012,6 @@ _DRE_LAYOUT = [
             ("02.02.07.03", "Desp. Operacionais — FI"),
             ("02.02.07.04", "Desp. Operacionais — FI"),
         ]},
-        {"id": "c-rep",   "label": "Repasse", "sign": -1, "itens": [
-            ("01.01.02.012", "Repasse ao Proprietário"),
-        ]},
     ]},
     # subtotal: margem
     {"id": "sga", "label": "(-) SG&A — Despesas Gerais e Administrativas", "grupos": [
