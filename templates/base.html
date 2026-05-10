@@ -81,6 +81,34 @@
         </div>
       </div>
 
+      <!-- ── Insights ── -->
+      {% set grp_insights = active in ['dre'] %}
+      <div class="sb-group" id="grp-insights" data-open="{{ 'true' if grp_insights else 'false' }}">
+        <button class="sb-group-head" onclick="toggleGroup('grp-insights')"
+                aria-expanded="{{ 'true' if grp_insights else 'false' }}" aria-controls="grp-insights-body">
+          <span>Insights</span>
+          <span class="chev" aria-hidden="true">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </span>
+        </button>
+        <div class="sb-group-body" id="grp-insights-body">
+          <div>
+            <a href="{{ url_for('pagina_dre') }}" class="sb-item"
+               data-active="{{ 'true' if active == 'dre' else 'false' }}"
+               aria-current="{{ 'page' if active == 'dre' else 'false' }}">
+              <span class="sb-item-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </span>
+              <span class="sb-item-label">DRE</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Contratos ── -->
       {% set grp_contratos = active in ['templates', 'gerar', 'historico'] %}
       <div class="sb-group" id="grp-contratos" data-open="{{ 'true' if grp_contratos else 'false' }}">
@@ -225,20 +253,6 @@
               <span class="sb-item-label">Inadimplência</span>
             </a>
           </div>
-          <div>
-            <a href="{{ url_for('pagina_dre') }}" class="sb-item"
-               data-active="{{ 'true' if active == 'dre' else 'false' }}"
-               aria-current="{{ 'page' if active == 'dre' else 'false' }}">
-              <span class="sb-item-icon" aria-hidden="true">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <line x1="3" y1="9" x2="21" y2="9"/>
-                  <line x1="9" y1="21" x2="9" y2="9"/>
-                </svg>
-              </span>
-              <span class="sb-item-label">DRE Ativuz</span>
-            </a>
-          </div>
         </div>
       </div>
 
@@ -285,6 +299,7 @@
           {% elif active == 'historico' %}Histórico de Contratos
           {% elif active == 'inadimplencia' %}Inadimplência
           {% elif active == 'checklist' %}Checklist
+          {% elif active == 'dre' %}DRE
           {% else %}ATIVUZ
           {% endif %}
         </span>

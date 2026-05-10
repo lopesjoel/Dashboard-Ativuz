@@ -8,7 +8,7 @@ import os as _os
 from dotenv import load_dotenv
 load_dotenv()
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 
 _BRT = ZoneInfo("America/Sao_Paulo")
@@ -30,6 +30,24 @@ app.secret_key = _os.environ.get("SECRET_KEY", "ativuz-secret-dev-2026")
 def handle_any_error(e):
     import traceback; traceback.print_exc()
     return jsonify({"error": str(e)}), 500
+
+
+# ── Template filters ──────────────────────────────────────────────────────────
+
+@app.template_filter('brl')
+def _fmt_brl(v):
+    if v is None:
+        return '—'
+    neg = v < 0
+    s = f"{abs(v):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    return f"({s})" if neg else s
+
+
+@app.template_filter('pct_fmt')
+def _fmt_pct(v):
+    if v is None:
+        return '—'
+    return f"{v * 100:.1f}%"
 
 
 # ── Autenticação ──────────────────────────────────────────────────────────────
@@ -1882,9 +1900,189 @@ def inadimplencia_upload():
     return redirect(url_for("pagina_inadimplencia"))
 
 
+_MESES_PT = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+_MESES_PT_CURTO = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                   "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+
+def _nome_mes_label(mes, ano, acumulado=False):
+    if acumulado:
+        return f"Jan–{_MESES_PT_CURTO[mes - 1]} {ano}"
+    return f"{_MESES_PT[mes - 1]} {ano}"
+
+
+def _dre_ler_lancamentos():
+    import openpyxl
+    path = Path(__file__).resolve().parent / "data" / "Lançamentos por natureza.xlsx"
+    if not path.exists():
+        return []
+    wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    result = []
+    for row in rows[5:]:
+        if not row[0]:
+            continue
+        pai_raw = str(row[1]) if row[1] else ""
+        nat_raw = str(row[2]) if row[2] else ""
+        dt      = row[3]
+        valor   = row[9]
+        if not isinstance(dt, datetime):
+            continue
+        if not isinstance(valor, (int, float)):
+            continue
+
+        def _split(s):
+            if ' - ' in s:
+                a, b = s.split(' - ', 1)
+                return a.strip(), b.strip()
+            return s.strip(), s.strip()
+
+        pai_c, pai_n = _split(pai_raw)
+        cod, nome    = _split(nat_raw)
+        result.append({"codigo": cod, "nome": nome, "pai_codigo": pai_c,
+                        "pai_nome": pai_n, "dt": dt, "valor": float(valor)})
+    return result
+
+
+def _dre_calcular(lancamentos):
+    from collections import defaultdict
+    code_val  = defaultdict(float)
+    code_pai  = {}
+    code_nome = {}
+    for l in lancamentos:
+        c = l["codigo"]
+        if not c:
+            continue
+        code_val[c] += l["valor"]
+        if c not in code_pai:
+            code_pai[c]  = (l["pai_codigo"], l["pai_nome"])
+            code_nome[c] = l["nome"]
+
+    def _extract(prefixes=(), codes=()):
+        total = 0.0
+        pais  = {}
+        codes_set = set(codes)
+        for c, v in code_val.items():
+            if not (any(c.startswith(p) for p in prefixes) or c in codes_set):
+                continue
+            total += v
+            pai_c, pai_n = code_pai.get(c, ("", c))
+            if pai_c not in pais:
+                pais[pai_c] = {"codigo": pai_c, "nome": pai_n, "valor": 0.0, "itens": []}
+            pais[pai_c]["valor"] += v
+            pais[pai_c]["itens"].append({"codigo": c, "nome": code_nome.get(c, c), "valor": v})
+        grupos = sorted(pais.values(), key=lambda g: g["codigo"])
+        return total, grupos
+
+    rb,   rb_g   = _extract(
+        prefixes=["01.01.01."],
+        codes=["01.01.02.001", "01.01.02.002", "01.01.02.004", "01.01.02.005",
+               "01.01.02.006", "01.01.02.009", "01.01.02.010", "01.01.02.011"])
+    ded,  ded_g  = _extract(
+        codes=["01.01.02.008", "02.01.01.005", "02.01.01.006"])
+    rl = rb - ded
+
+    cpv,  cpv_g  = _extract(
+        prefixes=["02.02.01.", "02.02.02.", "02.02.03.", "02.02.04.",
+                  "02.02.05.", "02.02.06.", "02.02.07."],
+        codes=["01.01.02.012"])
+    margem = rl - cpv
+
+    opex, opex_g = _extract(
+        prefixes=["02.03.01.", "02.03.02.", "02.03.03.", "02.03.04.",
+                  "02.04.01.", "02.04.02.", "02.04.03.", "02.04.04.",
+                  "02.04.05.", "02.04.07."])
+    ebitda = margem - opex
+
+    ebit = ebitda  # depreciação = 0
+
+    rfin_rec,  rfin_rec_g  = _extract(codes=["03.03.01.002", "03.03.01.003"])
+    rfin_desp, rfin_desp_g = _extract(
+        codes=["02.04.06.001", "02.04.06.003", "02.04.06.004", "02.04.06.005",
+               "03.01.03.002", "03.01.03.004"])
+    rfin = rfin_rec - rfin_desp
+    lair = ebit + rfin
+    ll   = lair
+
+    return {
+        "receita_bruta": rb,    "rb_grupos": rb_g,
+        "deducoes": -ded,       "ded_grupos": ded_g,
+        "receita_liquida": rl,
+        "cpv": -cpv,            "cpv_grupos": cpv_g,
+        "margem_bruta": margem,
+        "pct_margem": margem / rl if rl else 0,
+        "opex": -opex,          "opex_grupos": opex_g,
+        "ebitda": ebitda,
+        "pct_ebitda": ebitda / rl if rl else 0,
+        "depreciacao": 0.0,
+        "ebit": ebit,
+        "pct_ebit": ebit / rl if rl else 0,
+        "rfin_receitas": rfin_rec,   "rfin_rec_grupos": rfin_rec_g,
+        "rfin_despesas": -rfin_desp, "rfin_desp_grupos": rfin_desp_g,
+        "resultado_financeiro": rfin,
+        "lucro_antes_ir": lair,
+        "ir_csll": 0.0,
+        "lucro_liquido": ll,
+        "pct_margem_liquida": ll / rl if rl else 0,
+    }
+
+
 @app.route("/dre")
 def pagina_dre():
-    return render_template("dre.html", active="dre")
+    from calendar import monthrange
+    hoje = datetime.now(_BRT)
+    try:
+        mes = int(request.args.get("mes", hoje.month))
+        ano = int(request.args.get("ano", hoje.year))
+        if not (1 <= mes <= 12):
+            mes = hoje.month
+    except (ValueError, TypeError):
+        mes, ano = hoje.month, hoje.year
+
+    acumulado = request.args.get("acumulado", "0") == "1"
+
+    # Build current period date range
+    if acumulado:
+        d_ini = datetime(ano, 1, 1)
+        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
+    else:
+        d_ini = datetime(ano, mes, 1)
+        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
+
+    # Build previous period date range (previous month, or same period -1 year for acumulado)
+    if acumulado:
+        d_ini_prev = datetime(ano - 1, 1, 1)
+        d_fim_prev = datetime(ano - 1, mes, monthrange(ano - 1, mes)[1], 23, 59, 59)
+    else:
+        prev_mes = mes - 1 if mes > 1 else 12
+        prev_ano = ano if mes > 1 else ano - 1
+        d_ini_prev = datetime(prev_ano, prev_mes, 1)
+        d_fim_prev = datetime(prev_ano, prev_mes, monthrange(prev_ano, prev_mes)[1], 23, 59, 59)
+
+    todos = _dre_ler_lancamentos()
+
+    def _filtrar(d0, d1):
+        return [l for l in todos if d0 <= l["dt"] <= d1]
+
+    dre_atual = _dre_calcular(_filtrar(d_ini, d_fim))
+    dre_prev  = _dre_calcular(_filtrar(d_ini_prev, d_fim_prev))
+
+    meses_disponiveis = sorted({(l["dt"].year, l["dt"].month) for l in todos})
+
+    return render_template("dre.html",
+        active="dre",
+        dre=dre_atual,
+        dre_prev=dre_prev,
+        mes=mes, ano=ano,
+        acumulado=acumulado,
+        meses_disponiveis=meses_disponiveis,
+        label_atual=_nome_mes_label(mes, ano, acumulado),
+        label_prev=_nome_mes_label(d_ini_prev.month, d_ini_prev.year, acumulado),
+    )
 
 
 # ── Checklist ─────────────────────────────────────────────────────────────────
