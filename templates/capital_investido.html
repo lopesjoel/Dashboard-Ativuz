@@ -190,7 +190,6 @@
 
 var CSV_URL   = 'https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vT7sXHzkT1kEEt50X_ADazozBcicKD8m-jn-9RAZ6wsopcaK4wJMKbBJhQLEUiB2cUl0ez7aJR0AnQ7/pub?gid=247969929&single=true&output=csv';
 var CACHE_KEY = 'ci_cache_v1';
-var CACHE_TTL = 5 * 60 * 1000;
 var PALETTE   = ['#FF4713','#4A6FA5','#22a06b','#e6a817','#9B59B6','#E74C3C','#1ABC9C','#F39C12'];
 var SELIC     = { 2023: 0.1375, 2024: 0.105, 2025: 0.1475 };
 var TODAY     = new Date();
@@ -303,18 +302,19 @@ function parseCSV(text) {
 // ── Fetch + sessionStorage cache ─────────────────────────────────────────────
 
 async function fetchData() {
+  var today = new Date().toISOString().slice(0, 10);
   try {
     var cached = sessionStorage.getItem(CACHE_KEY);
     if (cached) {
       var obj = JSON.parse(cached);
-      if (Date.now() - obj.ts < CACHE_TTL) return obj.data;
+      if (obj.day === today) return obj.data;
     }
   } catch (e) {}
   var res = await fetch(CSV_URL);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   var text = await res.text();
   var data = parseCSV(text);
-  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ day: today, data: data })); } catch (e) {}
   return data;
 }
 
