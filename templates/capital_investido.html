@@ -261,38 +261,70 @@ function splitLine(line) {
 function normalizeDate(str) {
   str = (str || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  var m = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return m[3] + '-' + m[2] + '-' + m[1];
+  // D/M/YYYY or DD/MM/YYYY
+  var m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
   return str;
 }
 
 function parseBRL(str) {
-  // Handles: "1.234,56" (BR), "1234,56" (BR), "1234.56" (US), "1234"
   str = (str || '').trim().replace(/[^0-9,.-]/g, '');
   if (!str) return NaN;
   // BR format: ends with comma + 1-2 digits (e.g. "1.234,56" or "1234,56")
   if (/,\d{1,2}$/.test(str)) {
     return parseFloat(str.replace(/\./g, '').replace(',', '.'));
   }
-  // US format or plain integer: remove thousands commas
   return parseFloat(str.replace(/,/g, ''));
+}
+
+function detectCols(headerCols) {
+  var h = headerCols.map(function (s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); });
+  function find(kws) {
+    for (var i = 0; i < h.length; i++)
+      for (var j = 0; j < kws.length; j++)
+        if (h[i].includes(kws[j])) return i;
+    return -1;
+  }
+  return {
+    data:          find(['data', 'date']),
+    investidor:    find(['investidor', 'investor', 'socio', 'socio', 'nome', 'parceiro']),
+    descricao:     find(['descri', 'historico', 'memo', 'observ']),
+    banco_origem:  find(['origem', 'source']),
+    banco_destino: find(['destino', 'dest', 'banco']),
+    valor:         find(['valor', 'value', 'amount', 'montante']),
+  };
 }
 
 function parseCSV(text) {
   var lines = text.trim().split(/\r?\n/);
-  var rows  = [];
+  if (lines.length < 2) return [];
+
+  var header = splitLine(lines[0]);
+  var idx    = detectCols(header);
+
+  // Fallback to positional defaults if a column wasn't found
+  if (idx.data          < 0) idx.data          = 0;
+  if (idx.investidor    < 0) idx.investidor    = 1;
+  if (idx.descricao     < 0) idx.descricao     = 2;
+  if (idx.banco_origem  < 0) idx.banco_origem  = 3;
+  if (idx.banco_destino < 0) idx.banco_destino = 4;
+  if (idx.valor         < 0) idx.valor         = 5;
+
+  var need = Math.max(idx.data, idx.investidor, idx.descricao,
+                      idx.banco_origem, idx.banco_destino, idx.valor);
+  var rows = [];
   for (var i = 1; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
     var cols = splitLine(lines[i]);
-    if (cols.length < 6) continue;
-    var valor = parseBRL(cols[5]);
+    if (cols.length <= need) continue;
+    var valor = parseBRL(cols[idx.valor]);
     if (isNaN(valor)) continue;
     rows.push({
-      data:          normalizeDate(cols[0]),
-      investidor:    cols[1],
-      descricao:     cols[2],
-      banco_origem:  cols[3],
-      banco_destino: cols[4],
+      data:          normalizeDate(cols[idx.data]),
+      investidor:    cols[idx.investidor],
+      descricao:     cols[idx.descricao],
+      banco_origem:  cols[idx.banco_origem],
+      banco_destino: cols[idx.banco_destino],
       valor:         valor
     });
   }
