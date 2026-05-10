@@ -2174,12 +2174,8 @@ def _dre_ler_lancamentos():
 
     base = Path(__file__).resolve().parent
     pasta = base / "planilhas" / "dre"
-    fallback = base / "data" / "Lançamentos por natureza.xlsx"
 
-    # Coleta arquivos: pasta dedicada tem prioridade; fallback se estiver vazia
     arquivos = sorted(pasta.glob("*.xlsx")) if pasta.is_dir() else []
-    if not arquivos and fallback.exists():
-        arquivos = [fallback]
     if not arquivos:
         return []
 
