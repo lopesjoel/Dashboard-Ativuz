@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: gerador-de-contratos
-    runtime: python
-    buildCommand: apt-get update && apt-get install -y libreoffice fonts-liberation && pip install -r requirements.txt
-    startCommand: gunicorn app:app
