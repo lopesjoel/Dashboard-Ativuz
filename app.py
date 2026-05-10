@@ -2433,9 +2433,27 @@ def pagina_financiamentos():
 
 # ── Capital Investido ─────────────────────────────────────────────────────────
 
+_CI_CSV_URL = (
+    "https://docs.google.com/spreadsheets/d/e/"
+    "2PACX-1vT7sXHzkT1kEEt50X_ADazozBcicKD8m-jn-9RAZ6wsopcaK4wJMKbBJhQLEUiB2cUl0ez7aJR0AnQ7"
+    "/pub?gid=247969929&single=true&output=csv"
+)
+
 @app.route("/capital-investido")
 def pagina_capital_investido():
     return render_template("capital_investido.html", active="capital_investido")
+
+
+@app.route("/api/capital-investido-csv")
+def api_capital_investido_csv():
+    import urllib.request as _ur
+    try:
+        req = _ur.Request(_CI_CSV_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with _ur.urlopen(req, timeout=15) as resp:
+            text = resp.read().decode("utf-8")
+        return text, 200, {"Content-Type": "text/csv; charset=utf-8"}
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
 
 
 # ── Checklist ─────────────────────────────────────────────────────────────────
