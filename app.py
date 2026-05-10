@@ -1912,6 +1912,251 @@ def _nome_mes_label(mes, ano, acumulado=False):
     return f"{_MESES_PT[mes - 1]} {ano}"
 
 
+# ── DRE Layout ────────────────────────────────────────────────────────────────
+# sign: +1 = receita (contribui positivamente), -1 = despesa (negativo no DRE)
+# item tuple: (codigo, label)
+# Códigos tratados como string — nunca converter para número.
+
+_DRE_LAYOUT = [
+    {"id": "rb", "label": "(+) Receita Operacional Bruta", "grupos": [
+        {"id": "rb-loc",  "label": "Locação", "sign": +1, "itens": [
+            ("01.01.01.001", "Locação"),
+            ("01.01.01.002", "KM Excedente"),
+            ("01.01.01.003", "Multa Atraso Pagamento"),
+            ("01.01.01.004", "Multa Quebra de Contrato"),
+            ("01.01.01.005", "Acordo/Renegociação"),
+            ("01.01.01.006", "Taxa de Adm. de Veículos"),
+        ]},
+        {"id": "rb-reimb", "label": "Reembolsos", "sign": +1, "itens": [
+            ("01.01.02.001", "Manutenção Reembolsável"),
+            ("01.01.02.002", "Entrada de Multa de Trânsito"),
+            ("01.01.02.004", "Multa Dev. Antecipada"),
+            ("01.01.02.005", "Reembolso de Sinistro"),
+            ("01.01.02.006", "Outros Reembolsos"),
+            ("02.02.06.006", "Combustível Reembolsável"),  # SAÍDA no sistema → sinal invertido
+        ]},
+        {"id": "rb-fi", "label": "Reembolsos — Frota Investidores", "sign": +1, "itens": [
+            ("01.01.02.009", "Reembolso de Manutenções — FI"),
+            ("01.01.02.010", "Reembolso de Multas — FI"),
+            ("01.01.02.011", "Reembolso Desp. Operacionais — FI"),
+            ("01.02.01.005", "Recebimentos — Frota Investidores"),
+        ]},
+    ]},
+    {"id": "ded", "label": "(-) Deduções", "grupos": [
+        {"id": "ded-imp",  "label": "Impostos", "sign": -1, "itens": [
+            ("02.01.01.001", "PIS"),
+            ("02.01.01.005", "Simples Nacional"),
+            ("02.01.01.006", "Outros Impostos"),
+        ]},
+        {"id": "ded-desc", "label": "Descontos", "sign": -1, "itens": [
+            ("01.01.02.008", "Desconto Concedido a Clientes"),  # ENTRADA → sinal invertido
+        ]},
+    ]},
+    # subtotal: receita_liquida
+    {"id": "custos", "label": "(-) Custos — Custo Direto da Operação/Frota", "grupos": [
+        {"id": "c-lic",   "label": "Licenciamento", "sign": -1, "itens": [
+            ("02.02.01.001", "Emplacamento"),
+            ("02.02.01.002", "Transferência Veicular"),
+            ("02.02.01.003", "IPVA"),
+            ("02.02.01.005", "Taxa de Licenciamento"),
+            ("02.02.01.006", "Despesas com Cartório"),
+            ("02.02.01.007", "Transferência Veicular"),
+            ("02.02.01.008", "Taxa Bombeiros"),
+            ("02.02.01.009", "Vistoria"),
+            ("02.02.01.010", "Documentação Veicular"),
+        ]},
+        {"id": "c-desp",  "label": "Honorários Despachante", "sign": -1, "itens": [
+            ("02.02.02.001", "Honorários Despachante"),
+        ]},
+        {"id": "c-seg",   "label": "Seguro/Assistência 24h", "sign": -1, "itens": [
+            ("02.02.03.001", "Seguro Total"),
+            ("02.02.03.003", "Reserva Operacional p/ Sinistros"),
+            ("02.02.03.004", "Guincho"),
+            ("02.02.03.005", "Rastreador Veicular"),
+        ]},
+        {"id": "c-sub",   "label": "Sublocação/Transporte", "sign": -1, "itens": [
+            ("02.02.04.002", "Frete Não Reembolsável"),
+            ("02.02.04.003", "Multas Não Reembolsáveis"),
+            ("02.02.04.004", "Taxa de Frete"),
+            ("02.02.04.005", "Gasolina"),
+            ("02.02.04.006", "Uber ou App de Transporte"),
+        ]},
+        {"id": "c-man",   "label": "Manutenção", "sign": -1, "itens": [
+            ("02.02.05.001", "Manutenção Preventiva"),
+            ("02.02.05.002", "Manutenção Corretiva"),
+            ("02.02.05.006", "Compra Equipamento GNV"),
+            ("02.02.05.007", "Equipamentos (Sensor, SIM, etc.)"),
+            ("02.02.05.008", "Lavagem Veicular Não Reembolsável"),
+            ("02.02.05.009", "Compra de Peças"),
+            ("02.02.05.010", "Compra de Pneus"),
+        ]},
+        {"id": "c-reimb", "label": "Despesas Reembolsáveis", "sign": -1, "itens": [
+            ("02.02.06.001", "Saída de Multa de Trânsito"),
+            ("02.02.06.002", "Saída de Sinistro"),
+            ("02.02.06.010", "Reembolso de Clientes"),
+        ]},
+        {"id": "c-fi",    "label": "Despesas c/ Frota de Investidores", "sign": -1, "itens": [
+            ("02.02.07.01", "Manutenções — Frota Investidores"),
+            ("02.02.07.02", "Sinistros — Frota Investidores"),
+            ("02.02.07.03", "Desp. Operacionais — FI"),
+            ("02.02.07.04", "Desp. Operacionais — FI"),
+        ]},
+        {"id": "c-rep",   "label": "Repasse", "sign": -1, "itens": [
+            ("01.01.02.012", "Repasse ao Proprietário"),
+        ]},
+    ]},
+    # subtotal: margem
+    {"id": "sga", "label": "(-) SG&A — Despesas Gerais e Administrativas", "grupos": [
+        {"id": "s-sal", "label": "Salários", "sign": -1, "itens": [
+            ("02.03.01.001", "Salário"),
+            ("02.03.01.002", "Adiantamento Salarial"),
+            ("02.03.01.003", "Férias"),
+            ("02.03.01.004", "13° Salário"),
+            ("02.03.01.005", "Rescisão"),
+            ("02.03.01.006", "Prêmios"),
+            ("02.03.01.007", "Comissão"),
+            ("02.03.01.10",  "ASO e Saúde e Seg. do Trabalho"),
+        ]},
+        {"id": "s-ben", "label": "Benefícios", "sign": -1, "itens": [
+            ("02.03.02.001", "VT"),
+            ("02.03.02.003", "VR"),
+            ("02.03.02.005", "Assistência Médica"),
+            ("02.03.02.006", "P.C.M.S.O"),
+            ("02.03.02.007", "Treinamento"),
+            ("02.03.02.008", "Outros Benefícios"),
+        ]},
+        {"id": "s-imp", "label": "Impostos Folha", "sign": -1, "itens": [
+            ("02.03.03.001", "INSS"),
+            ("02.03.03.002", "FGTS"),
+        ]},
+        {"id": "s-pro", "label": "Pró-labore", "sign": -1, "itens": [
+            ("02.03.04.001", "Pró-labore Folha"),
+            ("02.03.04.002", "Distribuição de Lucros Mensal"),
+        ]},
+        {"id": "s-com", "label": "Despesas Comerciais", "sign": -1, "itens": [
+            ("02.04.01.001", "Marketing"),
+        ]},
+        {"id": "s-ocu", "label": "Ocupação", "sign": -1, "itens": [
+            ("02.04.02.001", "Aluguel de Imóveis"),
+            ("02.04.02.003", "IPTU"),
+            ("02.04.02.004", "Água"),
+            ("02.04.02.005", "Luz"),
+            ("02.04.02.006", "Manutenção Predial"),
+        ]},
+        {"id": "s-sup", "label": "Suprimentos", "sign": -1, "itens": [
+            ("02.04.03.001", "Telefone"),
+            ("02.04.03.007", "Bens de Pequeno Valor"),
+        ]},
+        {"id": "s-adm", "label": "Despesas Administrativas", "sign": -1, "itens": [
+            ("02.04.04.001", "Desp. Administrativas e de Escritório"),
+            ("02.04.04.004", "Taxas e Despesas Legais"),
+            ("02.04.04.005", "Outras Despesas"),
+            ("02.04.04.007", "Despesas Jurídicas"),
+        ]},
+        {"id": "s-svc", "label": "Serviços Prestados", "sign": -1, "itens": [
+            ("02.04.05.001", "Honorários Advocatícios"),
+            ("02.04.05.003", "Softwares"),
+            ("02.04.05.004", "Órgãos de Proteção ao Crédito"),
+            ("02.04.05.005", "Assessoria Administrativa"),
+            ("02.04.05.006", "Honorários de Consultoria"),
+            ("02.04.05.007", "Serviços Contábeis"),
+            ("02.04.05.008", "Serviços de Limpeza"),
+            ("02.04.05.009", "Serviços Manut. Máquinas e Equip."),
+        ]},
+        {"id": "s-out", "label": "Outras Saídas", "sign": -1, "itens": [
+            ("02.04.07.002", "Outras Saídas"),
+        ]},
+    ]},
+    # subtotal: ebitda; depreciação=0; subtotal: ebit
+    {"id": "rfin", "label": "(-) Resultado Financeiro", "grupos": [
+        {"id": "rf-desp", "label": "Despesas Bancárias e Financeiras", "sign": -1, "itens": [
+            ("02.04.06.001", "Tarifa Bancária"),
+            ("02.04.06.003", "Juros e Multas Bancárias Pagos"),
+            ("02.04.06.004", "Desconto Pgto Boletos"),
+            ("02.04.06.005", "Taxa Maquineta"),
+            ("03.01.03.002", "Consórcio Contemplado Juros"),
+            ("03.01.03.004", "Financiamento Juros"),
+            ("04.01.02.002", "Pgto Juros sobre Mútuos"),
+        ]},
+        {"id": "rf-rec",  "label": "Receitas Financeiras", "sign": +1, "itens": [
+            ("03.03.01.003", "Rendimento de Aplicações"),
+        ]},
+    ]},
+    {"id": "rnop", "label": "(-) Resultados Não Operacionais", "grupos": [
+        {"id": "rnop-out", "label": "Outras Entradas", "sign": +1, "itens": [
+            ("01.02.01.002", "Depósitos Não Identificados"),
+            ("01.02.01.003", "Outras Entradas"),
+        ]},
+        {"id": "rnop-inv", "label": "Outros Investimentos", "sign": +1, "itens": [
+            ("03.03.02.001", "Outros Investimentos"),
+        ]},
+    ]},
+    # subtotal: lucro_liquido ── abaixo: fluxo de caixa
+    {"id": "inv", "label": "(-) Investimentos", "grupos": [
+        {"id": "inv-venda", "label": "Venda de Veículos", "sign": +1, "itens": [
+            ("01.02.01.004", "Venda de Veículo"),
+        ]},
+        {"id": "inv-comp",  "label": "Compra de Veículos", "sign": -1, "itens": [
+            ("03.01.02.001", "Compra de Veículos à Vista"),
+            ("03.01.02.002", "Entrada Compra Veículo"),
+            ("03.01.02.003", "Adiantamento de Consórcio"),
+        ]},
+        {"id": "inv-fin",   "label": "Financiamentos Veiculares", "sign": -1, "itens": [
+            ("03.01.03.001", "Consórcio Contemplado"),
+            ("03.01.03.003", "Pagamento de Financiamento"),
+            ("03.01.03.005", "Consórcio Parcela Não Contemplada"),
+            ("03.01.03.006", "Quitação Antecipada de Parcelas"),
+        ]},
+        {"id": "inv-imob",  "label": "Outros Imobilizados", "sign": -1, "itens": [
+            ("03.02.01.001", "Instalações"),
+            ("03.02.01.002", "Computadores e Periféricos"),
+            ("03.02.01.003", "Móveis e Utensílios"),
+            ("03.02.01.004", "Sistemas e Softwares"),
+            ("03.02.01.005", "Outras Imobilizações"),
+        ]},
+        {"id": "inv-obra",  "label": "Construção da Oficina", "sign": -1, "itens": [
+            ("02.04.08.01", "Compra de Material para Oficina"),
+            ("02.04.08.02", "Pagamento da Mão de Obra"),
+            ("02.04.08.03", "Aluguel de Equipamentos"),
+        ]},
+        {"id": "inv-aplic", "label": "Aplicações Financeiras", "sign": -1, "itens": [
+            ("03.03.01.001", "Aplicações Financeiras"),
+        ]},
+        {"id": "inv-resg",  "label": "Resgate de Aplicação", "sign": +1, "itens": [
+            ("03.03.01.002", "Resgate de Aplicação Financeira"),
+        ]},
+    ]},
+    {"id": "financ", "label": "(-) Financiamentos", "grupos": [
+        {"id": "fin-ent",      "label": "Entradas de Mútuos", "sign": +1, "itens": [
+            ("04.01.01.001", "Entrada de Mútuos"),
+            ("04.01.01.002", "Entrada Caução"),
+        ]},
+        {"id": "fin-pgto",     "label": "Pgto de Mútuos", "sign": -1, "itens": [
+            ("04.01.02.001", "Saída de Mútuos"),
+            ("04.01.02.003", "Saída Caução"),
+        ]},
+        {"id": "fin-reimb-in", "label": "Entrada de Reembolso", "sign": +1, "itens": [
+            ("04.04.02.01", "Entrada de Reembolso"),
+        ]},
+        {"id": "fin-reimb-out","label": "Saída de Reembolso", "sign": -1, "itens": [
+            ("04.04.02.02", "Saída de Reembolso"),
+        ]},
+    ]},
+    {"id": "aporte", "label": "(+) Aporte de Capital", "grupos": [
+        {"id": "aporte-g", "label": "Aporte de Capital", "sign": +1, "itens": [
+            ("04.04.01.003", "Aporte de Capital"),
+        ]},
+    ]},
+    # subtotal: fluxo_acionista
+    {"id": "distrib", "label": "(-) Distribuição de Resultado", "grupos": [
+        {"id": "distrib-g", "label": "Distribuição de Resultado", "sign": -1, "itens": [
+            ("04.04.01.002", "Distribuição de Resultado"),
+        ]},
+    ]},
+    # subtotal: fluxo_livre
+]
+
+
 def _dre_ler_lancamentos():
     import openpyxl
     path = Path(__file__).resolve().parent / "data" / "Lançamentos por natureza.xlsx"
@@ -1922,112 +2167,91 @@ def _dre_ler_lancamentos():
     rows = list(ws.iter_rows(values_only=True))
     wb.close()
 
+    def _split(s):
+        if ' - ' in s:
+            a, b = s.split(' - ', 1)
+            return a.strip(), b.strip()
+        return s.strip(), s.strip()
+
     result = []
     for row in rows[5:]:
         if not row[0]:
             continue
-        pai_raw = str(row[1]) if row[1] else ""
-        nat_raw = str(row[2]) if row[2] else ""
-        dt      = row[3]
-        valor   = row[9]
-        if not isinstance(dt, datetime):
+        dt    = row[3]
+        valor = row[9]
+        if not isinstance(dt, datetime) or not isinstance(valor, (int, float)):
             continue
-        if not isinstance(valor, (int, float)):
-            continue
-
-        def _split(s):
-            if ' - ' in s:
-                a, b = s.split(' - ', 1)
-                return a.strip(), b.strip()
-            return s.strip(), s.strip()
-
-        pai_c, pai_n = _split(pai_raw)
-        cod, nome    = _split(nat_raw)
-        result.append({"codigo": cod, "nome": nome, "pai_codigo": pai_c,
-                        "pai_nome": pai_n, "dt": dt, "valor": float(valor)})
+        cod, _ = _split(str(row[2]) if row[2] else "")
+        result.append({"codigo": cod, "dt": dt, "valor": float(valor)})
     return result
 
 
 def _dre_calcular(lancamentos):
     from collections import defaultdict
-    code_val  = defaultdict(float)
-    code_pai  = {}
-    code_nome = {}
+    code_val = defaultdict(float)
     for l in lancamentos:
-        c = l["codigo"]
-        if not c:
-            continue
-        code_val[c] += l["valor"]
-        if c not in code_pai:
-            code_pai[c]  = (l["pai_codigo"], l["pai_nome"])
-            code_nome[c] = l["nome"]
+        if l["codigo"]:
+            code_val[l["codigo"]] += l["valor"]
 
-    def _extract(prefixes=(), codes=()):
-        total = 0.0
-        pais  = {}
-        codes_set = set(codes)
-        for c, v in code_val.items():
-            if not (any(c.startswith(p) for p in prefixes) or c in codes_set):
-                continue
-            total += v
-            pai_c, pai_n = code_pai.get(c, ("", c))
-            if pai_c not in pais:
-                pais[pai_c] = {"codigo": pai_c, "nome": pai_n, "valor": 0.0, "itens": []}
-            pais[pai_c]["valor"] += v
-            pais[pai_c]["itens"].append({"codigo": c, "nome": code_nome.get(c, c), "valor": v})
-        grupos = sorted(pais.values(), key=lambda g: g["codigo"])
-        return total, grupos
+    sections = []
+    for sec_def in _DRE_LAYOUT:
+        grupos = []
+        sec_total = 0.0
+        for grp_def in sec_def["grupos"]:
+            sign = grp_def["sign"]
+            itens = []
+            grp_abs = 0.0
+            for codigo, label in grp_def["itens"]:
+                v = code_val.get(codigo, 0.0)
+                grp_abs += v
+                itens.append({"codigo": codigo, "label": label, "val": sign * v})
+            grp_total = sign * grp_abs
+            sec_total += grp_total
+            grupos.append({"id": grp_def["id"], "label": grp_def["label"],
+                           "sign": sign, "total": grp_total, "itens": itens})
+        sections.append({"id": sec_def["id"], "label": sec_def["label"],
+                         "total": sec_total, "grupos": grupos})
 
-    rb,   rb_g   = _extract(
-        prefixes=["01.01.01."],
-        codes=["01.01.02.001", "01.01.02.002", "01.01.02.004", "01.01.02.005",
-               "01.01.02.006", "01.01.02.009", "01.01.02.010", "01.01.02.011"])
-    ded,  ded_g  = _extract(
-        codes=["01.01.02.008", "02.01.01.005", "02.01.01.006"])
-    rl = rb - ded
+    def _s(sid):
+        for s in sections:
+            if s["id"] == sid:
+                return s["total"]
+        return 0.0
 
-    cpv,  cpv_g  = _extract(
-        prefixes=["02.02.01.", "02.02.02.", "02.02.03.", "02.02.04.",
-                  "02.02.05.", "02.02.06.", "02.02.07."],
-        codes=["01.01.02.012"])
-    margem = rl - cpv
-
-    opex, opex_g = _extract(
-        prefixes=["02.03.01.", "02.03.02.", "02.03.03.", "02.03.04.",
-                  "02.04.01.", "02.04.02.", "02.04.03.", "02.04.04.",
-                  "02.04.05.", "02.04.07."])
-    ebitda = margem - opex
-
-    ebit = ebitda  # depreciação = 0
-
-    rfin_rec,  rfin_rec_g  = _extract(codes=["03.03.01.002", "03.03.01.003"])
-    rfin_desp, rfin_desp_g = _extract(
-        codes=["02.04.06.001", "02.04.06.003", "02.04.06.004", "02.04.06.005",
-               "03.01.03.002", "03.01.03.004"])
-    rfin = rfin_rec - rfin_desp
-    lair = ebit + rfin
-    ll   = lair
+    rb     = _s("rb")
+    ded    = _s("ded")
+    rl     = rb + ded
+    custos = _s("custos")
+    margem = rl + custos
+    sga    = _s("sga")
+    ebitda = margem + sga
+    ebit   = ebitda        # depreciação = 0
+    rfin   = _s("rfin")
+    rnop   = _s("rnop")
+    ll     = ebit + rfin + rnop
+    inv    = _s("inv")
+    financ = _s("financ")
+    aporte = _s("aporte")
+    fluxo_ac  = ll + inv + financ + aporte
+    distrib   = _s("distrib")
+    fluxo_liv = fluxo_ac + distrib
 
     return {
-        "receita_bruta": rb,    "rb_grupos": rb_g,
-        "deducoes": -ded,       "ded_grupos": ded_g,
+        "sections": sections,
+        "receita_bruta": rb,  "deducoes": ded,
         "receita_liquida": rl,
-        "cpv": -cpv,            "cpv_grupos": cpv_g,
-        "margem_bruta": margem,
-        "pct_margem": margem / rl if rl else 0,
-        "opex": -opex,          "opex_grupos": opex_g,
-        "ebitda": ebitda,
-        "pct_ebitda": ebitda / rl if rl else 0,
+        "custos": custos,
+        "margem": margem,       "pct_margem": margem / rl if rl else 0,
+        "sga": sga,
+        "ebitda": ebitda,       "pct_ebitda": ebitda / rl if rl else 0,
         "depreciacao": 0.0,
-        "ebit": ebit,
-        "pct_ebit": ebit / rl if rl else 0,
-        "rfin_receitas": rfin_rec,   "rfin_rec_grupos": rfin_rec_g,
-        "rfin_despesas": -rfin_desp, "rfin_desp_grupos": rfin_desp_g,
-        "resultado_financeiro": rfin,
-        "lucro_antes_ir": lair,
-        "ir_csll": 0.0,
-        "lucro_liquido": ll,
-        "pct_margem_liquida": ll / rl if rl else 0,
+        "ebit": ebit,           "pct_ebit": ebit / rl if rl else 0,
+        "rfin": rfin,           "rnop": rnop,
+        "lucro_liquido": ll,    "pct_ll": ll / rl if rl else 0,
+        "inv": inv,  "financ": financ,  "aporte": aporte,
+        "fluxo_acionista": fluxo_ac,
+        "distrib": distrib,
+        "fluxo_livre": fluxo_liv,
     }
 
 
