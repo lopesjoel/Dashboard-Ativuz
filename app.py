@@ -2435,8 +2435,8 @@ def pagina_financiamentos():
 
 _CI_CSV_URL = (
     "https://docs.google.com/spreadsheets/d/e/"
-    "2PACX-1vT7sXHzkT1kEEt50X_ADazozBcicKD8m-jn-9RAZ6wsopcaK4wJMKbBJhQLEUiB2cUl0ez7aJR0AnQ7"
-    "/pub?gid=247969929&single=true&output=csv"
+    "2PACX-1vRZFq7H45YwN5Sbc9yZbSc9HGcTOl99X2jC2TVYVT828yCpilVXhzT55-W3Ma5ctQ"
+    "/pub?gid=391372590&single=true&output=csv"
 )
 _CI_CACHE = {"day": None, "text": ""}
 
