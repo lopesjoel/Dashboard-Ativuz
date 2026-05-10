@@ -140,6 +140,12 @@
   <span>Carregando dados...</span>
 </div>
 
+<!-- Diagnóstico temporário — mostra cabeçalho do CSV e colunas detectadas -->
+<details style="margin-bottom:16px;font-size:11px;color:var(--ink-3)">
+  <summary style="cursor:pointer;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Diagnóstico CSV (abra se houver problema)</summary>
+  <pre id="ci-diag" style="margin-top:8px;padding:10px;background:#f5f5f5;border-radius:8px;overflow:auto;max-height:200px;font-size:11px;line-height:1.5">Aguardando dados...</pre>
+</details>
+
 <div id="ci-content" style="display:none">
 
   <div class="ci-kpis" id="ci-kpis"></div>
@@ -189,7 +195,7 @@
 'use strict';
 
 var CSV_URL   = 'https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vT7sXHzkT1kEEt50X_ADazozBcicKD8m-jn-9RAZ6wsopcaK4wJMKbBJhQLEUiB2cUl0ez7aJR0AnQ7/pub?gid=247969929&single=true&output=csv';
-var CACHE_KEY = 'ci_cache_v1';
+var CACHE_KEY = 'ci_cache_v3';
 var PALETTE   = ['#FF4713','#4A6FA5','#22a06b','#e6a817','#9B59B6','#E74C3C','#1ABC9C','#F39C12'];
 var SELIC     = { 2023: 0.1375, 2024: 0.105, 2025: 0.1475 };
 var TODAY     = new Date();
@@ -261,6 +267,9 @@ function splitLine(line) {
 function normalizeDate(str) {
   str = (str || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // ISO with time: "2024-01-05T12:00:00" or "2024-01-05 12:00:00"
+  var iso = str.match(/^(\d{4}-\d{2}-\d{2})[T ]/);
+  if (iso) return iso[1];
   // D/M/YYYY or DD/MM/YYYY
   var m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (m) return m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
@@ -277,22 +286,38 @@ function parseBRL(str) {
   return parseFloat(str.replace(/,/g, ''));
 }
 
+function stripAccents(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
 function detectCols(headerCols) {
-  var h = headerCols.map(function (s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); });
+  var h = headerCols.map(stripAccents);
+
   function find(kws) {
     for (var i = 0; i < h.length; i++)
       for (var j = 0; j < kws.length; j++)
         if (h[i].includes(kws[j])) return i;
     return -1;
   }
-  return {
-    data:          find(['data', 'date']),
-    investidor:    find(['investidor', 'investor', 'socio', 'socio', 'nome', 'parceiro']),
-    descricao:     find(['descri', 'historico', 'memo', 'observ']),
-    banco_origem:  find(['origem', 'source']),
-    banco_destino: find(['destino', 'dest', 'banco']),
-    valor:         find(['valor', 'value', 'amount', 'montante']),
+
+  var idx = {
+    data:          find(['data', 'date', 'competencia', 'lancamento']),
+    investidor:    find(['investidor', 'investor', 'socio', 'nome', 'parceiro', 'acionista', 'cotista']),
+    descricao:     find(['descri', 'historico', 'memo', 'observ', 'obs', 'descricao']),
+    banco_origem:  find(['origem', 'source', 'banco origem', 'de ']),
+    banco_destino: find(['destino', 'dest', 'banco destino', 'banco', 'para ']),
+    valor:         find(['valor', 'value', 'amount', 'montante', 'quantia']),
   };
+
+  // ── Diagnóstico visível ──────────────────────────────────────────────────
+  var dbg = document.getElementById('ci-diag');
+  if (dbg) {
+    var colsStr = headerCols.map(function (c, i) { return i + ': ' + c; }).join('\n');
+    var idxStr  = Object.keys(idx).map(function (k) { return k + ' → col ' + idx[k]; }).join(' | ');
+    dbg.textContent = 'COLUNAS DO CSV:\n' + colsStr + '\n\nDETECÇÃO: ' + idxStr;
+  }
+
+  return idx;
 }
 
 function parseCSV(text) {
@@ -302,7 +327,7 @@ function parseCSV(text) {
   var header = splitLine(lines[0]);
   var idx    = detectCols(header);
 
-  // Fallback to positional defaults if a column wasn't found
+  // Fallback to positional defaults
   if (idx.data          < 0) idx.data          = 0;
   if (idx.investidor    < 0) idx.investidor    = 1;
   if (idx.descricao     < 0) idx.descricao     = 2;
