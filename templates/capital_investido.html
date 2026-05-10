@@ -262,6 +262,11 @@
       <div class="ci-chart-title">Capital Real vs. SELIC por Investidor</div>
       <div class="ci-chart-wrap auto-h"><canvas id="chart-horiz"></canvas></div>
     </div>
+    <div class="ci-chart-card">
+      <div class="ci-chart-title">Lucro Real vs. Ganho Potencial nos Benchmarks</div>
+      <p style="font-size:12px;color:var(--ink-3);margin:-8px 0 16px">Lucro Real = Total Pago (Fin &amp; Con) − Total Aportado. Compara com o ganho que cada benchmark teria gerado no mesmo período.</p>
+      <div class="ci-chart-wrap auto-h"><canvas id="chart-lucro"></canvas></div>
+    </div>
   </div>
 
   <p class="ci-section-title">Transações</p>
@@ -291,6 +296,7 @@
 
 var CSV_TEXT  = {{ csv_text | tojson }};
 var CSV_ERROR = {{ csv_error | tojson }};
+var TOTAL_PAGO = {{ total_pago }};
 var PALETTE   = ['#FF4713','#4A6FA5','#22a06b','#e6a817','#9B59B6','#E74C3C','#1ABC9C','#F39C12'];
 var SELIC     = { 2023: 0.1375, 2024: 0.105, 2025: 0.1475 };
 var TODAY     = new Date();
@@ -818,6 +824,53 @@ function renderHorizChart(investors) {
   });
 }
 
+function renderLucroChart(rows, kpis) {
+  var totalAportado = kpis.total;
+  var lucroReal = TOTAL_PAGO - totalAportado;
+
+  var labels = ['Lucro Real (Negócio)'];
+  var values = [lucroReal];
+  var colors = ['#FF4713'];
+
+  BENCHMARKS.forEach(function (bmk) {
+    var benchValue = rows.reduce(function (s, r) {
+      return s + r.valor * bfactor(r.data, TODAY, bmk.rates, bmk.mult, bmk.spread);
+    }, 0);
+    labels.push(bmk.label);
+    values.push(benchValue - totalAportado);
+    colors.push(bmk.color);
+  });
+
+  var canvas = document.getElementById('chart-lucro');
+  canvas.parentElement.style.height = Math.max(200, labels.length * 54) + 'px';
+
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Ganho',
+        data: values,
+        backgroundColor: colors.map(function (c) { return c + 'cc'; }),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function (c) { return 'Ganho: R$ ' + brl(c.parsed.x); } } }
+      },
+      scales: {
+        x: { ticks: { callback: function (v) { return 'R$ ' + brl(v); }, font: { size: 10 } } },
+        y: { ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -832,6 +885,7 @@ async function main() {
     renderInvestors(investors);
     renderBarChart(rows, investors);
     renderHorizChart(investors);
+    renderLucroChart(rows, kpis);
     renderTable(rows);
     await renderLineChart(rows);
 
