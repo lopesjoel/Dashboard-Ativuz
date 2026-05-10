@@ -3,11 +3,11 @@
 
 {% block head %}
 <style>
-/* ── Centering wrapper ── */
-.fin-wrap { max-width: 1300px; margin: 0 auto; }
+/* ── Layout ── */
+.fin-wrap { width: 100%; }
 
 /* ── Page header ── */
-.fin-header { margin-bottom: 24px; text-align: center; }
+.fin-header { margin-bottom: 24px; text-align: left; }
 .fin-header h1 { font-size: 20px; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
 .fin-header p  { font-size: 13px; color: var(--ink-3); margin: 0; }
 
@@ -28,10 +28,12 @@
 .fin-card-label {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px;
+  text-align: center;
 }
 .fin-card-value {
   font-size: 20px; font-weight: 700; color: var(--ink);
   line-height: 1; font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 .fin-card-value.sm { font-size: 16px; }
 .fin-card-value.accent { color: var(--brand-orange, #FF4713); }
@@ -66,23 +68,17 @@
   font-size: 12px; min-width: 1200px;
 }
 .fin-table th {
-  background: var(--bg); padding: 9px 12px; text-align: right;
+  background: var(--bg); padding: 9px 12px; text-align: center;
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; color: var(--ink-3);
   border-bottom: 1px solid var(--line); white-space: nowrap;
 }
-.fin-table th:first-child,
-.fin-table th:nth-child(2),
-.fin-table th:nth-child(3) { text-align: left; }
 .fin-table td {
-  padding: 9px 12px; text-align: right;
+  padding: 9px 12px; text-align: center;
   border-bottom: 1px solid var(--line);
   font-variant-numeric: tabular-nums; white-space: nowrap;
   color: var(--ink-2);
 }
-.fin-table td:first-child,
-.fin-table td:nth-child(2),
-.fin-table td:nth-child(3) { text-align: left; }
 .fin-table tr:last-child td { border-bottom: none; }
 .fin-table tr:hover td { background: #f9f9fb; }
 
@@ -98,7 +94,7 @@
 
 /* Progress bar */
 .prog-wrap {
-  display: flex; align-items: center; gap: 6px; justify-content: flex-end;
+  display: flex; align-items: center; gap: 6px; justify-content: center;
 }
 .prog-track {
   width: 60px; height: 6px; background: var(--line);
