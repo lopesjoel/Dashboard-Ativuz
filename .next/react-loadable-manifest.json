@@ -1,0 +1,14 @@
+{
+  "lib\\docx\\applyReplacements.ts -> pizzip": {
+    "id": "lib\\docx\\applyReplacements.ts -> pizzip",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_pizzip_js_index_js.js"
+    ]
+  },
+  "lib\\docx\\extractText.ts -> mammoth": {
+    "id": "lib\\docx\\extractText.ts -> mammoth",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_mammoth_lib_index_js.js"
+    ]
+  }
+}
