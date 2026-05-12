@@ -168,7 +168,7 @@
                   <line x1="8" y1="12" x2="16" y2="12"/>
                 </svg>
               </span>
-              <span class="sb-item-label">Criar Contratos</span>
+              <span class="sb-item-label">Criar Documentos</span>
             </a>
             <a href="{{ url_for('pagina_historico') }}" class="sb-item"
                data-active="{{ 'true' if active == 'historico' else 'false' }}"
@@ -315,7 +315,7 @@
         <span class="current">
           {% if active == 'dashboard' %}Página Inicial
           {% elif active == 'templates' %}Templates
-          {% elif active == 'gerar' %}Criar Contratos
+          {% elif active == 'gerar' %}Criar Documentos
           {% elif active == 'contrato_locacao' %}Contrato Locação
           {% elif active == 'hist_contratos' %}Hist. Contratos de Locação
           {% elif active == 'vistoria' %}Vistoria
