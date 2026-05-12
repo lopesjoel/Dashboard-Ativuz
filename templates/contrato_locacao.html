@@ -110,7 +110,7 @@
       {{ field('contrato_duracao', 'Duração',           '90 dias') }}
       {{ field('valor_semanal',    'Valor Semanal (R$)','350,00') }}
       {{ field('caucao_valor',     'Caução (R$)',        '350,00') }}
-      {{ field('caucao_extenso',   'Caução por Extenso', 'trezentos e cinquenta reais') }}
+      <input type="hidden" name="caucao_extenso" id="caucao_extenso">
     </div>
   </div>
 
@@ -271,6 +271,53 @@ async function buscarCep(digits, prefix) {
   }
 }
 
+function valorParaExtenso(str) {
+  const s = str.replace(/\./g, '').replace(',', '.').replace(/[^\d.]/g, '');
+  const n = parseFloat(s);
+  if (isNaN(n) || n < 0) return '';
+  const inteiro = Math.round(n * 100);
+  const reais = Math.floor(inteiro / 100);
+  const centavos = inteiro % 100;
+
+  const unidades = ['','um','dois','três','quatro','cinco','seis','sete','oito','nove',
+                    'dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const dezenas  = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  const centenas = ['','cem','duzentos','trezentos','quatrocentos','quinhentos',
+                    'seiscentos','setecentos','oitocentos','novecentos'];
+
+  function grupo(n) {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    let r = centenas[Math.floor(n / 100)];
+    const resto = n % 100;
+    if (resto === 0) return r;
+    if (r) r += ' e ';
+    if (resto < 20) return r + unidades[resto];
+    const d = dezenas[Math.floor(resto / 10)];
+    const u = unidades[resto % 10];
+    return r + d + (u ? ' e ' + u : '');
+  }
+
+  function porExtenso(n) {
+    if (n === 0) return 'zero';
+    const bi  = Math.floor(n / 1000000000);
+    const mi  = Math.floor((n % 1000000000) / 1000000);
+    const mil = Math.floor((n % 1000000) / 1000);
+    const uni = n % 1000;
+    const parts = [];
+    if (bi)  parts.push(grupo(bi)  + (bi  === 1 ? ' bilhão'  : ' bilhões'));
+    if (mi)  parts.push(grupo(mi)  + (mi  === 1 ? ' milhão'  : ' milhões'));
+    if (mil) parts.push(mil === 1 ? 'mil' : grupo(mil) + ' mil');
+    if (uni) parts.push(grupo(uni));
+    return parts.join(' e ');
+  }
+
+  const partes = [];
+  if (reais > 0)     partes.push(porExtenso(reais)     + (reais     === 1 ? ' real'    : ' reais'));
+  if (centavos > 0)  partes.push(porExtenso(centavos)  + (centavos  === 1 ? ' centavo' : ' centavos'));
+  return partes.join(' e ');
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   // Aplica máscaras
   addMask('[name="locatario_cep"], [name="avalista_cep"]',            maskCep);
@@ -313,6 +360,17 @@ document.addEventListener('DOMContentLoaded', function () {
   if (inicioEl && inicioEl.value) inicioEl.value = maskDate(inicioEl.value);
   const placaEl = document.querySelector('[name="veiculo_placa"]');
   if (placaEl && placaEl.value) placaEl.value = maskPlaca(placaEl.value);
+
+  // Caução: gera extenso automaticamente
+  const caucaoValorEl   = document.querySelector('[name="caucao_valor"]');
+  const caucaoExtensoEl = document.getElementById('caucao_extenso');
+  function atualizarCaucaoExtenso() {
+    if (caucaoExtensoEl) caucaoExtensoEl.value = valorParaExtenso(caucaoValorEl.value);
+  }
+  if (caucaoValorEl) {
+    caucaoValorEl.addEventListener('input', atualizarCaucaoExtenso);
+    if (caucaoValorEl.value) atualizarCaucaoExtenso();
+  }
 });
 </script>
 {% endblock %}
