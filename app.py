@@ -843,6 +843,7 @@ def gerar_contrato_locacao_route():
         "veiculo_descricao", "veiculo_marca", "veiculo_modelo", "veiculo_ano",
         "veiculo_motor", "veiculo_chassi", "veiculo_cor", "veiculo_placa",
         "contrato_inicio", "contrato_duracao", "valor_semanal",
+        "caucao_valor", "caucao_extenso",
         "data_dia", "data_mes", "data_ano",
         "testemunha1_nome", "testemunha1_rg", "testemunha1_cpf",
         "testemunha2_nome", "testemunha2_rg", "testemunha2_cpf",
