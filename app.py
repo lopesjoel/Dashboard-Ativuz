@@ -2579,29 +2579,43 @@ def _ler_frota_dados():
         return [], [], str(e)
 
 
-_FROTA_MANUAL_JSON = Path(__file__).resolve().parent / "data" / "fipe_manual.json"
-
-
 def _frota_ler_manual():
-    """Retorna {placa: {valor, ref, atualizado_em}} ou {} se não existir."""
+    """Retorna {placa: {valor, ref, atualizado_em}} lido do Supabase."""
     try:
-        if _FROTA_MANUAL_JSON.exists():
-            return json.loads(_FROTA_MANUAL_JSON.read_text(encoding="utf-8"))
+        sb = _supabase()
+        if sb is None:
+            return {}
+        res = sb.table("fipe_manual").select("placa, valor, ref, atualizado_em").execute()
+        out = {}
+        for row in (res.data or []):
+            dt_str = row.get("atualizado_em") or ""
+            try:
+                # Supabase devolve DATE como "YYYY-MM-DD"; converte para dd/mm/yyyy
+                dt_str = datetime.strptime(dt_str, "%Y-%m-%d").strftime("%d/%m/%Y")
+            except Exception:
+                pass
+            out[row["placa"]] = {
+                "valor":         float(row["valor"]),
+                "ref":           row["ref"],
+                "atualizado_em": dt_str,
+            }
+        return out
     except Exception:
-        pass
-    return {}
+        import traceback; traceback.print_exc()
+        return {}
 
 
 def _frota_salvar_manual(placa, valor, ref):
-    """Persiste um valor manual para a placa."""
-    dados = _frota_ler_manual()
-    dados[placa] = {
-        "valor": valor,
-        "ref":   ref,
-        "atualizado_em": datetime.now(_BRT).strftime("%d/%m/%Y"),
-    }
-    _FROTA_MANUAL_JSON.parent.mkdir(parents=True, exist_ok=True)
-    _FROTA_MANUAL_JSON.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+    """Upsert de um valor manual no Supabase."""
+    sb = _supabase()
+    if sb is None:
+        return
+    sb.table("fipe_manual").upsert({
+        "placa":         placa,
+        "valor":         valor,
+        "ref":           ref,
+        "atualizado_em": datetime.now(_BRT).strftime("%Y-%m-%d"),
+    }).execute()
 
 
 @app.route("/insights/frota")
@@ -2634,36 +2648,36 @@ def api_frota_manual():
 
 @app.route("/api/frota/manual/batch", methods=["POST"])
 def api_frota_manual_batch():
-    """Salva valor FIPE por combinação (cod_fipe + ano_modelo)."""
+    """Upsert em bulk por combinação (cod_fipe + ano_modelo) no Supabase."""
     body     = request.get_json(silent=True) or {}
     entradas = body.get("entradas") or []
     if not entradas:
         return jsonify({"ok": False, "erro": "Nenhuma entrada"}), 400
 
+    sb = _supabase()
+    if sb is None:
+        return jsonify({"ok": False, "erro": "Supabase não configurado"}), 500
+
     veiculos, _, _ = _ler_frota_dados()
-    dados = _frota_ler_manual()
-    agora = datetime.now(_BRT).strftime("%d/%m/%Y")
-    atualizados = 0
+    agora = datetime.now(_BRT).strftime("%Y-%m-%d")
+
+    rows = []
     for entrada in entradas:
-        cod      = (entrada.get("cod_fipe")  or "").strip()
-        ano_mod  = (entrada.get("ano_modelo") or "").strip()
-        ref      = (entrada.get("ref")        or "MAI/26").strip()
+        cod     = (entrada.get("cod_fipe")   or "").strip()
+        ano_mod = (entrada.get("ano_modelo") or "").strip()
+        ref     = (entrada.get("ref")        or "MAI/26").strip()
         try:
             valor = float(str(entrada.get("valor", "")).replace(",", "."))
         except (ValueError, TypeError):
             continue
         for v in veiculos:
-            match_cod = v["cod_fipe"] == cod
-            match_ano = (not ano_mod) or (v["ano_modelo"] == ano_mod)
-            if match_cod and match_ano:
-                dados[v["placa"]] = {"valor": valor, "ref": ref, "atualizado_em": agora}
-                atualizados += 1
+            if v["cod_fipe"] == cod and ((not ano_mod) or v["ano_modelo"] == ano_mod):
+                rows.append({"placa": v["placa"], "valor": valor, "ref": ref, "atualizado_em": agora})
 
-    _FROTA_MANUAL_JSON.parent.mkdir(parents=True, exist_ok=True)
-    _FROTA_MANUAL_JSON.write_text(
-        json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    return jsonify({"ok": True, "atualizados": atualizados})
+    if rows:
+        sb.table("fipe_manual").upsert(rows).execute()
+
+    return jsonify({"ok": True, "atualizados": len(rows)})
 
 
 # ── Checklist ─────────────────────────────────────────────────────────────────
