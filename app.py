@@ -2579,24 +2579,40 @@ def _ler_frota_dados():
         return [], [], str(e)
 
 
+def _frota_mes_atual():
+    """Retorna (curr_key, curr_label, prev_key, prev_label) baseado na data do sistema."""
+    MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+    hoje  = datetime.now(_BRT)
+    ano, mes = hoje.year, hoje.month
+    yy        = str(ano)[2:]
+    curr_key   = MESES[mes - 1] + yy
+    curr_label = MESES[mes - 1].upper() + '/' + yy
+    prev_mes  = mes - 1 if mes > 1 else 12
+    prev_ano  = ano if mes > 1 else ano - 1
+    prev_yy   = str(prev_ano)[2:]
+    prev_key   = MESES[prev_mes - 1] + prev_yy
+    prev_label = MESES[prev_mes - 1].upper() + '/' + prev_yy
+    return curr_key, curr_label, prev_key, prev_label
+
+
 def _frota_ler_manual():
-    """Retorna {placa: {valor, ref, atualizado_em}} lido do Supabase."""
+    """Retorna {placa: {ref_label: {valor, atualizado_em}}} lido do Supabase."""
     try:
         sb = _supabase()
         if sb is None:
             return {}
-        res = sb.table("fipe_manual").select("placa, valor, ref, atualizado_em").execute()
+        res = sb.table("fipe_manual").select("placa, ref, valor, atualizado_em").execute()
         out = {}
         for row in (res.data or []):
+            placa  = row["placa"]
+            ref    = row["ref"]
             dt_str = row.get("atualizado_em") or ""
             try:
-                # Supabase devolve DATE como "YYYY-MM-DD"; converte para dd/mm/yyyy
                 dt_str = datetime.strptime(dt_str, "%Y-%m-%d").strftime("%d/%m/%Y")
             except Exception:
                 pass
-            out[row["placa"]] = {
+            out.setdefault(placa, {})[ref] = {
                 "valor":         float(row["valor"]),
-                "ref":           row["ref"],
                 "atualizado_em": dt_str,
             }
         return out
@@ -2606,14 +2622,14 @@ def _frota_ler_manual():
 
 
 def _frota_salvar_manual(placa, valor, ref):
-    """Upsert de um valor manual no Supabase."""
+    """Upsert de (placa, ref) no Supabase — chave composta."""
     sb = _supabase()
     if sb is None:
         return
     sb.table("fipe_manual").upsert({
         "placa":         placa,
-        "valor":         valor,
         "ref":           ref,
+        "valor":         valor,
         "atualizado_em": datetime.now(_BRT).strftime("%Y-%m-%d"),
     }).execute()
 
@@ -2622,12 +2638,17 @@ def _frota_salvar_manual(placa, valor, ref):
 def pagina_frota():
     veiculos, codigos, erro = _ler_frota_dados()
     manual = _frota_ler_manual()
+    curr_key, curr_label, prev_key, prev_label = _frota_mes_atual()
     return render_template("frota.html",
         active="frota",
         veiculos=veiculos,
         codigos=codigos,
         manual=manual,
         erro=erro,
+        curr_mes_key=curr_key,
+        curr_mes_label=curr_label,
+        prev_mes_key=prev_key,
+        prev_mes_label=prev_label,
     )
 
 
@@ -2665,7 +2686,7 @@ def api_frota_manual_batch():
     for entrada in entradas:
         cod     = (entrada.get("cod_fipe")   or "").strip()
         ano_mod = (entrada.get("ano_modelo") or "").strip()
-        ref     = (entrada.get("ref")        or "MAI/26").strip()
+        ref     = (entrada.get("ref")        or "").strip()
         try:
             valor = float(str(entrada.get("valor", "")).replace(",", "."))
         except (ValueError, TypeError):

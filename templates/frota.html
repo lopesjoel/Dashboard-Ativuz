@@ -5,222 +5,140 @@
 <style>
 .fr-wrap { width: 100%; }
 
-/* Header */
 .fr-header { margin-bottom: 24px; }
 .fr-header h1 { font-size: 20px; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
 .fr-header p  { font-size: 13px; color: var(--ink-3); margin: 0; }
 
-/* Section label */
 .fr-section {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .06em; color: var(--ink-3); margin: 0 0 12px;
 }
 
 /* KPI cards */
-.fr-kpis {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 14px; margin-bottom: 28px;
-}
-@media (max-width: 900px) { .fr-kpis { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 500px) { .fr-kpis { grid-template-columns: 1fr; } }
+.fr-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 28px; }
+@media (max-width:900px){ .fr-kpis { grid-template-columns: repeat(2,1fr); } }
+@media (max-width:500px){ .fr-kpis { grid-template-columns: 1fr; } }
 
-.fr-kpi {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 18px 20px;
-}
-.fr-kpi-icon {
-  width: 36px; height: 36px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 12px;
-}
-.fr-kpi-icon.orange { background: rgba(255,71,19,.12); color: #FF4713; }
-.fr-kpi-icon.blue   { background: rgba(46,107,230,.12); color: #2E6BE6; }
-.fr-kpi-icon.green  { background: rgba(34,160,107,.12); color: #22a06b; }
-.fr-kpi-icon.red    { background: rgba(229,72,77,.12);  color: #E5484D; }
-.fr-kpi-icon.amber  { background: rgba(245,158,11,.12); color: #F59E0B; }
-
-.fr-kpi-label {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--ink-3); margin-bottom: 6px;
-}
-.fr-kpi-value {
-  font-size: 22px; font-weight: 700; color: var(--ink);
-  font-variant-numeric: tabular-nums; line-height: 1.15;
-}
-.fr-kpi-value.up   { color: #22a06b; }
-.fr-kpi-value.down { color: #E5484D; }
-.fr-kpi-sub        { font-size: 12px; color: var(--ink-3); margin-top: 5px; }
-.fr-kpi-sub.up     { color: #22a06b; }
-.fr-kpi-sub.down   { color: #E5484D; }
+.fr-kpi { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+.fr-kpi-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+.fr-kpi-icon.orange { background:rgba(255,71,19,.12); color:#FF4713; }
+.fr-kpi-icon.blue   { background:rgba(46,107,230,.12); color:#2E6BE6; }
+.fr-kpi-icon.green  { background:rgba(34,160,107,.12); color:#22a06b; }
+.fr-kpi-icon.red    { background:rgba(229,72,77,.12);  color:#E5484D; }
+.fr-kpi-icon.amber  { background:rgba(245,158,11,.12); color:#F59E0B; }
+.fr-kpi-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); margin-bottom:6px; }
+.fr-kpi-value { font-size:22px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1.15; }
+.fr-kpi-value.up   { color:#22a06b; }
+.fr-kpi-value.down { color:#E5484D; }
+.fr-kpi-sub        { font-size:12px; color:var(--ink-3); margin-top:5px; }
 
 /* Composição */
-.fr-comp {
-  display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 12px; margin-bottom: 28px;
-}
-@media (max-width: 900px) { .fr-comp { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 500px) { .fr-comp { grid-template-columns: repeat(2, 1fr); } }
-
-.fr-comp-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-left-width: 3px; border-radius: 10px; padding: 14px 16px;
-}
-.fr-comp-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
-.fr-comp-count { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 4px; }
-.fr-comp-count span { font-size: 13px; font-weight: 500; color: var(--ink-3); }
-.fr-comp-value { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.fr-comp { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:28px; }
+@media (max-width:900px){ .fr-comp { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:500px){ .fr-comp { grid-template-columns:repeat(2,1fr); } }
+.fr-comp-card { background:var(--surface); border:1px solid var(--line); border-left-width:3px; border-radius:10px; padding:14px 16px; }
+.fr-comp-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+.fr-comp-count { font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:4px; }
+.fr-comp-count span { font-size:13px; font-weight:500; color:var(--ink-3); }
+.fr-comp-value { font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 
 /* Table toolbar */
-.fr-table-toolbar {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
-}
+.fr-table-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
 .fr-sort-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 12px; font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .04em;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
-  color: var(--ink-3); cursor: pointer; transition: all .15s; font-family: inherit;
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 12px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  color:var(--ink-3); cursor:pointer; transition:all .15s; font-family:inherit;
 }
-.fr-sort-btn:hover { border-color: #2E6BE6; color: #2E6BE6; }
-.fr-sort-btn.active { background: #eff4ff; border-color: #2E6BE6; color: #2E6BE6; }
-.fr-sort-arrow { font-size: 13px; }
+.fr-sort-btn:hover { border-color:#2E6BE6; color:#2E6BE6; }
+.fr-sort-btn.active { background:#eff4ff; border-color:#2E6BE6; color:#2E6BE6; }
+.fr-sort-arrow { font-size:13px; }
 
 /* Table */
-.fr-table-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; overflow-x: auto; margin-bottom: 28px;
-}
-.fr-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.fr-table-card { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow-x:auto; margin-bottom:28px; }
+.fr-table { width:100%; border-collapse:collapse; font-size:12px; }
 .fr-table th {
-  background: var(--bg); padding: 9px 12px;
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--ink-3);
-  border-bottom: 1px solid var(--line); white-space: nowrap;
-  text-align: center; cursor: pointer; user-select: none;
+  background:var(--bg); padding:9px 12px;
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3);
+  border-bottom:1px solid var(--line); white-space:nowrap; text-align:center;
+  cursor:pointer; user-select:none;
 }
-.fr-table th.sorted-asc::after  { content: ' ↑'; opacity:.7; }
-.fr-table th.sorted-desc::after { content: ' ↓'; opacity:.7; }
-.fr-table th.fipe-edit-hd { color: #2E6BE6; }
-.fr-table th.fipe-edit-hd:hover { background: #eff4ff; }
-.fr-table th.fipe-edit-hd .edit-icon { font-size: 11px; opacity: .75; margin-left: 3px; }
-.fr-table td {
-  padding: 7px 12px; border-bottom: 1px solid var(--line);
-  color: var(--ink-2); white-space: nowrap;
-  text-align: center; font-variant-numeric: tabular-nums;
-}
-.fr-table tr:last-child td { border-bottom: none; }
-.fr-table tbody tr:nth-child(even) td { background: #f9f9fb; }
-.fr-table tbody tr:hover td { background: #f0f0f5 !important; }
-.fr-table .up   { color: #22a06b; font-weight: 600; }
-.fr-table .down { color: #E5484D; font-weight: 600; }
+.fr-table th.sorted-asc::after  { content:' ↑'; opacity:.7; }
+.fr-table th.sorted-desc::after { content:' ↓'; opacity:.7; }
+.fr-table th.fipe-edit-hd { color:#2E6BE6; }
+.fr-table th.fipe-edit-hd:hover { background:#eff4ff; }
+.fr-table th.fipe-edit-hd .edit-icon { font-size:11px; opacity:.75; margin-left:3px; }
+.fr-table td { padding:7px 12px; border-bottom:1px solid var(--line); color:var(--ink-2); white-space:nowrap; text-align:center; font-variant-numeric:tabular-nums; }
+.fr-table tr:last-child td { border-bottom:none; }
+.fr-table tbody tr:nth-child(even) td { background:#f9f9fb; }
+.fr-table tbody tr:hover td { background:#f0f0f5 !important; }
+.fr-table .up   { color:#22a06b; font-weight:600; }
+.fr-table .down { color:#E5484D; font-weight:600; }
 
-/* FIPE read-only cell */
-.fr-fipe-cell { display: inline-flex; align-items: center; gap: 5px; }
-.fr-fipe-badge {
-  font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; white-space: nowrap;
-}
-.fr-fipe-badge.planilha { background: #f0f0f5; color: var(--ink-3); }
-.fr-fipe-badge.manual   { background: #d1fae5; color: #059669; }
+.fr-fipe-cell { display:inline-flex; align-items:center; gap:5px; }
+.fr-fipe-badge { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 5px; border-radius:4px; white-space:nowrap; }
+.fr-fipe-badge.planilha { background:#f0f0f5; color:var(--ink-3); }
+.fr-fipe-badge.manual   { background:#d1fae5; color:#059669; }
+.fr-fipe-badge.vazio    { background:#fef3c7; color:#d97706; }
 
-/* Plate hover */
-.fr-placa-link {
-  font-weight: 600; color: var(--ink); letter-spacing: .03em;
-  border-bottom: 1px dashed #c5c9d6; cursor: default;
-}
+.fr-placa-link { font-weight:600; color:var(--ink); letter-spacing:.03em; border-bottom:1px dashed #c5c9d6; cursor:pointer; }
 
 /* Modal */
-.fr-modal-overlay {
-  position: fixed; inset: 0; background: rgba(15,20,42,.5);
-  z-index: 1000; display: flex; align-items: center; justify-content: center;
-  padding: 20px;
-}
-.fr-modal {
-  background: var(--surface); border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.22);
-  width: 100%; max-width: 580px; max-height: 88vh;
-  display: flex; flex-direction: column;
-}
-.fr-modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 22px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0;
-}
-.fr-modal-header h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; }
-.fr-modal-close {
-  background: none; border: none; cursor: pointer; padding: 4px 8px;
-  font-size: 16px; color: var(--ink-3); border-radius: 6px; line-height: 1;
-}
-.fr-modal-close:hover { background: #f0f0f5; color: var(--ink); }
-.fr-modal-body { flex: 1; overflow-y: auto; }
-.fr-modal-row {
-  display: grid; grid-template-columns: 120px 1fr auto;
-  align-items: center; gap: 14px; padding: 11px 22px;
-  border-bottom: 1px solid var(--line);
-}
-.fr-modal-row:last-child { border-bottom: none; }
-.fr-modal-code { font-size: 12px; font-weight: 700; color: var(--ink); font-family: monospace; }
-.fr-modal-info { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
-.fr-modal-info strong { color: var(--ink-2); font-weight: 600; }
-.fr-modal-input {
-  width: 128px; text-align: right;
-  border: 1px solid var(--line); border-radius: 6px;
-  padding: 6px 10px; font-size: 12px; font-family: inherit;
-  font-variant-numeric: tabular-nums; color: var(--ink);
-  background: var(--surface); outline: none; transition: border-color .15s;
-}
-.fr-modal-input:focus { border-color: #2E6BE6; box-shadow: 0 0 0 2px rgba(46,107,230,.15); }
-.fr-modal-footer {
-  display: flex; justify-content: flex-end; gap: 10px;
-  padding: 14px 22px; border-top: 1px solid var(--line); flex-shrink: 0;
-}
-.fr-btn-primary {
-  background: #2E6BE6; color: #fff; border: none; border-radius: 8px;
-  padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: background .15s; font-family: inherit;
-}
-.fr-btn-primary:hover:not(:disabled) { background: #1a57d3; }
-.fr-btn-primary:disabled { opacity: .6; cursor: default; }
-.fr-btn-secondary {
-  background: var(--surface); color: var(--ink-2); border: 1px solid var(--line);
-  border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all .15s; font-family: inherit;
-}
-.fr-btn-secondary:hover { border-color: var(--ink-3); }
+.fr-modal-overlay { position:fixed; inset:0; background:rgba(15,20,42,.5); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+.fr-modal { background:var(--surface); border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.22); width:100%; max-width:580px; max-height:88vh; display:flex; flex-direction:column; }
+.fr-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 14px; border-bottom:1px solid var(--line); flex-shrink:0; }
+.fr-modal-header h3 { font-size:14px; font-weight:700; color:var(--ink); margin:0; }
+.fr-modal-close { background:none; border:none; cursor:pointer; padding:4px 8px; font-size:16px; color:var(--ink-3); border-radius:6px; line-height:1; }
+.fr-modal-close:hover { background:#f0f0f5; }
+.fr-modal-body { flex:1; overflow-y:auto; }
+.fr-modal-row { display:grid; grid-template-columns:120px 1fr auto; align-items:center; gap:14px; padding:11px 22px; border-bottom:1px solid var(--line); }
+.fr-modal-row:last-child { border-bottom:none; }
+.fr-modal-code { font-size:12px; font-weight:700; color:var(--ink); font-family:monospace; }
+.fr-modal-info { font-size:11px; color:var(--ink-3); line-height:1.5; }
+.fr-modal-info strong { color:var(--ink-2); font-weight:600; }
+.fr-modal-input { width:128px; text-align:right; border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:12px; font-family:inherit; font-variant-numeric:tabular-nums; color:var(--ink); background:var(--surface); outline:none; transition:border-color .15s; }
+.fr-modal-input:focus { border-color:#2E6BE6; box-shadow:0 0 0 2px rgba(46,107,230,.15); }
+.fr-modal-footer { display:flex; justify-content:flex-end; gap:10px; padding:14px 22px; border-top:1px solid var(--line); flex-shrink:0; }
+.fr-btn-primary { background:#2E6BE6; color:#fff; border:none; border-radius:8px; padding:8px 18px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; font-family:inherit; }
+.fr-btn-primary:hover:not(:disabled) { background:#1a57d3; }
+.fr-btn-primary:disabled { opacity:.6; cursor:default; }
+.fr-btn-secondary { background:var(--surface); color:var(--ink-2); border:1px solid var(--line); border-radius:8px; padding:8px 18px; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; font-family:inherit; }
+.fr-btn-secondary:hover { border-color:var(--ink-3); }
 
 /* Plate tooltip */
-.fr-plate-tip {
-  position: fixed; z-index: 2000;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 14px 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.16);
-  pointer-events: none;
-}
-.fr-plate-tip-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .04em; color: var(--ink); margin-bottom: 10px;
-}
-.fr-plate-tip-wrap { position: relative; width: 260px; height: 150px; }
+.fr-plate-tip { position:fixed; z-index:2000; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:0 8px 32px rgba(0,0,0,.18); pointer-events:none; }
+.fr-plate-tip.pinned { pointer-events:auto; }
+.fr-plate-tip-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px; }
+.fr-plate-tip-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink); }
+.fr-tip-close-btn { display:none; background:none; border:none; cursor:pointer; padding:2px 6px; font-size:14px; color:var(--ink-3); border-radius:5px; line-height:1; }
+.fr-tip-close-btn:hover { background:#f0f0f5; }
+.fr-plate-tip-wrap { position:relative; width:351px; height:203px; }
+
+/* Histórico drawer */
+.fr-hist-overlay { position:fixed; inset:0; background:rgba(15,20,42,.5); z-index:1000; display:flex; align-items:stretch; justify-content:flex-end; }
+.fr-hist-drawer { background:var(--surface); width:min(96vw,1200px); display:flex; flex-direction:column; box-shadow:-8px 0 40px rgba(0,0,0,.18); }
+.fr-hist-header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px 14px; border-bottom:1px solid var(--line); flex-shrink:0; }
+.fr-hist-header h3 { font-size:14px; font-weight:700; color:var(--ink); margin:0; }
+.fr-hist-body { flex:1; overflow:auto; }
+.fr-hist-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:11px; }
+.fr-hist-table th { background:var(--bg); padding:8px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); border-bottom:1px solid var(--line); white-space:nowrap; text-align:center; position:sticky; top:0; z-index:1; }
+.fr-hist-table th.sticky-col { position:sticky; left:0; z-index:2; background:var(--bg); }
+.fr-hist-table td { padding:6px 12px; border-bottom:1px solid var(--line); color:var(--ink-2); white-space:nowrap; text-align:center; font-variant-numeric:tabular-nums; }
+.fr-hist-table td.sticky-col { position:sticky; left:0; z-index:1; background:var(--surface); font-weight:600; color:var(--ink); }
+.fr-hist-table tbody tr:nth-child(even) td { background:#f9f9fb; }
+.fr-hist-table tbody tr:nth-child(even) td.sticky-col { background:#f9f9fb; }
+.fr-hist-table tbody tr:hover td { background:#f0f0f5 !important; }
+.fr-hist-table .curr-col { background:rgba(46,107,230,.06) !important; }
+.fr-hist-table th.curr-col { color:#2E6BE6; }
 
 /* Charts */
-.fr-charts {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 16px; margin-bottom: 28px;
-}
-@media (max-width: 800px) { .fr-charts { grid-template-columns: 1fr; } }
+.fr-charts { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+@media (max-width:800px){ .fr-charts { grid-template-columns:1fr; } }
+.fr-chart-card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:20px; }
+.fr-chart-title { font-size:13px; font-weight:700; color:var(--ink); margin-bottom:16px; }
+.fr-chart-wrap  { position:relative; height:260px; }
 
-.fr-chart-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 20px;
-}
-.fr-chart-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 16px; }
-.fr-chart-wrap  { position: relative; height: 260px; }
-
-/* Error */
-.fr-error {
-  background: #fff3f3; border: 1px solid #fca5a5;
-  border-radius: 10px; padding: 16px 20px;
-  color: #dc2626; font-size: 13px;
-}
+.fr-error { background:#fff3f3; border:1px solid #fca5a5; border-radius:10px; padding:16px 20px; color:#dc2626; font-size:13px; }
 </style>
 {% endblock %}
 
@@ -229,7 +147,7 @@
 
   <div class="fr-header">
     <h1>FROTA</h1>
-    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · ABR/26 (planilha) · MAI/26 editável por código</p>
+    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · {{ prev_mes_label }} (planilha) · {{ curr_mes_label }} editável por código</p>
   </div>
 
   {% if erro %}
@@ -237,7 +155,7 @@
   {% else %}
 
   <p class="fr-section">Resumo da Frota</p>
-  <div class="fr-kpis" id="fr-kpis">
+  <div class="fr-kpis">
     <div class="fr-kpi">
       <div class="fr-kpi-icon orange">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -249,7 +167,7 @@
       <div class="fr-kpi-value">{{ veiculos|length }}</div>
       <div class="fr-kpi-sub">frota ativa</div>
     </div>
-    <div class="fr-kpi" id="kpi-total">
+    <div class="fr-kpi">
       <div class="fr-kpi-icon blue">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <rect x="2" y="3" width="20" height="18" rx="2"/>
@@ -260,18 +178,18 @@
       <div class="fr-kpi-value" id="kpi-total-val">—</div>
       <div class="fr-kpi-sub" id="kpi-total-sub">calculando…</div>
     </div>
-    <div class="fr-kpi" id="kpi-var-mes">
+    <div class="fr-kpi">
       <div class="fr-kpi-icon green" id="kpi-var-mes-icon">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
           <polyline points="17 6 23 6 23 12"/>
         </svg>
       </div>
-      <div class="fr-kpi-label">Variação vs. ABR/26</div>
+      <div class="fr-kpi-label" id="kpi-var-mes-label">Variação vs. {{ prev_mes_label }}</div>
       <div class="fr-kpi-value" id="kpi-var-mes-val">—</div>
-      <div class="fr-kpi-sub">MAI/26 vs ABR/26</div>
+      <div class="fr-kpi-sub" id="kpi-var-mes-sub">{{ curr_mes_label }} vs {{ prev_mes_label }}</div>
     </div>
-    <div class="fr-kpi" id="kpi-var-aq">
+    <div class="fr-kpi">
       <div class="fr-kpi-icon green" id="kpi-var-aq-icon">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <line x1="12" y1="1" x2="12" y2="23"/>
@@ -292,6 +210,9 @@
     <button id="btn-sort-date" class="fr-sort-btn" title="Ordenar por data de aquisição">
       Data de Aquisição <span class="fr-sort-arrow" id="sort-date-arrow">↑↓</span>
     </button>
+    <button id="btn-historico" class="fr-sort-btn" title="Ver histórico completo de todos os meses">
+      Histórico Completo
+    </button>
   </div>
   <div class="fr-table-card">
     <table class="fr-table" id="fr-table">
@@ -303,11 +224,11 @@
           <th data-col="cod_fipe">Cód. FIPE</th>
           <th data-col="dt_aquisicao">Dt. Aquisição</th>
           <th data-col="vl_aquisicao">Vl. Aquisição</th>
-          <th data-col="abr26">ABR/26</th>
-          <th id="th-fipe-edit" class="fipe-edit-hd" title="Clique para editar valores MAI/26 por código FIPE">
-            MAI/26 <span class="edit-icon">✎</span>
+          <th data-col="prev_val">{{ prev_mes_label }}</th>
+          <th id="th-fipe-edit" class="fipe-edit-hd" title="Clique para editar valores {{ curr_mes_label }} por código FIPE">
+            {{ curr_mes_label }} <span class="edit-icon">✎</span>
           </th>
-          <th data-col="var_mes">Var. vs ABR/26</th>
+          <th data-col="var_mes">Var. vs {{ prev_mes_label }}</th>
           <th data-col="var_aq">Var. vs Aquisição</th>
         </tr>
       </thead>
@@ -332,10 +253,10 @@
 
 <!-- Modal de edição por código FIPE -->
 <div id="fr-modal-overlay" class="fr-modal-overlay" style="display:none">
-  <div class="fr-modal" role="dialog" aria-modal="true" aria-labelledby="fr-modal-title">
+  <div class="fr-modal" role="dialog" aria-modal="true">
     <div class="fr-modal-header">
-      <h3 id="fr-modal-title">Editar Valores FIPE — MAI/26</h3>
-      <button id="fr-modal-close" class="fr-modal-close" type="button" aria-label="Fechar">✕</button>
+      <h3 id="fr-modal-title">Editar Valores FIPE — {{ curr_mes_label }}</h3>
+      <button id="fr-modal-close" class="fr-modal-close" type="button">✕</button>
     </div>
     <div class="fr-modal-body" id="fr-modal-body"></div>
     <div class="fr-modal-footer">
@@ -345,11 +266,30 @@
   </div>
 </div>
 
+<!-- Histórico completo (drawer) -->
+<div id="fr-hist-overlay" class="fr-hist-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="fr-hist-drawer">
+    <div class="fr-hist-header">
+      <h3>Histórico Completo da Frota — JAN/25 até {{ curr_mes_label }}</h3>
+      <button id="fr-hist-close" class="fr-modal-close" type="button">✕</button>
+    </div>
+    <div class="fr-hist-body">
+      <table class="fr-hist-table">
+        <thead id="fr-hist-thead"></thead>
+        <tbody id="fr-hist-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- Tooltip de placa -->
 <div id="fr-plate-tooltip" class="fr-plate-tip" style="display:none" aria-hidden="true">
-  <div class="fr-plate-tip-title" id="fr-tip-title"></div>
+  <div class="fr-plate-tip-header">
+    <div class="fr-plate-tip-title" id="fr-tip-title"></div>
+    <button class="fr-tip-close-btn" id="fr-tip-close" type="button">✕</button>
+  </div>
   <div class="fr-plate-tip-wrap">
-    <canvas id="fr-tip-canvas" width="260" height="150"></canvas>
+    <canvas id="fr-tip-canvas" width="351" height="203"></canvas>
   </div>
 </div>
 
@@ -359,21 +299,48 @@
 'use strict';
 
 /* ── Dados do servidor ── */
-var VEICULOS = {{ veiculos | tojson }};
-var MANUAL   = {{ manual   | tojson }};   /* {placa: {valor, ref, atualizado_em}} */
-var CODIGOS  = {{ codigos  | tojson }};   /* [{cod_fipe, modelo, ano_modelo, qtd}] */
+var VEICULOS        = {{ veiculos | tojson }};
+var MANUAL          = {{ manual   | tojson }};  /* {placa: {ref_label: {valor, atualizado_em}}} */
+var CODIGOS         = {{ codigos  | tojson }};
+var CURR_MES_KEY    = '{{ curr_mes_key }}';    /* 'mai26' */
+var CURR_MES_LABEL  = '{{ curr_mes_label }}';  /* 'MAI/26' */
+var PREV_MES_KEY    = '{{ prev_mes_key }}';    /* 'abr26' */
+var PREV_MES_LABEL  = '{{ prev_mes_label }}';  /* 'ABR/26' */
 
 var MODELO_COR = { GOL:'#22a06b', VOYAGE:'#2E6BE6', SANDERO:'#7B8499', START:'#F59E0B', BROSS:'#FF4713' };
-var MES_KEYS   = ['jan25','fev25','mar25','abr25','mai25','jun25','jul25','ago25','set25','out25','nov25','dez25','jan26','fev26','mar26','abr26'];
-var MES_LABELS = ['JAN/25','FEV/25','MAR/25','ABR/25','MAI/25','JUN/25','JUL/25','AGO/25','SET/25','OUT/25','NOV/25','DEZ/25','JAN/26','FEV/26','MAR/26','ABR/26'];
+
+/* ── Helpers de mês ── */
+var _MES_NOMES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+function keyToLabel(key) {
+  /* 'mai26' -> 'MAI/26' */
+  return key.slice(0, 3).toUpperCase() + '/' + key.slice(3);
+}
+
+function buildAllMonths() {
+  /* JAN/25 até CURR_MES */
+  var m = CURR_MES_KEY.match(/^([a-z]+)(\d+)$/);
+  if (!m) return [];
+  var endIdx = _MES_NOMES.indexOf(m[1]);
+  var endYY  = parseInt(m[2]);
+  var months = [], mi = 0, y = 25;
+  for (;;) {
+    var key   = _MES_NOMES[mi] + y;
+    var label = _MES_NOMES[mi].toUpperCase() + '/' + y;
+    months.push({ key: key, label: label });
+    if (y === endYY && mi === endIdx) break;
+    mi++; if (mi >= 12) { mi = 0; y++; }
+    if (y > endYY + 1) break;
+  }
+  return months;
+}
 
 /* ── Formatters ── */
 function brl(v, dec) {
   if (v == null || isNaN(v)) return '—';
   var d = dec !== undefined ? dec : 2;
-  var neg = v < 0;
   var s = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
-  return (neg ? '−' : '') + s;
+  return (v < 0 ? '−' : '') + s;
 }
 function brlInput(v) {
   if (v == null || isNaN(v)) return '';
@@ -381,15 +348,14 @@ function brlInput(v) {
 }
 function parseBrl(s) {
   s = String(s || '').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
-  var v = parseFloat(s);
-  return isNaN(v) ? null : v;
+  var v = parseFloat(s); return isNaN(v) ? null : v;
 }
 function varHtml(val, pct) {
   if (val == null) return '<span>—</span>';
   var up = val >= 0, sign = up ? '+' : '';
   var cls = up ? 'up' : 'down';
-  var ps = pct != null ? ' (' + sign + pct.toFixed(1) + '%)' : '';
-  return '<span class="' + cls + '">' + sign + 'R$ ' + brl(val) + ps + '</span>';
+  var ps = pct != null ? ' (' + sign + pct.toFixed(1) + '%)' : '';
+  return '<span class="' + cls + '">' + sign + 'R$ ' + brl(val) + ps + '</span>';
 }
 function fmtDate(s) {
   if (!s) return '—';
@@ -400,33 +366,53 @@ function fmtDate(s) {
 function parseDate(s) {
   if (!s) return 0;
   var m;
-  if (m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)) return new Date(+m[1], +m[2]-1, +m[3]).getTime();
-  if (m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/)) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+  if (m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)) return new Date(+m[1],+m[2]-1,+m[3]).getTime();
+  if (m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/)) return new Date(+m[3],+m[2]-1,+m[1]).getTime();
   return 0;
 }
 
-/* ── Valor atual de cada veículo: manual se existir, senão abr26 ── */
+/* ── Valor por mês (spreadsheet + manual) ── */
+function mesValor(v, mesKey, mesLabel) {
+  if (v[mesKey] != null) return v[mesKey];
+  var meses = MANUAL[v.placa] || {};
+  var m = meses[mesLabel];
+  return (m && m.valor != null) ? m.valor : null;
+}
+
+/* Valor "atual" = melhor valor disponível para o curr_mes */
 function valorAtual(v) {
-  var m = MANUAL[v.placa];
-  if (m && m.valor != null) return { val: m.valor, fonte: 'manual', ref: m.ref || 'editado', em: m.atualizado_em };
-  if (v.abr26 != null)      return { val: v.abr26, fonte: 'planilha', ref: 'ABR/26', em: null };
-  var keys = ['mar26','fev26','jan26','dez25'];
-  for (var i = 0; i < keys.length; i++) {
-    if (v[keys[i]] != null) return { val: v[keys[i]], fonte: 'planilha', ref: keys[i].toUpperCase().replace('25','/25').replace('26','/26'), em: null };
+  var meses  = MANUAL[v.placa] || {};
+  var mc     = meses[CURR_MES_LABEL];
+  if (mc && mc.valor != null) return { val: mc.valor, fonte: 'manual', ref: CURR_MES_LABEL, em: mc.atualizado_em };
+  if (v[CURR_MES_KEY] != null) return { val: v[CURR_MES_KEY], fonte: 'planilha', ref: CURR_MES_LABEL, em: null };
+  /* fallback para meses anteriores */
+  var all = buildAllMonths().slice().reverse();
+  for (var i = 0; i < all.length; i++) {
+    var val = mesValor(v, all[i].key, all[i].label);
+    if (val != null) return { val: val, fonte: 'planilha', ref: all[i].label, em: null };
   }
   return { val: null, fonte: 'planilha', ref: '—', em: null };
 }
 
+/* Valor "prev" = valor do mês anterior para comparação */
+function valorPrev(v) {
+  var sp = v[PREV_MES_KEY];
+  if (sp != null) return sp;
+  var meses = MANUAL[v.placa] || {};
+  var mp    = meses[PREV_MES_LABEL];
+  return (mp && mp.valor != null) ? mp.valor : null;
+}
+
 /* ── KPIs ── */
 function recalcKPIs() {
-  var totalFipe = 0, totalAbr26 = 0, totalAq = 0;
+  var totalFipe = 0, totalPrev = 0, totalAq = 0;
   VEICULOS.forEach(function(v) {
-    var a = valorAtual(v);
-    if (a.val != null)   totalFipe  += a.val;
-    if (v.abr26 != null) totalAbr26 += v.abr26;
-    if (v.vl_aquisicao)  totalAq    += v.vl_aquisicao;
+    var a = valorAtual(v), p = valorPrev(v);
+    if (a.val != null)   totalFipe += a.val;
+    if (p != null)       totalPrev += p;
+    if (v.vl_aquisicao)  totalAq   += v.vl_aquisicao;
   });
-  var varMes = totalFipe - totalAbr26;
+  var varMes = totalFipe - totalPrev;
   var varAq  = totalFipe - totalAq;
   var varAqP = totalAq > 0 ? varAq / totalAq * 100 : 0;
 
@@ -468,34 +454,30 @@ function renderComp() {
 /* ── Tabela ── */
 var _sortCol    = 'modelo';
 var _sortAsc    = true;
-var _sortByDate = null; /* null | 'asc' | 'desc' */
+var _sortByDate = null;
 
 function buildRows() {
   return VEICULOS.map(function(v) {
     var a    = valorAtual(v);
-    var abr  = v.abr26;
-    var varM  = (a.val != null && abr != null) ? a.val - abr : null;
-    var varMP = (varM != null && abr > 0) ? varM / abr * 100 : null;
+    var prev = valorPrev(v);
+    var varM  = (a.val != null && prev != null) ? a.val - prev : null;
+    var varMP = (varM != null && prev > 0) ? varM / prev * 100 : null;
     var varA  = (a.val != null && v.vl_aquisicao) ? a.val - v.vl_aquisicao : null;
     var varAP = (varA != null && v.vl_aquisicao > 0) ? varA / v.vl_aquisicao * 100 : null;
-    return { v: v, a: a, varM: varM, varMP: varMP, varA: varA, varAP: varAP };
+    return { v: v, a: a, prev: prev, varM: varM, varMP: varMP, varA: varA, varAP: varAP };
   });
 }
 
 function sortAndRender() {
   var rows = buildRows();
-
   if (_sortByDate) {
     var asc = _sortByDate === 'asc';
-    rows.sort(function(x, y) {
-      var da = parseDate(x.v.dt_aquisicao), db = parseDate(y.v.dt_aquisicao);
-      return asc ? da - db : db - da;
-    });
+    rows.sort(function(x, y) { return asc ? parseDate(x.v.dt_aquisicao) - parseDate(y.v.dt_aquisicao) : parseDate(y.v.dt_aquisicao) - parseDate(x.v.dt_aquisicao); });
   } else if (_sortCol) {
     rows.sort(function(x, y) {
       var col = _sortCol;
-      var va = col === 'var_mes' ? x.varM : col === 'var_aq' ? x.varA : (x.v[col] != null ? x.v[col] : null);
-      var vb = col === 'var_mes' ? y.varM : col === 'var_aq' ? y.varA : (y.v[col] != null ? y.v[col] : null);
+      var va = col === 'var_mes' ? x.varM : col === 'var_aq' ? x.varA : col === 'prev_val' ? x.prev : (x.v[col] != null ? x.v[col] : null);
+      var vb = col === 'var_mes' ? y.varM : col === 'var_aq' ? y.varA : col === 'prev_val' ? y.prev : (y.v[col] != null ? y.v[col] : null);
       if (va == null && vb == null) return 0;
       if (va == null) return 1; if (vb == null) return -1;
       if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
@@ -503,63 +485,49 @@ function sortAndRender() {
     });
   }
 
-  /* Update column header indicators */
   document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
     th.classList.remove('sorted-asc','sorted-desc');
     if (!_sortByDate && _sortCol && th.dataset.col === _sortCol)
       th.classList.add(_sortAsc ? 'sorted-asc' : 'sorted-desc');
   });
 
-  /* Update date sort button */
-  var btn   = document.getElementById('btn-sort-date');
+  var btn = document.getElementById('btn-sort-date');
   var arrow = document.getElementById('sort-date-arrow');
-  if (_sortByDate) {
-    btn.classList.add('active');
-    arrow.textContent = _sortByDate === 'asc' ? '↑' : '↓';
-  } else {
-    btn.classList.remove('active');
-    arrow.textContent = '↑↓';
-  }
+  if (_sortByDate) { btn.classList.add('active'); arrow.textContent = _sortByDate === 'asc' ? '↑' : '↓'; }
+  else             { btn.classList.remove('active'); arrow.textContent = '↑↓'; }
 
-  /* Render rows */
   document.getElementById('fr-tbody').innerHTML = rows.map(function(r) {
     var v = r.v, a = r.a;
-    var badgeCls = a.fonte === 'manual' ? 'manual' : 'planilha';
-    var badgeTxt = a.ref || (a.fonte === 'manual' ? 'manual' : '—');
-    var fipeVal  = a.val != null ? 'R$ ' + brl(a.val) : '—';
+    var meses    = MANUAL[v.placa] || {};
+    var mc       = meses[CURR_MES_LABEL];
+    var badgeCls = mc ? 'manual' : (a.val != null ? 'planilha' : 'vazio');
+    var badgeTxt = mc ? CURR_MES_LABEL : (a.val != null ? a.ref : 'sem valor');
+    var fipeVal  = a.val != null ? 'R$ ' + brl(a.val) : '—';
+    var prevVal  = r.prev != null ? 'R$ ' + brl(r.prev) : '—';
     return '<tr data-placa="' + v.placa + '">' +
       '<td>' + (v.modelo || '—') + '</td>' +
       '<td><span class="fr-placa-link" data-placa="' + v.placa + '">' + (v.placa || '—') + '</span></td>' +
       '<td>' + (v.ano_modelo || '—') + '</td>' +
       '<td>' + (v.cod_fipe || '—') + '</td>' +
       '<td>' + fmtDate(v.dt_aquisicao) + '</td>' +
-      '<td>' + (v.vl_aquisicao != null ? 'R$ ' + brl(v.vl_aquisicao) : '—') + '</td>' +
-      '<td>' + (v.abr26 != null ? 'R$ ' + brl(v.abr26) : '—') + '</td>' +
-      '<td><span class="fr-fipe-cell">' +
-        '<span class="fr-fipe-badge ' + badgeCls + '">' + badgeTxt + '</span>' +
-        fipeVal +
-      '</span></td>' +
+      '<td>' + (v.vl_aquisicao != null ? 'R$ ' + brl(v.vl_aquisicao) : '—') + '</td>' +
+      '<td>' + prevVal + '</td>' +
+      '<td><span class="fr-fipe-cell"><span class="fr-fipe-badge ' + badgeCls + '">' + badgeTxt + '</span>' + fipeVal + '</span></td>' +
       '<td>' + varHtml(r.varM, r.varMP) + '</td>' +
       '<td>' + varHtml(r.varA, r.varAP) + '</td>' +
     '</tr>';
   }).join('');
 
-  /* Bind plate tooltip */
   document.querySelectorAll('.fr-placa-link').forEach(function(el) {
-    el.addEventListener('mouseenter', showPlateTooltip);
-    el.addEventListener('mouseleave', hidePlateTooltip);
+    el.addEventListener('mouseenter', onPlacaEnter);
+    el.addEventListener('mouseleave', onPlacaLeave);
+    el.addEventListener('click',      onPlacaClick);
   });
 }
 
-/* ── Date sort button ── */
+/* ── Date sort ── */
 document.getElementById('btn-sort-date').addEventListener('click', function() {
-  if (_sortByDate === null) {
-    _sortByDate = 'asc';
-  } else if (_sortByDate === 'asc') {
-    _sortByDate = 'desc';
-  } else {
-    _sortByDate = null;
-  }
+  _sortByDate = _sortByDate === null ? 'asc' : _sortByDate === 'asc' ? 'desc' : null;
   if (_sortByDate) _sortCol = null;
   sortAndRender();
 });
@@ -573,7 +541,7 @@ document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
   });
 });
 
-/* ── Variações únicas (cod_fipe + ano_modelo) derivadas dos veículos ── */
+/* ── Variações (cod_fipe + ano_modelo) para o modal ── */
 function buildVariacoes() {
   var map = {};
   VEICULOS.forEach(function(v) {
@@ -583,11 +551,8 @@ function buildVariacoes() {
     map[key].qtd++;
   });
   return Object.values(map).sort(function(a, b) {
-    if (a.cod_fipe < b.cod_fipe) return -1;
-    if (a.cod_fipe > b.cod_fipe) return 1;
-    if (a.ano_modelo < b.ano_modelo) return -1;
-    if (a.ano_modelo > b.ano_modelo) return 1;
-    return 0;
+    return a.cod_fipe < b.cod_fipe ? -1 : a.cod_fipe > b.cod_fipe ? 1 :
+           a.ano_modelo < b.ano_modelo ? -1 : a.ano_modelo > b.ano_modelo ? 1 : 0;
   });
 }
 
@@ -595,147 +560,156 @@ function buildVariacoes() {
 function openModal() {
   var body      = document.getElementById('fr-modal-body');
   var variacoes = buildVariacoes();
-
   body.innerHTML = variacoes.map(function(c) {
-    /* Representative value: first vehicle matching cod_fipe + ano_modelo */
     var rep = null;
     for (var i = 0; i < VEICULOS.length; i++) {
       var vi = VEICULOS[i];
       if (vi.cod_fipe === c.cod_fipe && vi.ano_modelo === c.ano_modelo) {
-        rep = valorAtual(vi).val;
+        var meses = MANUAL[vi.placa] || {};
+        var mc    = meses[CURR_MES_LABEL];
+        rep = mc ? mc.valor : valorAtual(vi).val;
         break;
       }
     }
-    var inputVal = rep != null ? brlInput(rep) : '';
     return '<div class="fr-modal-row">' +
-      '<div>' +
-        '<div class="fr-modal-code">' + c.cod_fipe + '</div>' +
-      '</div>' +
-      '<div class="fr-modal-info">' +
-        '<strong>' + c.modelo + '</strong> ' + c.ano_modelo +
-        '<br>' + c.qtd + ' veículo' + (c.qtd !== 1 ? 's' : '') +
-      '</div>' +
-      '<input type="text" class="fr-modal-input"' +
-        ' data-cod="' + c.cod_fipe + '"' +
-        ' data-ano="' + c.ano_modelo + '"' +
-        ' value="' + inputVal + '" autocomplete="off">' +
+      '<div><div class="fr-modal-code">' + c.cod_fipe + '</div></div>' +
+      '<div class="fr-modal-info"><strong>' + c.modelo + '</strong> ' + c.ano_modelo +
+        '<br>' + c.qtd + ' veículo' + (c.qtd !== 1 ? 's' : '') + '</div>' +
+      '<input type="text" class="fr-modal-input" data-cod="' + c.cod_fipe + '" data-ano="' + c.ano_modelo + '"' +
+        ' value="' + (rep != null ? brlInput(rep) : '') + '" autocomplete="off">' +
     '</div>';
   }).join('');
-
   document.getElementById('fr-modal-overlay').style.display = 'flex';
   var first = body.querySelector('.fr-modal-input');
-  if (first) { setTimeout(function(){ first.focus(); first.select(); }, 40); }
+  if (first) setTimeout(function(){ first.focus(); first.select(); }, 40);
 }
-
-function closeModal() {
-  document.getElementById('fr-modal-overlay').style.display = 'none';
-}
-
+function closeModal() { document.getElementById('fr-modal-overlay').style.display = 'none'; }
 function saveModal() {
-  var inputs   = document.querySelectorAll('.fr-modal-input');
+  var inputs = document.querySelectorAll('.fr-modal-input');
   var entradas = [];
   inputs.forEach(function(inp) {
     var raw = parseBrl(inp.value);
-    if (raw != null) entradas.push({ cod_fipe: inp.dataset.cod, ano_modelo: inp.dataset.ano, valor: raw, ref: 'MAI/26' });
+    if (raw != null) entradas.push({ cod_fipe: inp.dataset.cod, ano_modelo: inp.dataset.ano, valor: raw, ref: CURR_MES_LABEL });
   });
   if (!entradas.length) { closeModal(); return; }
-
   var btn = document.getElementById('fr-modal-save');
   btn.textContent = 'Salvando…'; btn.disabled = true;
-
   fetch('/api/frota/manual/batch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entradas: entradas })
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r){ return r.json(); })
   .then(function(d) {
     if (d.ok) {
       var hoje = new Date().toLocaleDateString('pt-BR');
-      /* Build lookup: "cod_fipe|ano_modelo" -> valor */
       var varMap = {};
-      entradas.forEach(function(e) { varMap[e.cod_fipe + '|' + e.ano_modelo] = e.valor; });
+      entradas.forEach(function(e){ varMap[e.cod_fipe + '|' + e.ano_modelo] = e.valor; });
       VEICULOS.forEach(function(v) {
         var key = (v.cod_fipe || '') + '|' + (v.ano_modelo || '');
         if (varMap[key] != null) {
-          MANUAL[v.placa] = { valor: varMap[key], ref: 'MAI/26', atualizado_em: hoje };
+          if (!MANUAL[v.placa]) MANUAL[v.placa] = {};
+          MANUAL[v.placa][CURR_MES_LABEL] = { valor: varMap[key], atualizado_em: hoje };
         }
       });
       closeModal();
       recalcKPIs(); renderComp(); sortAndRender(); updateLineChart();
-    } else {
-      alert('Erro ao salvar: ' + (d.erro || 'tente novamente'));
-    }
+    } else { alert('Erro ao salvar: ' + (d.erro || 'tente novamente')); }
     btn.textContent = 'Salvar todos'; btn.disabled = false;
   })
-  .catch(function() {
-    alert('Erro de rede. Tente novamente.');
-    btn.textContent = 'Salvar todos'; btn.disabled = false;
-  });
+  .catch(function(){ alert('Erro de rede. Tente novamente.'); btn.textContent = 'Salvar todos'; btn.disabled = false; });
 }
-
 document.getElementById('th-fipe-edit').addEventListener('click', openModal);
 document.getElementById('fr-modal-close').addEventListener('click', closeModal);
 document.getElementById('fr-modal-cancel').addEventListener('click', closeModal);
 document.getElementById('fr-modal-save').addEventListener('click', saveModal);
-document.getElementById('fr-modal-overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
+document.getElementById('fr-modal-overlay').addEventListener('click', function(e){ if (e.target === this) closeModal(); });
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape'){
+    if (document.getElementById('fr-modal-overlay').style.display !== 'none') closeModal();
+    if (document.getElementById('fr-hist-overlay').style.display !== 'none') closeHistorico();
+  }
 });
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && document.getElementById('fr-modal-overlay').style.display !== 'none') closeModal();
-});
-document.getElementById('fr-modal-body').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') saveModal();
-});
+document.getElementById('fr-modal-body').addEventListener('keydown', function(e){ if (e.key === 'Enter') saveModal(); });
+
+/* ── Histórico Completo ── */
+function openHistorico() {
+  var allMonths = buildAllMonths();
+  var sorted    = VEICULOS.slice().sort(function(a, b){ return parseDate(a.dt_aquisicao) - parseDate(b.dt_aquisicao); });
+
+  /* Header */
+  document.getElementById('fr-hist-thead').innerHTML =
+    '<tr>' +
+    '<th class="sticky-col">Placa</th>' +
+    '<th class="sticky-col" style="left:70px">Modelo</th>' +
+    '<th class="sticky-col" style="left:140px">Ano</th>' +
+    allMonths.map(function(m){
+      var isCurr = m.label === CURR_MES_LABEL;
+      return '<th' + (isCurr ? ' class="curr-col"' : '') + '>' + m.label + '</th>';
+    }).join('') +
+    '</tr>';
+
+  /* Body */
+  document.getElementById('fr-hist-tbody').innerHTML = sorted.map(function(v) {
+    var cells = allMonths.map(function(m) {
+      var val  = mesValor(v, m.key, m.label);
+      var isCurr = m.label === CURR_MES_LABEL;
+      var txt  = val != null ? 'R$ ' + brl(val, 0) : '—';
+      return '<td' + (isCurr ? ' class="curr-col"' : '') + '>' + txt + '</td>';
+    }).join('');
+    return '<tr>' +
+      '<td class="sticky-col">' + (v.placa || '—') + '</td>' +
+      '<td class="sticky-col" style="left:70px">' + (v.modelo || '—') + '</td>' +
+      '<td class="sticky-col" style="left:140px">' + (v.ano_modelo || '—') + '</td>' +
+      cells + '</tr>';
+  }).join('');
+
+  document.getElementById('fr-hist-overlay').style.display = 'flex';
+}
+function closeHistorico() { document.getElementById('fr-hist-overlay').style.display = 'none'; }
+document.getElementById('btn-historico').addEventListener('click', openHistorico);
+document.getElementById('fr-hist-close').addEventListener('click', closeHistorico);
+document.getElementById('fr-hist-overlay').addEventListener('click', function(e){ if (e.target === this) closeHistorico(); });
 
 /* ── Plate tooltip ── */
-var _tipChart = null;
+var _tipChart      = null;
+var _tipPinned     = false;
+var _tipPinnedPlaca = null;
 
-function showPlateTooltip(e) {
-  var placa = e.currentTarget.dataset.placa;
-  var v = null;
-  for (var i = 0; i < VEICULOS.length; i++) {
-    if (VEICULOS[i].placa === placa) { v = VEICULOS[i]; break; }
-  }
-  if (!v) return;
-
-  /* Build series: only months with values */
-  var labels = [], data = [];
-  MES_KEYS.forEach(function(k, i) {
-    if (v[k] != null) { labels.push(MES_LABELS[i]); data.push(v[k]); }
-  });
-  /* Add MAI/26 manual value if exists */
-  var m = MANUAL[placa];
-  if (m && m.valor != null) { labels.push('MAI/26'); data.push(m.valor); }
-
-  if (labels.length < 2) return;
-
-  var tip = document.getElementById('fr-plate-tooltip');
-  document.getElementById('fr-tip-title').textContent = placa + ' · ' + (v.modelo || '') + (v.ano_modelo ? ' ' + v.ano_modelo : '');
-  tip.style.display = 'block';
-
+function buildTipChart(v) {
   if (_tipChart) { _tipChart.destroy(); _tipChart = null; }
-  var canvas = document.getElementById('fr-tip-canvas');
-  canvas.width = 260; canvas.height = 150;
+  var allMonths = buildAllMonths();
+  var labels = [], data = [];
+  allMonths.forEach(function(m) {
+    var val = mesValor(v, m.key, m.label);
+    if (val != null) { labels.push(m.label); data.push(val); }
+  });
+  if (labels.length < 2) return false;
 
+  document.getElementById('fr-tip-title').textContent =
+    v.placa + ' · ' + (v.modelo || '') + (v.ano_modelo ? ' ' + v.ano_modelo : '');
+
+  var canvas = document.getElementById('fr-tip-canvas');
+  canvas.width = 351; canvas.height = 203;
   var cor = MODELO_COR[v.modelo] || '#2E6BE6';
+
   _tipChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels: labels,
-      datasets: [{
-        data: data, borderColor: cor,
-        backgroundColor: cor + '20',
-        borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
-        fill: true, tension: 0.3
-      }]
+      datasets: [{ data: data, borderColor: cor, backgroundColor: cor + '20',
+        borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, fill: true, tension: 0.3 }]
     },
     options: {
       responsive: false, maintainAspectRatio: false,
       animation: { duration: 0 },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: function(c){ return 'R$ ' + brl(c.parsed.y, 0); } } }
+        tooltip: {
+          callbacks: {
+            title: function(items) { return items[0].label; },
+            label: function(c) { return 'R$ ' + brl(c.parsed.y, 0); }
+          }
+        }
       },
       scales: {
         x: { ticks: { font: { size: 9 }, maxRotation: 50, minRotation: 30 } },
@@ -743,20 +717,24 @@ function showPlateTooltip(e) {
       }
     }
   });
-
-  positionTooltip(e);
+  return true;
 }
 
-function hidePlateTooltip() {
-  document.getElementById('fr-plate-tooltip').style.display = 'none';
-  if (_tipChart) { _tipChart.destroy(); _tipChart = null; }
+function showTip(e, placa) {
+  var v = null;
+  for (var i = 0; i < VEICULOS.length; i++) { if (VEICULOS[i].placa === placa) { v = VEICULOS[i]; break; } }
+  if (!v) return;
+  var tip = document.getElementById('fr-plate-tooltip');
+  if (!buildTipChart(v)) return;
+  tip.style.display = 'block';
+  positionTooltip(e);
 }
 
 function positionTooltip(e) {
   var tip  = document.getElementById('fr-plate-tooltip');
-  var td   = e.currentTarget.closest('td');
+  var td   = e.currentTarget ? e.currentTarget.closest('td') : null;
   var rect = td ? td.getBoundingClientRect() : { right: e.clientX, left: e.clientX - 1, top: e.clientY, height: 0 };
-  var w = 300, h = 210;
+  var w = 383, h = 251; /* tip padding + canvas */
   var vw = window.innerWidth, vh = window.innerHeight;
   var x = rect.right + 10;
   var y = rect.top + rect.height / 2 - h / 2;
@@ -767,52 +745,90 @@ function positionTooltip(e) {
   tip.style.top  = y + 'px';
 }
 
+function onPlacaEnter(e) {
+  if (_tipPinned) return;
+  showTip(e, e.currentTarget.dataset.placa);
+}
+function onPlacaLeave() {
+  if (_tipPinned) return;
+  hideTip();
+}
+function onPlacaClick(e) {
+  var placa = e.currentTarget.dataset.placa;
+  if (_tipPinned && _tipPinnedPlaca === placa) {
+    unpinTip();
+  } else {
+    _tipPinned     = true;
+    _tipPinnedPlaca = placa;
+    var tip = document.getElementById('fr-plate-tooltip');
+    showTip(e, placa);
+    tip.classList.add('pinned');
+    document.getElementById('fr-tip-close').style.display = 'block';
+  }
+}
+function unpinTip() {
+  _tipPinned     = false;
+  _tipPinnedPlaca = null;
+  hideTip();
+}
+function hideTip() {
+  var tip = document.getElementById('fr-plate-tooltip');
+  tip.style.display = 'none';
+  tip.classList.remove('pinned');
+  document.getElementById('fr-tip-close').style.display = 'none';
+  if (_tipChart) { _tipChart.destroy(); _tipChart = null; }
+}
+document.getElementById('fr-tip-close').addEventListener('click', unpinTip);
+/* Fechar tooltip fixado ao clicar fora */
+document.addEventListener('click', function(e) {
+  if (!_tipPinned) return;
+  var tip = document.getElementById('fr-plate-tooltip');
+  if (!tip.contains(e.target) && !e.target.classList.contains('fr-placa-link'))
+    unpinTip();
+});
+
 /* ── Gráficos ── */
 var _lineChart = null;
 
 function buildMonthlyTotals() {
-  var totals = MES_KEYS.map(function(key) {
+  var allMonths = buildAllMonths();
+  var totals = allMonths.map(function(m) {
     var sum = 0, any = false;
-    VEICULOS.forEach(function(v) { if (v[key] != null) { sum += v[key]; any = true; } });
+    VEICULOS.forEach(function(v) {
+      var val = mesValor(v, m.key, m.label);
+      if (val != null) { sum += val; any = true; }
+    });
     return any ? sum : null;
   });
-  var mai26 = 0;
-  VEICULOS.forEach(function(v) { var a = valorAtual(v); if (a.val != null) mai26 += a.val; });
-  return { totals: totals, mai26: mai26 };
+  return { labels: allMonths.map(function(m){ return m.label; }), totals: totals };
 }
 
 function updateLineChart() {
   if (!_lineChart) return;
   var d = buildMonthlyTotals();
-  var all = d.totals.concat([d.mai26]);
-  _lineChart.data.datasets[0].data = all.map(function(v){ return v != null ? v : undefined; });
+  _lineChart.data.datasets[0].data = d.totals.map(function(v){ return v != null ? v : undefined; });
   _lineChart.update();
 }
 
 function renderLineChart() {
   var d = buildMonthlyTotals();
-  var labels = MES_LABELS.concat(['MAI/26']);
-  var data   = d.totals.concat([d.mai26]).map(function(v){ return v != null ? v : undefined; });
   _lineChart = new Chart(document.getElementById('fr-chart-line').getContext('2d'), {
     type: 'line',
     data: {
-      labels: labels,
-      datasets: [{
-        label: 'Valor Total', data: data,
-        borderColor: '#2E6BE6', backgroundColor: 'rgba(46,107,230,.08)',
-        borderWidth: 2, pointRadius: 3, pointHoverRadius: 6,
-        fill: true, tension: 0.3, spanGaps: true,
-      }]
+      labels: d.labels,
+      datasets: [{ label: 'Valor Total', data: d.totals.map(function(v){ return v != null ? v : undefined; }),
+        borderColor:'#2E6BE6', backgroundColor:'rgba(46,107,230,.08)',
+        borderWidth:2, pointRadius:3, pointHoverRadius:6, fill:true, tension:0.3, spanGaps:true }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: function(c){ return 'R$ ' + brl(c.parsed.y, 0); } } }
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label:function(c){ return 'R$ ' + brl(c.parsed.y,0); } } }
       },
       scales: {
-        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
-        y: { ticks: { callback: function(v){ return 'R$ ' + (v/1e6).toFixed(1) + 'M'; }, font: { size: 10 } } }
+        x:{ ticks:{ font:{ size:10 }, maxRotation:45 } },
+        y:{ ticks:{ callback:function(v){ return 'R$ '+(v/1e6).toFixed(1)+'M'; }, font:{ size:10 } } }
       }
     }
   });
@@ -820,30 +836,25 @@ function renderLineChart() {
 
 function renderDoughnutChart() {
   var grouped = {};
-  VEICULOS.forEach(function(v) { grouped[v.modelo] = (grouped[v.modelo]||0) + 1; });
+  VEICULOS.forEach(function(v){ grouped[v.modelo] = (grouped[v.modelo]||0) + 1; });
   var order  = ['GOL','VOYAGE','SANDERO','START','BROSS'];
   var labels = [], counts = [], colors = [];
-  order.forEach(function(m) {
+  order.forEach(function(m){
     if (!grouped[m]) return;
     labels.push(m + ' (' + grouped[m] + ')');
     counts.push(grouped[m]);
     colors.push(MODELO_COR[m] || '#888');
   });
   new Chart(document.getElementById('fr-chart-doughnut').getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: labels,
-      datasets: [{ data: counts,
-        backgroundColor: colors.map(function(c){ return c + 'cc'; }),
-        borderColor: colors, borderWidth: 2, hoverOffset: 8 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 14, usePointStyle: true } },
-        tooltip: { callbacks: { label: function(c){
-          var tot = c.dataset.data.reduce(function(a,b){ return a+b; }, 0);
-          return c.label + ' — ' + (c.parsed/tot*100).toFixed(0) + '%';
+    type:'doughnut',
+    data:{ labels:labels, datasets:[{ data:counts, backgroundColor:colors.map(function(c){ return c+'cc'; }), borderColor:colors, borderWidth:2, hoverOffset:8 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ font:{ size:11 }, padding:14, usePointStyle:true } },
+        tooltip:{ callbacks:{ label:function(c){
+          var tot = c.dataset.data.reduce(function(a,b){ return a+b; },0);
+          return c.label+' — '+(c.parsed/tot*100).toFixed(0)+'%';
         }}}
       }
     }
