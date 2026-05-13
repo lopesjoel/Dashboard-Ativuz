@@ -70,6 +70,21 @@
 .fr-comp-count span { font-size: 13px; font-weight: 500; color: var(--ink-3); }
 .fr-comp-value { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
+/* Table toolbar */
+.fr-table-toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+}
+.fr-sort-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  color: var(--ink-3); cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.fr-sort-btn:hover { border-color: #2E6BE6; color: #2E6BE6; }
+.fr-sort-btn.active { background: #eff4ff; border-color: #2E6BE6; color: #2E6BE6; }
+.fr-sort-arrow { font-size: 13px; }
+
 /* Table */
 .fr-table-card {
   background: var(--surface); border: 1px solid var(--line);
@@ -81,43 +96,110 @@
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; color: var(--ink-3);
   border-bottom: 1px solid var(--line); white-space: nowrap;
-  text-align: left; cursor: pointer; user-select: none;
+  text-align: center; cursor: pointer; user-select: none;
 }
-.fr-table th.num { text-align: right; }
 .fr-table th.sorted-asc::after  { content: ' ↑'; opacity:.7; }
 .fr-table th.sorted-desc::after { content: ' ↓'; opacity:.7; }
+.fr-table th.fipe-edit-hd { color: #2E6BE6; }
+.fr-table th.fipe-edit-hd:hover { background: #eff4ff; }
+.fr-table th.fipe-edit-hd .edit-icon { font-size: 11px; opacity: .75; margin-left: 3px; }
 .fr-table td {
   padding: 7px 12px; border-bottom: 1px solid var(--line);
   color: var(--ink-2); white-space: nowrap;
+  text-align: center; font-variant-numeric: tabular-nums;
 }
-.fr-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .fr-table tr:last-child td { border-bottom: none; }
 .fr-table tbody tr:nth-child(even) td { background: #f9f9fb; }
 .fr-table tbody tr:hover td { background: #f0f0f5 !important; }
 .fr-table .up   { color: #22a06b; font-weight: 600; }
 .fr-table .down { color: #E5484D; font-weight: 600; }
 
-/* Editable FIPE cell */
-.fr-fipe-cell { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
-.fr-fipe-input {
-  width: 110px; text-align: right;
-  border: 1px solid var(--line); border-radius: 6px;
-  padding: 4px 8px; font-size: 12px; font-family: inherit;
-  font-variant-numeric: tabular-nums; color: var(--ink);
-  background: var(--surface); outline: none;
-  transition: border-color .15s;
-}
-.fr-fipe-input:focus { border-color: #2E6BE6; box-shadow: 0 0 0 2px rgba(46,107,230,.15); }
-.fr-fipe-input.manual { border-color: #22a06b; background: #f0fdf7; }
+/* FIPE read-only cell */
+.fr-fipe-cell { display: inline-flex; align-items: center; gap: 5px; }
 .fr-fipe-badge {
   font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .04em; padding: 2px 5px; border-radius: 4px;
-  white-space: nowrap; flex-shrink: 0;
+  letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; white-space: nowrap;
 }
 .fr-fipe-badge.planilha { background: #f0f0f5; color: var(--ink-3); }
 .fr-fipe-badge.manual   { background: #d1fae5; color: #059669; }
-.fr-fipe-badge.saving   { background: #fef3c7; color: #d97706; }
-.fr-fipe-badge.erro     { background: #fee2e2; color: #dc2626; }
+
+/* Plate hover */
+.fr-placa-link {
+  font-weight: 600; color: var(--ink); letter-spacing: .03em;
+  border-bottom: 1px dashed #c5c9d6; cursor: default;
+}
+
+/* Modal */
+.fr-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15,20,42,.5);
+  z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.fr-modal {
+  background: var(--surface); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.22);
+  width: 100%; max-width: 580px; max-height: 88vh;
+  display: flex; flex-direction: column;
+}
+.fr-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.fr-modal-header h3 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0; }
+.fr-modal-close {
+  background: none; border: none; cursor: pointer; padding: 4px 8px;
+  font-size: 16px; color: var(--ink-3); border-radius: 6px; line-height: 1;
+}
+.fr-modal-close:hover { background: #f0f0f5; color: var(--ink); }
+.fr-modal-body { flex: 1; overflow-y: auto; }
+.fr-modal-row {
+  display: grid; grid-template-columns: 120px 1fr auto;
+  align-items: center; gap: 14px; padding: 11px 22px;
+  border-bottom: 1px solid var(--line);
+}
+.fr-modal-row:last-child { border-bottom: none; }
+.fr-modal-code { font-size: 12px; font-weight: 700; color: var(--ink); font-family: monospace; }
+.fr-modal-info { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.fr-modal-info strong { color: var(--ink-2); font-weight: 600; }
+.fr-modal-input {
+  width: 128px; text-align: right;
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; font-size: 12px; font-family: inherit;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+  background: var(--surface); outline: none; transition: border-color .15s;
+}
+.fr-modal-input:focus { border-color: #2E6BE6; box-shadow: 0 0 0 2px rgba(46,107,230,.15); }
+.fr-modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 22px; border-top: 1px solid var(--line); flex-shrink: 0;
+}
+.fr-btn-primary {
+  background: #2E6BE6; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: background .15s; font-family: inherit;
+}
+.fr-btn-primary:hover:not(:disabled) { background: #1a57d3; }
+.fr-btn-primary:disabled { opacity: .6; cursor: default; }
+.fr-btn-secondary {
+  background: var(--surface); color: var(--ink-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.fr-btn-secondary:hover { border-color: var(--ink-3); }
+
+/* Plate tooltip */
+.fr-plate-tip {
+  position: fixed; z-index: 2000;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.16);
+  pointer-events: none;
+}
+.fr-plate-tip-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--ink); margin-bottom: 10px;
+}
+.fr-plate-tip-wrap { position: relative; width: 260px; height: 150px; }
 
 /* Charts */
 .fr-charts {
@@ -147,7 +229,7 @@
 
   <div class="fr-header">
     <h1>FROTA</h1>
-    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · ABR/26 (planilha) · MAI/26 editável</p>
+    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · ABR/26 (planilha) · MAI/26 editável por código</p>
   </div>
 
   {% if erro %}
@@ -206,6 +288,11 @@
   <div class="fr-comp" id="fr-comp"></div>
 
   <p class="fr-section">Veículos</p>
+  <div class="fr-table-toolbar">
+    <button id="btn-sort-date" class="fr-sort-btn" title="Ordenar por data de aquisição">
+      Data de Aquisição <span class="fr-sort-arrow" id="sort-date-arrow">↑↓</span>
+    </button>
+  </div>
   <div class="fr-table-card">
     <table class="fr-table" id="fr-table">
       <thead>
@@ -215,11 +302,13 @@
           <th data-col="ano_modelo">Ano</th>
           <th data-col="cod_fipe">Cód. FIPE</th>
           <th data-col="dt_aquisicao">Dt. Aquisição</th>
-          <th data-col="vl_aquisicao" class="num">Vl. Aquisição</th>
-          <th data-col="abr26" class="num">ABR/26 (planilha)</th>
-          <th class="num">MAI/26 (editável)</th>
-          <th data-col="var_mes" class="num">Var. vs ABR/26</th>
-          <th data-col="var_aq" class="num">Var. vs Aquisição</th>
+          <th data-col="vl_aquisicao">Vl. Aquisição</th>
+          <th data-col="abr26">ABR/26</th>
+          <th id="th-fipe-edit" class="fipe-edit-hd" title="Clique para editar valores MAI/26 por código FIPE">
+            MAI/26 <span class="edit-icon">✎</span>
+          </th>
+          <th data-col="var_mes">Var. vs ABR/26</th>
+          <th data-col="var_aq">Var. vs Aquisição</th>
         </tr>
       </thead>
       <tbody id="fr-tbody"></tbody>
@@ -241,6 +330,29 @@
   {% endif %}
 </div>
 
+<!-- Modal de edição por código FIPE -->
+<div id="fr-modal-overlay" class="fr-modal-overlay" style="display:none">
+  <div class="fr-modal" role="dialog" aria-modal="true" aria-labelledby="fr-modal-title">
+    <div class="fr-modal-header">
+      <h3 id="fr-modal-title">Editar Valores FIPE — MAI/26</h3>
+      <button id="fr-modal-close" class="fr-modal-close" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <div class="fr-modal-body" id="fr-modal-body"></div>
+    <div class="fr-modal-footer">
+      <button id="fr-modal-cancel" class="fr-btn-secondary" type="button">Cancelar</button>
+      <button id="fr-modal-save" class="fr-btn-primary" type="button">Salvar todos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip de placa -->
+<div id="fr-plate-tooltip" class="fr-plate-tip" style="display:none" aria-hidden="true">
+  <div class="fr-plate-tip-title" id="fr-tip-title"></div>
+  <div class="fr-plate-tip-wrap">
+    <canvas id="fr-tip-canvas" width="260" height="150"></canvas>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
 (function () {
@@ -249,6 +361,7 @@
 /* ── Dados do servidor ── */
 var VEICULOS = {{ veiculos | tojson }};
 var MANUAL   = {{ manual   | tojson }};   /* {placa: {valor, ref, atualizado_em}} */
+var CODIGOS  = {{ codigos  | tojson }};   /* [{cod_fipe, modelo, ano_modelo, qtd}] */
 
 var MODELO_COR = { GOL:'#22a06b', VOYAGE:'#2E6BE6', SANDERO:'#7B8499', START:'#F59E0B', BROSS:'#FF4713' };
 var MES_KEYS   = ['jan25','fev25','mar25','abr25','mai25','jun25','jul25','ago25','set25','out25','nov25','dez25','jan26','fev26','mar26','abr26'];
@@ -275,8 +388,21 @@ function varHtml(val, pct) {
   if (val == null) return '<span>—</span>';
   var up = val >= 0, sign = up ? '+' : '';
   var cls = up ? 'up' : 'down';
-  var ps = pct != null ? ' (' + sign + pct.toFixed(1) + '%)' : '';
+  var ps = pct != null ? ' (' + sign + pct.toFixed(1) + '%)' : '';
   return '<span class="' + cls + '">' + sign + 'R$ ' + brl(val) + ps + '</span>';
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[3] + '/' + m[2] + '/' + m[1];
+  return s.replace(/\s\d{2}:\d{2}:\d{2}.*/, '');
+}
+function parseDate(s) {
+  if (!s) return 0;
+  var m;
+  if (m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)) return new Date(+m[1], +m[2]-1, +m[3]).getTime();
+  if (m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/)) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+  return 0;
 }
 
 /* ── Valor atual de cada veículo: manual se existir, senão abr26 ── */
@@ -284,7 +410,6 @@ function valorAtual(v) {
   var m = MANUAL[v.placa];
   if (m && m.valor != null) return { val: m.valor, fonte: 'manual', ref: m.ref || 'editado', em: m.atualizado_em };
   if (v.abr26 != null)      return { val: v.abr26, fonte: 'planilha', ref: 'ABR/26', em: null };
-  /* fallback para o último mês disponível */
   var keys = ['mar26','fev26','jan26','dez25'];
   for (var i = 0; i < keys.length; i++) {
     if (v[keys[i]] != null) return { val: v[keys[i]], fonte: 'planilha', ref: keys[i].toUpperCase().replace('25','/25').replace('26','/26'), em: null };
@@ -297,24 +422,24 @@ function recalcKPIs() {
   var totalFipe = 0, totalAbr26 = 0, totalAq = 0;
   VEICULOS.forEach(function(v) {
     var a = valorAtual(v);
-    if (a.val != null)     totalFipe  += a.val;
-    if (v.abr26 != null)   totalAbr26 += v.abr26;
-    if (v.vl_aquisicao)    totalAq    += v.vl_aquisicao;
+    if (a.val != null)   totalFipe  += a.val;
+    if (v.abr26 != null) totalAbr26 += v.abr26;
+    if (v.vl_aquisicao)  totalAq    += v.vl_aquisicao;
   });
   var varMes = totalFipe - totalAbr26;
   var varAq  = totalFipe - totalAq;
   var varAqP = totalAq > 0 ? varAq / totalAq * 100 : 0;
 
-  document.getElementById('kpi-total-val').textContent = 'R$ ' + brl(totalFipe, 0);
+  document.getElementById('kpi-total-val').textContent = 'R$ ' + brl(totalFipe, 0);
   document.getElementById('kpi-total-sub').textContent = 'FIPE atual';
 
   var vMesEl = document.getElementById('kpi-var-mes-val');
-  vMesEl.textContent = (varMes >= 0 ? '+' : '') + 'R$ ' + brl(varMes, 0);
+  vMesEl.textContent = (varMes >= 0 ? '+' : '') + 'R$ ' + brl(varMes, 0);
   vMesEl.className = 'fr-kpi-value ' + (varMes >= 0 ? 'up' : 'down');
   document.getElementById('kpi-var-mes-icon').className = 'fr-kpi-icon ' + (varMes >= 0 ? 'green' : 'red');
 
   var vAqEl = document.getElementById('kpi-var-aq-val');
-  vAqEl.textContent = (varAq >= 0 ? '+' : '') + 'R$ ' + brl(varAq, 0);
+  vAqEl.textContent = (varAq >= 0 ? '+' : '') + 'R$ ' + brl(varAq, 0);
   vAqEl.className = 'fr-kpi-value ' + (varAq >= 0 ? 'up' : 'down');
   document.getElementById('kpi-var-aq-sub').textContent = (varAqP >= 0 ? '+' : '') + varAqP.toFixed(1) + '% vs. custo total';
   document.getElementById('kpi-var-aq-icon').className = 'fr-kpi-icon ' + (varAq >= 0 ? 'green' : 'red');
@@ -341,110 +466,280 @@ function renderComp() {
 }
 
 /* ── Tabela ── */
-var _sortCol = 'modelo', _sortAsc = true;
+var _sortCol    = 'modelo';
+var _sortAsc    = true;
+var _sortByDate = null; /* null | 'asc' | 'desc' */
 
 function buildRows() {
   return VEICULOS.map(function(v) {
     var a    = valorAtual(v);
     var abr  = v.abr26;
-    var varM = (a.val != null && abr != null) ? a.val - abr : null;
+    var varM  = (a.val != null && abr != null) ? a.val - abr : null;
     var varMP = (varM != null && abr > 0) ? varM / abr * 100 : null;
-    var varA = (a.val != null && v.vl_aquisicao) ? a.val - v.vl_aquisicao : null;
+    var varA  = (a.val != null && v.vl_aquisicao) ? a.val - v.vl_aquisicao : null;
     var varAP = (varA != null && v.vl_aquisicao > 0) ? varA / v.vl_aquisicao * 100 : null;
     return { v: v, a: a, varM: varM, varMP: varMP, varA: varA, varAP: varAP };
   });
 }
 
 function sortAndRender() {
-  var rows = buildRows().sort(function(x, y) {
-    var col = _sortCol;
-    var va = col === 'var_mes' ? x.varM : col === 'var_aq' ? x.varA : (x.v[col] != null ? x.v[col] : (x.a != null && col === 'fipe_atual' ? x.a.val : null));
-    var vb = col === 'var_mes' ? y.varM : col === 'var_aq' ? y.varA : (y.v[col] != null ? y.v[col] : (y.a != null && col === 'fipe_atual' ? y.a.val : null));
-    if (va == null && vb == null) return 0;
-    if (va == null) return 1; if (vb == null) return -1;
-    if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
-    return _sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va > vb ? -1 : va < vb ? 1 : 0);
-  });
+  var rows = buildRows();
 
+  if (_sortByDate) {
+    var asc = _sortByDate === 'asc';
+    rows.sort(function(x, y) {
+      var da = parseDate(x.v.dt_aquisicao), db = parseDate(y.v.dt_aquisicao);
+      return asc ? da - db : db - da;
+    });
+  } else if (_sortCol) {
+    rows.sort(function(x, y) {
+      var col = _sortCol;
+      var va = col === 'var_mes' ? x.varM : col === 'var_aq' ? x.varA : (x.v[col] != null ? x.v[col] : null);
+      var vb = col === 'var_mes' ? y.varM : col === 'var_aq' ? y.varA : (y.v[col] != null ? y.v[col] : null);
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1; if (vb == null) return -1;
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
+      return _sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va > vb ? -1 : va < vb ? 1 : 0);
+    });
+  }
+
+  /* Update column header indicators */
   document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
     th.classList.remove('sorted-asc','sorted-desc');
-    if (th.dataset.col === _sortCol) th.classList.add(_sortAsc ? 'sorted-asc' : 'sorted-desc');
+    if (!_sortByDate && _sortCol && th.dataset.col === _sortCol)
+      th.classList.add(_sortAsc ? 'sorted-asc' : 'sorted-desc');
   });
 
+  /* Update date sort button */
+  var btn   = document.getElementById('btn-sort-date');
+  var arrow = document.getElementById('sort-date-arrow');
+  if (_sortByDate) {
+    btn.classList.add('active');
+    arrow.textContent = _sortByDate === 'asc' ? '↑' : '↓';
+  } else {
+    btn.classList.remove('active');
+    arrow.textContent = '↑↓';
+  }
+
+  /* Render rows */
   document.getElementById('fr-tbody').innerHTML = rows.map(function(r) {
     var v = r.v, a = r.a;
-    var badgeCls  = a.fonte === 'manual' ? 'manual' : 'planilha';
-    var badgeTxt  = a.fonte === 'manual' ? (a.em ? a.em : 'manual') : a.ref;
-    var inputVal  = a.val != null ? brlInput(a.val) : '';
-    var inputCls  = a.fonte === 'manual' ? 'fr-fipe-input manual' : 'fr-fipe-input';
+    var badgeCls = a.fonte === 'manual' ? 'manual' : 'planilha';
+    var badgeTxt = a.ref || (a.fonte === 'manual' ? 'manual' : '—');
+    var fipeVal  = a.val != null ? 'R$ ' + brl(a.val) : '—';
     return '<tr data-placa="' + v.placa + '">' +
-      '<td>' + (v.modelo||'—') + '</td>' +
-      '<td>' + (v.placa||'—') + '</td>' +
-      '<td>' + (v.ano_modelo||'—') + '</td>' +
-      '<td>' + (v.cod_fipe||'—') + '</td>' +
-      '<td>' + (v.dt_aquisicao||'—') + '</td>' +
-      '<td class="num">' + (v.vl_aquisicao != null ? 'R$ ' + brl(v.vl_aquisicao) : '—') + '</td>' +
-      '<td class="num">' + (v.abr26 != null ? 'R$ ' + brl(v.abr26) : '—') + '</td>' +
-      '<td class="num">' +
-        '<div class="fr-fipe-cell">' +
-          '<span class="fr-fipe-badge ' + badgeCls + '" data-badge>' + badgeTxt + '</span>' +
-          '<input type="text" class="' + inputCls + '" data-input value="' + inputVal + '" placeholder="0,00" autocomplete="off">' +
-        '</div>' +
-      '</td>' +
-      '<td class="num">' + varHtml(r.varM, r.varMP) + '</td>' +
-      '<td class="num">' + varHtml(r.varA, r.varAP) + '</td>' +
+      '<td>' + (v.modelo || '—') + '</td>' +
+      '<td><span class="fr-placa-link" data-placa="' + v.placa + '">' + (v.placa || '—') + '</span></td>' +
+      '<td>' + (v.ano_modelo || '—') + '</td>' +
+      '<td>' + (v.cod_fipe || '—') + '</td>' +
+      '<td>' + fmtDate(v.dt_aquisicao) + '</td>' +
+      '<td>' + (v.vl_aquisicao != null ? 'R$ ' + brl(v.vl_aquisicao) : '—') + '</td>' +
+      '<td>' + (v.abr26 != null ? 'R$ ' + brl(v.abr26) : '—') + '</td>' +
+      '<td><span class="fr-fipe-cell">' +
+        '<span class="fr-fipe-badge ' + badgeCls + '">' + badgeTxt + '</span>' +
+        fipeVal +
+      '</span></td>' +
+      '<td>' + varHtml(r.varM, r.varMP) + '</td>' +
+      '<td>' + varHtml(r.varA, r.varAP) + '</td>' +
     '</tr>';
   }).join('');
 
-  /* Bind editable inputs */
-  document.querySelectorAll('#fr-tbody tr').forEach(function(tr) {
-    var placa = tr.dataset.placa;
-    var inp   = tr.querySelector('[data-input]');
-    var badge = tr.querySelector('[data-badge]');
-    if (!inp || !placa) return;
-
-    inp.addEventListener('focus', function() { inp.select(); });
-
-    inp.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { inp.blur(); }
-      if (e.key === 'Escape') {
-        var a = valorAtual(VEICULOS.find(function(x){ return x.placa === placa; }) || {});
-        inp.value = a.val != null ? brlInput(a.val) : '';
-        inp.blur();
-      }
-    });
-
-    inp.addEventListener('blur', function() {
-      var raw = parseBrl(inp.value);
-      if (raw == null) { inp.value = ''; return; }
-      inp.value = brlInput(raw);
-
-      var prev = MANUAL[placa] ? MANUAL[placa].valor : null;
-      if (prev === raw) return; /* sem mudança */
-
-      badge.className = 'fr-fipe-badge saving'; badge.textContent = 'salvando…';
-
-      fetch('/api/frota/manual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ placa: placa, valor: raw, ref: 'MAI/26' })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d.ok) {
-          MANUAL[placa] = { valor: raw, ref: 'MAI/26', atualizado_em: new Date().toLocaleDateString('pt-BR') };
-          inp.classList.add('manual');
-          badge.className = 'fr-fipe-badge manual'; badge.textContent = 'MAI/26';
-          recalcKPIs(); renderComp(); updateLineChart();
-        } else {
-          badge.className = 'fr-fipe-badge erro'; badge.textContent = 'erro';
-        }
-      })
-      .catch(function() {
-        badge.className = 'fr-fipe-badge erro'; badge.textContent = 'erro';
-      });
-    });
+  /* Bind plate tooltip */
+  document.querySelectorAll('.fr-placa-link').forEach(function(el) {
+    el.addEventListener('mouseenter', showPlateTooltip);
+    el.addEventListener('mouseleave', hidePlateTooltip);
   });
+}
+
+/* ── Date sort button ── */
+document.getElementById('btn-sort-date').addEventListener('click', function() {
+  if (_sortByDate === null) {
+    _sortByDate = 'asc';
+  } else if (_sortByDate === 'asc') {
+    _sortByDate = 'desc';
+  } else {
+    _sortByDate = null;
+  }
+  if (_sortByDate) _sortCol = null;
+  sortAndRender();
+});
+
+/* ── Column sort ── */
+document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
+  th.addEventListener('click', function() {
+    _sortByDate = null;
+    if (_sortCol === th.dataset.col) { _sortAsc = !_sortAsc; } else { _sortCol = th.dataset.col; _sortAsc = true; }
+    sortAndRender();
+  });
+});
+
+/* ── Modal ── */
+function openModal() {
+  var body = document.getElementById('fr-modal-body');
+
+  body.innerHTML = CODIGOS.map(function(c) {
+    /* Representative value: first vehicle with this cod_fipe */
+    var rep = null;
+    for (var i = 0; i < VEICULOS.length; i++) {
+      if (VEICULOS[i].cod_fipe === c.cod_fipe) {
+        rep = valorAtual(VEICULOS[i]).val;
+        break;
+      }
+    }
+    var inputVal = rep != null ? brlInput(rep) : '';
+    return '<div class="fr-modal-row">' +
+      '<div>' +
+        '<div class="fr-modal-code">' + c.cod_fipe + '</div>' +
+      '</div>' +
+      '<div class="fr-modal-info">' +
+        '<strong>' + (c.modelo || '') + '</strong> ' + (c.ano_modelo || '') +
+        '<br>' + c.qtd + ' veículo' + (c.qtd !== 1 ? 's' : '') +
+      '</div>' +
+      '<input type="text" class="fr-modal-input" data-cod="' + c.cod_fipe + '" value="' + inputVal + '" autocomplete="off">' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('fr-modal-overlay').style.display = 'flex';
+  var first = body.querySelector('.fr-modal-input');
+  if (first) { setTimeout(function(){ first.focus(); first.select(); }, 40); }
+}
+
+function closeModal() {
+  document.getElementById('fr-modal-overlay').style.display = 'none';
+}
+
+function saveModal() {
+  var inputs   = document.querySelectorAll('.fr-modal-input');
+  var entradas = [];
+  inputs.forEach(function(inp) {
+    var raw = parseBrl(inp.value);
+    if (raw != null) entradas.push({ cod_fipe: inp.dataset.cod, valor: raw, ref: 'MAI/26' });
+  });
+  if (!entradas.length) { closeModal(); return; }
+
+  var btn = document.getElementById('fr-modal-save');
+  btn.textContent = 'Salvando…'; btn.disabled = true;
+
+  fetch('/api/frota/manual/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entradas: entradas })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      var hoje   = new Date().toLocaleDateString('pt-BR');
+      var codMap = {};
+      entradas.forEach(function(e) { codMap[e.cod_fipe] = e.valor; });
+      VEICULOS.forEach(function(v) {
+        if (v.cod_fipe && codMap[v.cod_fipe] != null) {
+          MANUAL[v.placa] = { valor: codMap[v.cod_fipe], ref: 'MAI/26', atualizado_em: hoje };
+        }
+      });
+      closeModal();
+      recalcKPIs(); renderComp(); sortAndRender(); updateLineChart();
+    } else {
+      alert('Erro ao salvar: ' + (d.erro || 'tente novamente'));
+    }
+    btn.textContent = 'Salvar todos'; btn.disabled = false;
+  })
+  .catch(function() {
+    alert('Erro de rede. Tente novamente.');
+    btn.textContent = 'Salvar todos'; btn.disabled = false;
+  });
+}
+
+document.getElementById('th-fipe-edit').addEventListener('click', openModal);
+document.getElementById('fr-modal-close').addEventListener('click', closeModal);
+document.getElementById('fr-modal-cancel').addEventListener('click', closeModal);
+document.getElementById('fr-modal-save').addEventListener('click', saveModal);
+document.getElementById('fr-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('fr-modal-overlay').style.display !== 'none') closeModal();
+});
+document.getElementById('fr-modal-body').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') saveModal();
+});
+
+/* ── Plate tooltip ── */
+var _tipChart = null;
+
+function showPlateTooltip(e) {
+  var placa = e.currentTarget.dataset.placa;
+  var v = null;
+  for (var i = 0; i < VEICULOS.length; i++) {
+    if (VEICULOS[i].placa === placa) { v = VEICULOS[i]; break; }
+  }
+  if (!v) return;
+
+  /* Build series: only months with values */
+  var labels = [], data = [];
+  MES_KEYS.forEach(function(k, i) {
+    if (v[k] != null) { labels.push(MES_LABELS[i]); data.push(v[k]); }
+  });
+  /* Add MAI/26 manual value if exists */
+  var m = MANUAL[placa];
+  if (m && m.valor != null) { labels.push('MAI/26'); data.push(m.valor); }
+
+  if (labels.length < 2) return;
+
+  var tip = document.getElementById('fr-plate-tooltip');
+  document.getElementById('fr-tip-title').textContent = placa + ' · ' + (v.modelo || '') + (v.ano_modelo ? ' ' + v.ano_modelo : '');
+  tip.style.display = 'block';
+
+  if (_tipChart) { _tipChart.destroy(); _tipChart = null; }
+  var canvas = document.getElementById('fr-tip-canvas');
+  canvas.width = 260; canvas.height = 150;
+
+  var cor = MODELO_COR[v.modelo] || '#2E6BE6';
+  _tipChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data, borderColor: cor,
+        backgroundColor: cor + '20',
+        borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
+        fill: true, tension: 0.3
+      }]
+    },
+    options: {
+      responsive: false, maintainAspectRatio: false,
+      animation: { duration: 0 },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(c){ return 'R$ ' + brl(c.parsed.y, 0); } } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 50, minRotation: 30 } },
+        y: { ticks: { callback: function(v){ return 'R$' + (v/1000).toFixed(0) + 'k'; }, font: { size: 9 } } }
+      }
+    }
+  });
+
+  positionTooltip(e);
+}
+
+function hidePlateTooltip() {
+  document.getElementById('fr-plate-tooltip').style.display = 'none';
+  if (_tipChart) { _tipChart.destroy(); _tipChart = null; }
+}
+
+function positionTooltip(e) {
+  var tip  = document.getElementById('fr-plate-tooltip');
+  var td   = e.currentTarget.closest('td');
+  var rect = td ? td.getBoundingClientRect() : { right: e.clientX, left: e.clientX - 1, top: e.clientY, height: 0 };
+  var w = 300, h = 210;
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var x = rect.right + 10;
+  var y = rect.top + rect.height / 2 - h / 2;
+  if (x + w > vw - 8) x = rect.left - w - 10;
+  if (y < 8) y = 8;
+  if (y + h > vh - 8) y = vh - h - 8;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
 }
 
 /* ── Gráficos ── */
@@ -456,7 +751,6 @@ function buildMonthlyTotals() {
     VEICULOS.forEach(function(v) { if (v[key] != null) { sum += v[key]; any = true; } });
     return any ? sum : null;
   });
-  /* MAI/26 = soma dos valores atuais */
   var mai26 = 0;
   VEICULOS.forEach(function(v) { var a = valorAtual(v); if (a.val != null) mai26 += a.val; });
   return { totals: totals, mai26: mai26 };
@@ -474,18 +768,14 @@ function renderLineChart() {
   var d = buildMonthlyTotals();
   var labels = MES_LABELS.concat(['MAI/26']);
   var data   = d.totals.concat([d.mai26]).map(function(v){ return v != null ? v : undefined; });
-
   _lineChart = new Chart(document.getElementById('fr-chart-line').getContext('2d'), {
     type: 'line',
     data: {
       labels: labels,
       datasets: [{
-        label: 'Valor Total',
-        data: data,
-        borderColor: '#2E6BE6',
-        backgroundColor: 'rgba(46,107,230,.08)',
-        borderWidth: 2,
-        pointRadius: 3, pointHoverRadius: 6,
+        label: 'Valor Total', data: data,
+        borderColor: '#2E6BE6', backgroundColor: 'rgba(46,107,230,.08)',
+        borderWidth: 2, pointRadius: 3, pointHoverRadius: 6,
         fill: true, tension: 0.3, spanGaps: true,
       }]
     },
@@ -534,14 +824,6 @@ function renderDoughnutChart() {
     }
   });
 }
-
-/* ── Sorting ── */
-document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
-  th.addEventListener('click', function() {
-    if (_sortCol === th.dataset.col) { _sortAsc = !_sortAsc; } else { _sortCol = th.dataset.col; _sortAsc = true; }
-    sortAndRender();
-  });
-});
 
 /* ── Init ── */
 recalcKPIs();
