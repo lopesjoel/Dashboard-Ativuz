@@ -1,14 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C flask_ativuz remote -v)",
-      "Bash(rm -f \"C:/Users/anabm/OneDrive/Documentos/aprendendo_claude/.git/HEAD.lock\")",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(git add *)",
-      "Bash(git -C \"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Documentos\\\\New project\" remote add origin https://github.com/karolbmedeiros/let-s-create-together.git)",
-      "Bash(git -C \"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Documentos\\\\New project\" branch -M main)",
-      "Bash(git -C \"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Documentos\\\\New project\" push -u origin main)",
       "Bash(bash -c \"git add -A; git diff --staged --quiet || \\(git commit -m 'chore: auto-commit via Claude Code hook' && git push\\)\")",
       "Bash(powershell *)"
     ]
