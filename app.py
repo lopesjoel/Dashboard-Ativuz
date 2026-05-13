@@ -2634,32 +2634,30 @@ def api_frota_manual():
 
 @app.route("/api/frota/manual/batch", methods=["POST"])
 def api_frota_manual_batch():
-    """Salva valor FIPE para todos os veículos de um ou mais códigos FIPE."""
+    """Salva valor FIPE por combinação (cod_fipe + ano_modelo)."""
     body     = request.get_json(silent=True) or {}
     entradas = body.get("entradas") or []
     if not entradas:
         return jsonify({"ok": False, "erro": "Nenhuma entrada"}), 400
 
     veiculos, _, _ = _ler_frota_dados()
-    cod_map = {}
-    for v in veiculos:
-        cod = v["cod_fipe"]
-        if cod:
-            cod_map.setdefault(cod, []).append(v["placa"])
-
     dados = _frota_ler_manual()
     agora = datetime.now(_BRT).strftime("%d/%m/%Y")
     atualizados = 0
     for entrada in entradas:
-        cod = (entrada.get("cod_fipe") or "").strip()
-        ref = (entrada.get("ref") or "MAI/26").strip()
+        cod      = (entrada.get("cod_fipe")  or "").strip()
+        ano_mod  = (entrada.get("ano_modelo") or "").strip()
+        ref      = (entrada.get("ref")        or "MAI/26").strip()
         try:
             valor = float(str(entrada.get("valor", "")).replace(",", "."))
         except (ValueError, TypeError):
             continue
-        for placa in cod_map.get(cod, []):
-            dados[placa] = {"valor": valor, "ref": ref, "atualizado_em": agora}
-            atualizados += 1
+        for v in veiculos:
+            match_cod = v["cod_fipe"] == cod
+            match_ano = (not ano_mod) or (v["ano_modelo"] == ano_mod)
+            if match_cod and match_ano:
+                dados[v["placa"]] = {"valor": valor, "ref": ref, "atualizado_em": agora}
+                atualizados += 1
 
     _FROTA_MANUAL_JSON.parent.mkdir(parents=True, exist_ok=True)
     _FROTA_MANUAL_JSON.write_text(

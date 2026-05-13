@@ -573,16 +573,36 @@ document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
   });
 });
 
+/* ── Variações únicas (cod_fipe + ano_modelo) derivadas dos veículos ── */
+function buildVariacoes() {
+  var map = {};
+  VEICULOS.forEach(function(v) {
+    if (!v.cod_fipe) return;
+    var key = v.cod_fipe + '|' + (v.ano_modelo || '');
+    if (!map[key]) map[key] = { cod_fipe: v.cod_fipe, ano_modelo: v.ano_modelo || '', modelo: v.modelo || '', qtd: 0 };
+    map[key].qtd++;
+  });
+  return Object.values(map).sort(function(a, b) {
+    if (a.cod_fipe < b.cod_fipe) return -1;
+    if (a.cod_fipe > b.cod_fipe) return 1;
+    if (a.ano_modelo < b.ano_modelo) return -1;
+    if (a.ano_modelo > b.ano_modelo) return 1;
+    return 0;
+  });
+}
+
 /* ── Modal ── */
 function openModal() {
-  var body = document.getElementById('fr-modal-body');
+  var body      = document.getElementById('fr-modal-body');
+  var variacoes = buildVariacoes();
 
-  body.innerHTML = CODIGOS.map(function(c) {
-    /* Representative value: first vehicle with this cod_fipe */
+  body.innerHTML = variacoes.map(function(c) {
+    /* Representative value: first vehicle matching cod_fipe + ano_modelo */
     var rep = null;
     for (var i = 0; i < VEICULOS.length; i++) {
-      if (VEICULOS[i].cod_fipe === c.cod_fipe) {
-        rep = valorAtual(VEICULOS[i]).val;
+      var vi = VEICULOS[i];
+      if (vi.cod_fipe === c.cod_fipe && vi.ano_modelo === c.ano_modelo) {
+        rep = valorAtual(vi).val;
         break;
       }
     }
@@ -592,10 +612,13 @@ function openModal() {
         '<div class="fr-modal-code">' + c.cod_fipe + '</div>' +
       '</div>' +
       '<div class="fr-modal-info">' +
-        '<strong>' + (c.modelo || '') + '</strong> ' + (c.ano_modelo || '') +
+        '<strong>' + c.modelo + '</strong> ' + c.ano_modelo +
         '<br>' + c.qtd + ' veículo' + (c.qtd !== 1 ? 's' : '') +
       '</div>' +
-      '<input type="text" class="fr-modal-input" data-cod="' + c.cod_fipe + '" value="' + inputVal + '" autocomplete="off">' +
+      '<input type="text" class="fr-modal-input"' +
+        ' data-cod="' + c.cod_fipe + '"' +
+        ' data-ano="' + c.ano_modelo + '"' +
+        ' value="' + inputVal + '" autocomplete="off">' +
     '</div>';
   }).join('');
 
@@ -613,7 +636,7 @@ function saveModal() {
   var entradas = [];
   inputs.forEach(function(inp) {
     var raw = parseBrl(inp.value);
-    if (raw != null) entradas.push({ cod_fipe: inp.dataset.cod, valor: raw, ref: 'MAI/26' });
+    if (raw != null) entradas.push({ cod_fipe: inp.dataset.cod, ano_modelo: inp.dataset.ano, valor: raw, ref: 'MAI/26' });
   });
   if (!entradas.length) { closeModal(); return; }
 
@@ -628,12 +651,14 @@ function saveModal() {
   .then(function(r) { return r.json(); })
   .then(function(d) {
     if (d.ok) {
-      var hoje   = new Date().toLocaleDateString('pt-BR');
-      var codMap = {};
-      entradas.forEach(function(e) { codMap[e.cod_fipe] = e.valor; });
+      var hoje = new Date().toLocaleDateString('pt-BR');
+      /* Build lookup: "cod_fipe|ano_modelo" -> valor */
+      var varMap = {};
+      entradas.forEach(function(e) { varMap[e.cod_fipe + '|' + e.ano_modelo] = e.valor; });
       VEICULOS.forEach(function(v) {
-        if (v.cod_fipe && codMap[v.cod_fipe] != null) {
-          MANUAL[v.placa] = { valor: codMap[v.cod_fipe], ref: 'MAI/26', atualizado_em: hoje };
+        var key = (v.cod_fipe || '') + '|' + (v.ano_modelo || '');
+        if (varMap[key] != null) {
+          MANUAL[v.placa] = { valor: varMap[key], ref: 'MAI/26', atualizado_em: hoje };
         }
       });
       closeModal();
