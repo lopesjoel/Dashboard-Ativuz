@@ -452,9 +452,9 @@ function renderComp() {
 }
 
 /* ── Tabela ── */
-var _sortCol    = 'modelo';
+var _sortCol    = null;
 var _sortAsc    = true;
-var _sortByDate = null;
+var _sortByDate = 'asc';
 
 function buildRows() {
   return VEICULOS.map(function(v) {
