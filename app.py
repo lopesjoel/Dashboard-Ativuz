@@ -2490,12 +2490,56 @@ def _fin_total_pago():
 def pagina_capital_investido():
     csv_text, csv_error = _ci_fetch_csv()
     total_pago = _fin_total_pago()
+    try:
+        sb = _supabase()
+        res = sb.table("capital_aportes").select(
+            "data, investidor, descricao, banco_destino, valor"
+        ).order("data").execute()
+        aportes_extra = [
+            {
+                "data":          str(r["data"]),
+                "investidor":    r["investidor"],
+                "descricao":     r.get("descricao") or "",
+                "banco_destino": r.get("banco_destino") or "",
+                "valor":         float(r["valor"]),
+            }
+            for r in (res.data or [])
+        ]
+    except Exception:
+        aportes_extra = []
     return render_template("capital_investido.html",
         active="capital_investido",
         csv_text=csv_text,
         csv_error=csv_error,
         total_pago=total_pago,
+        aportes_extra=aportes_extra,
     )
+
+
+@app.route("/api/capital/aportes", methods=["POST"])
+def api_capital_aportes():
+    body       = request.get_json(silent=True) or {}
+    data       = (body.get("data")       or "").strip()
+    investidor = (body.get("investidor") or "").strip()
+    descricao  = (body.get("descricao")  or "").strip()
+    banco_dest = (body.get("banco_destino") or "").strip()
+    try:
+        valor = float(str(body.get("valor", "")).replace(",", "."))
+    except (ValueError, TypeError):
+        return jsonify({"ok": False, "erro": "Valor inválido"}), 400
+    if not data or not investidor:
+        return jsonify({"ok": False, "erro": "Data e investidor são obrigatórios"}), 400
+    sb = _supabase()
+    if sb is None:
+        return jsonify({"ok": False, "erro": "Supabase não configurado"}), 500
+    sb.table("capital_aportes").insert({
+        "data":          data,
+        "investidor":    investidor,
+        "descricao":     descricao,
+        "banco_destino": banco_dest,
+        "valor":         valor,
+    }).execute()
+    return jsonify({"ok": True, "data": data, "investidor": investidor, "valor": valor})
 
 
 # ── Frota ─────────────────────────────────────────────────────────────────────

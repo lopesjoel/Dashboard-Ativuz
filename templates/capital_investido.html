@@ -149,6 +149,51 @@
 .ci-chart-wrap  { position: relative; height: 260px; }
 .ci-chart-wrap.auto-h { height: auto; }
 
+/* ── Novo aporte form ── */
+.ci-novo-aporte {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 20px; margin-bottom: 28px;
+}
+.ci-novo-aporte-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink-3); margin: 0 0 14px;
+}
+.ci-novo-form {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr 1fr 130px auto;
+  gap: 8px; align-items: end;
+}
+@media (max-width: 900px) {
+  .ci-novo-form { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 500px) {
+  .ci-novo-form { grid-template-columns: 1fr; }
+}
+.ci-novo-form label { display: flex; flex-direction: column; gap: 4px; }
+.ci-novo-form label span {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ink-3);
+}
+.ci-novo-form input {
+  height: 34px; padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg);
+  font-size: 13px; color: var(--ink); outline: none; width: 100%;
+  box-sizing: border-box;
+}
+.ci-novo-form input:focus { border-color: var(--brand-orange, #FF4713); }
+.ci-novo-btn {
+  height: 34px; padding: 0 18px; border-radius: 8px;
+  background: var(--brand-orange, #FF4713); color: #fff;
+  border: none; font-size: 13px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.ci-novo-btn:disabled { opacity: .5; cursor: default; }
+.ci-novo-feedback {
+  font-size: 12px; margin-top: 10px; min-height: 18px;
+}
+.ci-novo-feedback.ok  { color: #16a34a; }
+.ci-novo-feedback.err { color: #dc2626; }
+
 /* ── Transaction table ── */
 .ci-table-wrap {
   background: var(--surface); border: 1px solid var(--line);
@@ -191,6 +236,36 @@
 
 
 <div id="ci-content" style="display:none">
+
+  <div class="ci-novo-aporte">
+    <div class="ci-novo-aporte-title">Novo Aporte</div>
+    <div class="ci-novo-form">
+      <label>
+        <span>Data</span>
+        <input type="date" id="na-data">
+      </label>
+      <label>
+        <span>Investidor</span>
+        <input type="text" id="na-investidor" list="na-investidor-list" autocomplete="off" placeholder="Nome">
+        <datalist id="na-investidor-list"></datalist>
+      </label>
+      <label>
+        <span>Descrição</span>
+        <input type="text" id="na-descricao" placeholder="Opcional">
+      </label>
+      <label>
+        <span>Banco Destino</span>
+        <input type="text" id="na-banco" list="na-banco-list" autocomplete="off" placeholder="Opcional">
+        <datalist id="na-banco-list"></datalist>
+      </label>
+      <label>
+        <span>Valor (R$)</span>
+        <input type="number" id="na-valor" min="0" step="0.01" placeholder="0,00">
+      </label>
+      <button class="ci-novo-btn" id="na-btn" onclick="submitAporte()">Salvar</button>
+    </div>
+    <div class="ci-novo-feedback" id="na-feedback"></div>
+  </div>
 
   <div class="ci-kpis" id="ci-kpis"></div>
 
@@ -275,9 +350,10 @@
 (function () {
 'use strict';
 
-var CSV_TEXT  = {{ csv_text | tojson }};
-var CSV_ERROR = {{ csv_error | tojson }};
-var TOTAL_PAGO = {{ total_pago }};
+var CSV_TEXT      = {{ csv_text | tojson }};
+var CSV_ERROR     = {{ csv_error | tojson }};
+var TOTAL_PAGO    = {{ total_pago }};
+var APORTES_EXTRA = {{ aportes_extra | tojson }};
 var PALETTE   = ['#FF4713','#4A6FA5','#22a06b','#e6a817','#9B59B6','#E74C3C','#1ABC9C','#F39C12'];
 var SELIC     = { 2023: 0.1375, 2024: 0.105, 2025: 0.1475 };
 var TODAY     = new Date();
@@ -460,12 +536,17 @@ function parseCSV(text) {
   return rows;
 }
 
-// ── Parse CSV injetado pelo servidor ─────────────────────────────────────────
+// ── Merge CSV + Supabase rows ────────────────────────────────────────────────
 
-async function fetchData() {
+var _allRows = [];  // current merged dataset
+
+function mergeRows() {
   if (CSV_ERROR) throw new Error(CSV_ERROR);
   if (!CSV_TEXT) throw new Error('Nenhum dado retornado do servidor.');
-  return parseCSV(CSV_TEXT);
+  var csv  = parseCSV(CSV_TEXT);
+  var rows = csv.concat(APORTES_EXTRA);
+  rows.sort(function (a, b) { return a.data.localeCompare(b.data); });
+  return rows;
 }
 
 // ── Data calculations ────────────────────────────────────────────────────────
@@ -658,7 +739,7 @@ function renderBarChart(rows, investors) {
     };
   });
 
-  new Chart(document.getElementById('chart-bar').getContext('2d'), {
+  return new Chart(document.getElementById('chart-bar').getContext('2d'), {
     type: 'bar',
     data: { labels: months.map(monthLabel), datasets: datasets },
     options: {
@@ -689,7 +770,7 @@ function renderHorizChart(investors) {
     });
   });
 
-  new Chart(canvas.getContext('2d'), {
+  return new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels: investors.map(function (inv) {
@@ -731,7 +812,7 @@ function renderLucroChart(rows, kpis) {
   var canvas = document.getElementById('chart-lucro');
   canvas.parentElement.style.height = Math.max(200, labels.length * 54) + 'px';
 
-  new Chart(canvas.getContext('2d'), {
+  return new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels: labels,
@@ -758,25 +839,112 @@ function renderLucroChart(rows, kpis) {
   });
 }
 
+// ── Chart instance management ────────────────────────────────────────────────
+
+var _charts = {};
+
+function destroyCharts() {
+  Object.keys(_charts).forEach(function (k) { if (_charts[k]) _charts[k].destroy(); });
+  _charts = {};
+}
+
+// ── Render all ───────────────────────────────────────────────────────────────
+
+function renderAll(rows) {
+  destroyCharts();
+  var investors = buildInvestors(rows);
+  var kpis      = buildKPIs(rows, investors);
+  renderKPIs(kpis);
+  renderInvestors(investors);
+  _charts.bar   = renderBarChart(rows, investors);
+  _charts.horiz = renderHorizChart(investors);
+  _charts.lucro = renderLucroChart(rows, kpis);
+  renderTable(rows);
+
+  // Populate datalists from current data
+  var invNames  = Array.from(new Set(rows.map(function (r) { return r.investidor; }))).sort();
+  var bankNames = Array.from(new Set(rows.map(function (r) { return r.banco_destino; }).filter(Boolean))).sort();
+  document.getElementById('na-investidor-list').innerHTML =
+    invNames.map(function (n) { return '<option value="' + n + '">'; }).join('');
+  document.getElementById('na-banco-list').innerHTML =
+    bankNames.map(function (n) { return '<option value="' + n + '">'; }).join('');
+}
+
+// ── Form submission ──────────────────────────────────────────────────────────
+
+function submitAporte() {
+  var data       = document.getElementById('na-data').value.trim();
+  var investidor = document.getElementById('na-investidor').value.trim();
+  var descricao  = document.getElementById('na-descricao').value.trim();
+  var banco      = document.getElementById('na-banco').value.trim();
+  var valorRaw   = document.getElementById('na-valor').value.trim();
+  var feedback   = document.getElementById('na-feedback');
+  var btn        = document.getElementById('na-btn');
+
+  feedback.className = 'ci-novo-feedback';
+  feedback.textContent = '';
+
+  if (!data)       { feedback.className += ' err'; feedback.textContent = 'Informe a data.'; return; }
+  if (!investidor) { feedback.className += ' err'; feedback.textContent = 'Informe o investidor.'; return; }
+  var valor = parseFloat(valorRaw);
+  if (isNaN(valor) || valor <= 0) { feedback.className += ' err'; feedback.textContent = 'Informe um valor válido.'; return; }
+
+  btn.disabled = true;
+  feedback.textContent = 'Salvando…';
+
+  fetch('/api/capital/aportes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: data, investidor: investidor, descricao: descricao,
+                           banco_destino: banco, valor: valor }),
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (res) {
+    btn.disabled = false;
+    if (!res.ok) {
+      feedback.className += ' err';
+      feedback.textContent = res.erro || 'Erro ao salvar.';
+      return;
+    }
+    // Add to local dataset and re-render
+    APORTES_EXTRA.push({ data: data, investidor: investidor, descricao: descricao,
+                         banco_destino: banco, valor: valor });
+    _allRows = mergeRows();
+    renderAll(_allRows);
+
+    // Clear form
+    document.getElementById('na-data').value       = '';
+    document.getElementById('na-investidor').value = '';
+    document.getElementById('na-descricao').value  = '';
+    document.getElementById('na-banco').value      = '';
+    document.getElementById('na-valor').value      = '';
+    feedback.className += ' ok';
+    feedback.textContent = 'Aporte salvo com sucesso.';
+    setTimeout(function () { feedback.textContent = ''; }, 3000);
+  })
+  .catch(function (e) {
+    btn.disabled = false;
+    feedback.className += ' err';
+    feedback.textContent = 'Erro de conexão: ' + e.message;
+  });
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
+function main() {
   var loading = document.getElementById('ci-loading');
   var content = document.getElementById('ci-content');
   try {
-    var rows      = await fetchData();
-    var investors = buildInvestors(rows);
-    var kpis      = buildKPIs(rows, investors);
-
-    renderKPIs(kpis);
-    renderInvestors(investors);
-    renderBarChart(rows, investors);
-    renderHorizChart(investors);
-    renderLucroChart(rows, kpis);
-    renderTable(rows);
-
+    _allRows = mergeRows();
+    renderAll(_allRows);
     loading.style.display = 'none';
     content.style.display = '';
+    // Pre-fill today's date
+    var today = new Date();
+    var yyyy  = today.getFullYear();
+    var mm    = String(today.getMonth() + 1).padStart(2, '0');
+    var dd    = String(today.getDate()).padStart(2, '0');
+    document.getElementById('na-data').value = yyyy + '-' + mm + '-' + dd;
   } catch (e) {
     loading.innerHTML = '<div class="ci-error">Erro ao carregar dados: ' + e.message + '</div>';
   }
