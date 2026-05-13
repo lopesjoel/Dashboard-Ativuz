@@ -649,11 +649,25 @@ function openHistorico() {
 
   /* Body */
   document.getElementById('fr-hist-tbody').innerHTML = sorted.map(function(v) {
-    var cells = allMonths.map(function(m) {
-      var val  = mesValor(v, m.key, m.label);
-      var isCurr = m.label === CURR_MES_LABEL;
-      var txt  = val != null ? 'R$ ' + brl(val) : '—';
-      return '<td' + (isCurr ? ' class="curr-col"' : '') + '>' + txt + '</td>';
+    var cells = allMonths.map(function(m, idx) {
+      var val     = mesValor(v, m.key, m.label);
+      var isCurr  = m.label === CURR_MES_LABEL;
+      var valTxt  = val != null ? 'R$ ' + brl(val) : '—';
+      var varHtml = '';
+      if (idx > 0 && val != null) {
+        var prev = mesValor(v, allMonths[idx-1].key, allMonths[idx-1].label);
+        if (prev != null) {
+          var diff   = val - prev;
+          var pct    = prev > 0 ? diff / prev * 100 : null;
+          var arrow  = diff > 0 ? '▲' : diff < 0 ? '▼' : '●';
+          var color  = diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#6b7280';
+          var pctTxt = pct != null ? (diff >= 0 ? '+' : '') + pct.toFixed(1) + '%  ' : '';
+          var difTxt = (diff >= 0 ? '+' : '') + 'R$ ' + brl(Math.abs(diff));
+          varHtml = '<div style="font-size:0.7rem;color:' + color + ';margin-top:2px">' +
+                    arrow + ' ' + pctTxt + difTxt + '</div>';
+        }
+      }
+      return '<td' + (isCurr ? ' class="curr-col"' : '') + '>' + valTxt + varHtml + '</td>';
     }).join('');
     return '<tr>' +
       '<td class="sticky-col">' + (v.placa || '—') + '</td>' +
