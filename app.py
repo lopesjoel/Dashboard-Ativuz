@@ -2500,12 +2500,19 @@ def pagina_capital_investido():
 
 # ── Frota ─────────────────────────────────────────────────────────────────────
 
-_FROTA_XLSX = Path(__file__).resolve().parent / "docx_templates" / "Frota_FIPE.xlsx"
+_FROTA_XLSX = Path(__file__).resolve().parent / "docx_templates" / "Frota_FIPE2.xlsx"
 
 
 def _ler_frota_dados():
+    """
+    Lê Frota_FIPE2.xlsx.
+    Estrutura: row[0]=título, row[1]=cabeçalho, row[2..44]=43 veículos, row[45]=totais.
+    Colunas: [0]MODELO [1]PLACA [2]ANO/MODELO [3]COD_FIPE [4]DT_AQUISICAO
+             [5]VL_AQUISICAO [6..17]JAN/25..DEZ/25 [18]VAR_PCT [19]VAR_RS
+             [20]JAN/26 [21]FEV/26 [22]MAR/26 [23]ABR/26 [24]MAI/26(vazio)
+    """
     if not _FROTA_XLSX.exists():
-        return [], [], "Planilha não encontrada em docx_templates/Frota_FIPE.xlsx."
+        return [], [], "Planilha não encontrada em docx_templates/Frota_FIPE2.xlsx."
     try:
         import openpyxl
         wb = openpyxl.load_workbook(str(_FROTA_XLSX), read_only=True, data_only=True)
@@ -2528,27 +2535,28 @@ def _ler_frota_dados():
 
         ws = wb['Frota_FIPE']
         rows = list(ws.iter_rows(values_only=True))
-        # row[3] = header, row[4..46] = 43 vehicles, row[47] = TOTAIS
+        # row[1]=cabeçalho, row[2..44]=veículos, row[45]=totais
         veiculos = []
-        for row in rows[4:47]:
-            modelo = _s(row[1])
-            placa  = _s(row[2])
+        for row in rows[2:45]:
+            modelo = _s(row[0])
+            placa  = _s(row[1])
             if not modelo or not placa:
                 continue
             veiculos.append({
                 'modelo':       modelo,
                 'placa':        placa,
-                'ano_modelo':   _s(row[3]),
-                'cod_fipe':     _s(row[4]),
-                'dt_aquisicao': _s(row[5]),
-                'vl_aquisicao': _n(row[6]),
-                'jan25':  _n(row[7]),  'fev25': _n(row[8]),  'mar25': _n(row[9]),
-                'abr25':  _n(row[10]), 'mai25': _n(row[11]), 'jun25': _n(row[12]),
-                'jul25':  _n(row[13]), 'ago25': _n(row[14]), 'set25': _n(row[15]),
-                'out25':  _n(row[16]), 'nov25': _n(row[17]), 'dez25': _n(row[18]),
-                'var_pct_2025': _n(row[19]),
-                'var_rs_2025':  _n(row[20]),
-                'jan26':  _n(row[21]), 'fev26': _n(row[22]), 'mar26': _n(row[23]),
+                'ano_modelo':   _s(row[2]),
+                'cod_fipe':     _s(row[3]),
+                'dt_aquisicao': _s(row[4]),
+                'vl_aquisicao': _n(row[5]),
+                'jan25':  _n(row[6]),  'fev25': _n(row[7]),  'mar25': _n(row[8]),
+                'abr25':  _n(row[9]),  'mai25': _n(row[10]), 'jun25': _n(row[11]),
+                'jul25':  _n(row[12]), 'ago25': _n(row[13]), 'set25': _n(row[14]),
+                'out25':  _n(row[15]), 'nov25': _n(row[16]), 'dez25': _n(row[17]),
+                'var_pct_2025': _n(row[18]),
+                'var_rs_2025':  _n(row[19]),
+                'jan26':  _n(row[20]), 'fev26': _n(row[21]), 'mar26': _n(row[22]),
+                'abr26':  _n(row[23]),
             })
 
         ws2 = wb['Codigos_FIPE_Unicos']
@@ -2562,7 +2570,6 @@ def _ler_frota_dados():
                     'modelo':    _s(row[1]),
                     'ano_modelo': _s(row[2]),
                     'qtd':       int(row[3]) if row[3] else 0,
-                    'endpoint':  _s(row[4]),
                 })
 
         wb.close()
@@ -2572,127 +2579,57 @@ def _ler_frota_dados():
         return [], [], str(e)
 
 
+_FROTA_MANUAL_JSON = Path(__file__).resolve().parent / "data" / "fipe_manual.json"
+
+
+def _frota_ler_manual():
+    """Retorna {placa: {valor, ref, atualizado_em}} ou {} se não existir."""
+    try:
+        if _FROTA_MANUAL_JSON.exists():
+            return json.loads(_FROTA_MANUAL_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _frota_salvar_manual(placa, valor, ref):
+    """Persiste um valor manual para a placa."""
+    dados = _frota_ler_manual()
+    dados[placa] = {
+        "valor": valor,
+        "ref":   ref,
+        "atualizado_em": datetime.now(_BRT).strftime("%d/%m/%Y"),
+    }
+    _FROTA_MANUAL_JSON.parent.mkdir(parents=True, exist_ok=True)
+    _FROTA_MANUAL_JSON.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 @app.route("/insights/frota")
 def pagina_frota():
     veiculos, codigos, erro = _ler_frota_dados()
+    manual = _frota_ler_manual()
     return render_template("frota.html",
         active="frota",
         veiculos=veiculos,
         codigos=codigos,
+        manual=manual,
         erro=erro,
     )
 
 
-# ── FIPE API proxy ────────────────────────────────────────────────────────────
-
-_FIPE_BASE = "https://veiculos.fipe.org.br/api/veiculos/"
-_FIPE_HDR  = {
-    "Content-Type": "application/json;charset=UTF-8",
-    "Accept": "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
-    "Referer": "https://veiculos.fipe.org.br/",
-    "Origin":  "https://veiculos.fipe.org.br",
-}
-# Parâmetros internos da FIPE para cada código da frota
-_FIPE_PARAMS = {
-    "005380-5": {"tipo": 1, "marca": 59, "modelo": 6809,  "ano": "2018-5"},
-    "005455-0": {"tipo": 1, "marca": 59, "modelo": 7522,  "ano": "2017-5"},
-    "005490-9": {"tipo": 1, "marca": 59, "modelo": 8323,  "ano": "2022-5"},
-    "005491-7": {"tipo": 1, "marca": 59, "modelo": 8324,  "ano": "2022-5"},
-    "005492-5": {"tipo": 1, "marca": 59, "modelo": 8325,  "ano": "2023-5"},
-    "005493-3": {"tipo": 1, "marca": 59, "modelo": 8326,  "ano": "2021-5"},
-    "025284-0": {"tipo": 1, "marca": 48, "modelo": 8794,  "ano": "2021-5"},
-    "811130-8": {"tipo": 2, "marca": 80, "modelo": 7110,  "ano": "2024-5"},
-    "811139-1": {"tipo": 2, "marca": 80, "modelo": 7525,  "ano": "2024-1"},
-}
-_FIPE_CACHE = {"ts": 0.0, "mes": "", "data": {}}
-_FIPE_CACHE_TTL = 4 * 3600  # 4 horas
-
-
-def _fipe_parse_valor(s):
-    """'R$ 51.672,00' → 51672.0"""
-    if not s:
-        return None
-    c = s.replace("R$", "").strip().replace(".", "").replace(",", ".")
+@app.route("/api/frota/manual", methods=["POST"])
+def api_frota_manual():
+    body  = request.get_json(silent=True) or {}
+    placa = (body.get("placa") or "").strip().upper()
+    ref   = (body.get("ref")   or "").strip()
     try:
-        return float(c)
-    except ValueError:
-        return None
-
-
-def _fipe_buscar_precos():
-    """Consulta FIPE para todos os 9 códigos. Retorna (dict cod→valor, mes_ref, erro)."""
-    import requests as _req
-    try:
-        r0 = _req.post(_FIPE_BASE + "ConsultarTabelaDeReferencia",
-                       headers=_FIPE_HDR, json={}, timeout=12)
-        r0.raise_for_status()
-        tabela   = r0.json()[0]["Codigo"]
-        mes_ref  = r0.json()[0]["Mes"].strip()
-    except Exception as e:
-        return {}, "", f"Erro ao obter tabela FIPE: {e}"
-
-    precos = {}
-    for cod, p in _FIPE_PARAMS.items():
-        try:
-            r = _req.post(
-                _FIPE_BASE + "ConsultarValorComTodosParametros",
-                headers=_FIPE_HDR,
-                json={
-                    "codigoTabelaReferencia": tabela,
-                    "codigoTipoVeiculo":       p["tipo"],
-                    "codigoMarca":             p["marca"],
-                    "codigoModelo":            p["modelo"],
-                    "ano":                     p["ano"],
-                    "codigoTipoCombustivel":   int(p["ano"].split("-")[1]),
-                    "anoModelo":               int(p["ano"].split("-")[0]),
-                    "tipoConsulta":            "tradicional",
-                },
-                timeout=12,
-            )
-            r.raise_for_status()
-            precos[cod] = _fipe_parse_valor(r.json().get("Valor"))
-        except Exception:
-            precos[cod] = None
-
-    return precos, mes_ref, None
-
-
-@app.route("/api/fipe/frota")
-def api_fipe_frota():
-    now = datetime.now().timestamp()
-    cache_age = now - _FIPE_CACHE["ts"]
-
-    if cache_age < _FIPE_CACHE_TTL and _FIPE_CACHE["data"]:
-        return jsonify({
-            "precos":  _FIPE_CACHE["data"],
-            "mes_ref": _FIPE_CACHE["mes"],
-            "cached":  True,
-            "erro":    None,
-        })
-
-    precos, mes_ref, erro = _fipe_buscar_precos()
-
-    if precos:
-        _FIPE_CACHE["ts"]   = now
-        _FIPE_CACHE["data"] = precos
-        _FIPE_CACHE["mes"]  = mes_ref
-
-    # Se falhou mas há cache antigo, devolve o cache com aviso
-    if erro and _FIPE_CACHE["data"]:
-        return jsonify({
-            "precos":  _FIPE_CACHE["data"],
-            "mes_ref": _FIPE_CACHE["mes"],
-            "cached":  True,
-            "erro":    erro,
-        })
-
-    return jsonify({
-        "precos":  precos,
-        "mes_ref": mes_ref,
-        "cached":  False,
-        "erro":    erro,
-    })
+        valor = float(str(body.get("valor", "")).replace(",", "."))
+    except (ValueError, TypeError):
+        return jsonify({"ok": False, "erro": "Valor inválido"}), 400
+    if not placa:
+        return jsonify({"ok": False, "erro": "Placa obrigatória"}), 400
+    _frota_salvar_manual(placa, valor, ref)
+    return jsonify({"ok": True, "placa": placa, "valor": valor, "ref": ref})
 
 
 # ── Checklist ─────────────────────────────────────────────────────────────────

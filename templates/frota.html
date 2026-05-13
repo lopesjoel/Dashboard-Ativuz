@@ -3,33 +3,20 @@
 
 {% block head %}
 <style>
-/* ── Layout ── */
 .fr-wrap { width: 100%; }
 
-/* ── Header ── */
+/* Header */
 .fr-header { margin-bottom: 24px; }
 .fr-header h1 { font-size: 20px; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
 .fr-header p  { font-size: 13px; color: var(--ink-3); margin: 0; }
 
-/* ── Loading ── */
-.fr-loading {
-  display: flex; align-items: center; justify-content: center;
-  padding: 80px 0; gap: 12px; color: var(--ink-3); font-size: 14px;
-}
-.fr-spinner {
-  width: 20px; height: 20px; border: 2px solid var(--line);
-  border-top-color: #FF4713; border-radius: 50%;
-  animation: fr-spin 0.8s linear infinite;
-}
-@keyframes fr-spin { to { transform: rotate(360deg); } }
-
-/* ── Section label ── */
+/* Section label */
 .fr-section {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .06em; color: var(--ink-3); margin: 0 0 12px;
 }
 
-/* ── KPI cards ── */
+/* KPI cards */
 .fr-kpis {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 14px; margin-bottom: 28px;
@@ -49,8 +36,8 @@
 .fr-kpi-icon.orange { background: rgba(255,71,19,.12); color: #FF4713; }
 .fr-kpi-icon.blue   { background: rgba(46,107,230,.12); color: #2E6BE6; }
 .fr-kpi-icon.green  { background: rgba(34,160,107,.12); color: #22a06b; }
-.fr-kpi-icon.amber  { background: rgba(245,158,11,.12); color: #F59E0B; }
 .fr-kpi-icon.red    { background: rgba(229,72,77,.12);  color: #E5484D; }
+.fr-kpi-icon.amber  { background: rgba(245,158,11,.12); color: #F59E0B; }
 
 .fr-kpi-label {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -65,9 +52,8 @@
 .fr-kpi-sub        { font-size: 12px; color: var(--ink-3); margin-top: 5px; }
 .fr-kpi-sub.up     { color: #22a06b; }
 .fr-kpi-sub.down   { color: #E5484D; }
-.fr-kpi-sub.warn   { color: #F59E0B; }
 
-/* ── Composição ── */
+/* Composição */
 .fr-comp {
   display: grid; grid-template-columns: repeat(5, 1fr);
   gap: 12px; margin-bottom: 28px;
@@ -79,18 +65,12 @@
   background: var(--surface); border: 1px solid var(--line);
   border-left-width: 3px; border-radius: 10px; padding: 14px 16px;
 }
-.fr-comp-label {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .05em; margin-bottom: 8px;
-}
-.fr-comp-count {
-  font-size: 24px; font-weight: 700; color: var(--ink);
-  line-height: 1; margin-bottom: 4px;
-}
+.fr-comp-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.fr-comp-count { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 4px; }
 .fr-comp-count span { font-size: 13px; font-weight: 500; color: var(--ink-3); }
 .fr-comp-value { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
-/* ── Table ── */
+/* Table */
 .fr-table-card {
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 12px; overflow-x: auto; margin-bottom: 28px;
@@ -104,23 +84,42 @@
   text-align: left; cursor: pointer; user-select: none;
 }
 .fr-table th.num { text-align: right; }
-.fr-table th.sorted-asc::after  { content: ' ↑'; opacity: .7; }
-.fr-table th.sorted-desc::after { content: ' ↓'; opacity: .7; }
+.fr-table th.sorted-asc::after  { content: ' ↑'; opacity:.7; }
+.fr-table th.sorted-desc::after { content: ' ↓'; opacity:.7; }
 .fr-table td {
-  padding: 8px 12px; border-bottom: 1px solid var(--line);
+  padding: 7px 12px; border-bottom: 1px solid var(--line);
   color: var(--ink-2); white-space: nowrap;
 }
 .fr-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .fr-table tr:last-child td { border-bottom: none; }
 .fr-table tbody tr:nth-child(even) td { background: #f9f9fb; }
 .fr-table tbody tr:hover td { background: #f0f0f5 !important; }
-.fr-table td.fipe-atual { font-weight: 600; color: #22a06b; background: #e8f9f1 !important; }
-.fr-table tbody tr:nth-child(even) td.fipe-atual { background: #ddf6ea !important; }
 .fr-table .up   { color: #22a06b; font-weight: 600; }
 .fr-table .down { color: #E5484D; font-weight: 600; }
-.fr-table .warn { color: #F59E0B; }
 
-/* ── Charts ── */
+/* Editable FIPE cell */
+.fr-fipe-cell { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.fr-fipe-input {
+  width: 110px; text-align: right;
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 8px; font-size: 12px; font-family: inherit;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+  background: var(--surface); outline: none;
+  transition: border-color .15s;
+}
+.fr-fipe-input:focus { border-color: #2E6BE6; box-shadow: 0 0 0 2px rgba(46,107,230,.15); }
+.fr-fipe-input.manual { border-color: #22a06b; background: #f0fdf7; }
+.fr-fipe-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; padding: 2px 5px; border-radius: 4px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.fr-fipe-badge.planilha { background: #f0f0f5; color: var(--ink-3); }
+.fr-fipe-badge.manual   { background: #d1fae5; color: #059669; }
+.fr-fipe-badge.saving   { background: #fef3c7; color: #d97706; }
+.fr-fipe-badge.erro     { background: #fee2e2; color: #dc2626; }
+
+/* Charts */
 .fr-charts {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 16px; margin-bottom: 28px;
@@ -131,12 +130,10 @@
   background: var(--surface); border: 1px solid var(--line);
   border-radius: 12px; padding: 20px;
 }
-.fr-chart-title {
-  font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 16px;
-}
-.fr-chart-wrap { position: relative; height: 260px; }
+.fr-chart-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 16px; }
+.fr-chart-wrap  { position: relative; height: 260px; }
 
-/* ── Error ── */
+/* Error */
 .fr-error {
   background: #fff3f3; border: 1px solid #fca5a5;
   border-radius: 10px; padding: 16px 20px;
@@ -150,189 +147,191 @@
 
   <div class="fr-header">
     <h1>FROTA</h1>
-    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · <span id="fr-mes-ref">Valor atual via API FIPE</span></p>
+    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · ABR/26 (planilha) · MAI/26 editável</p>
   </div>
 
   {% if erro %}
     <div class="fr-error">Erro ao carregar planilha: {{ erro }}</div>
   {% else %}
 
-  <div class="fr-loading" id="fr-loading">
-    <div class="fr-spinner"></div>
-    <span>Buscando valores FIPE atuais...</span>
+  <p class="fr-section">Resumo da Frota</p>
+  <div class="fr-kpis" id="fr-kpis">
+    <div class="fr-kpi">
+      <div class="fr-kpi-icon orange">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+        </svg>
+      </div>
+      <div class="fr-kpi-label">Total de Veículos</div>
+      <div class="fr-kpi-value">{{ veiculos|length }}</div>
+      <div class="fr-kpi-sub">frota ativa</div>
+    </div>
+    <div class="fr-kpi" id="kpi-total">
+      <div class="fr-kpi-icon blue">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="2" y="3" width="20" height="18" rx="2"/>
+          <polyline points="8 17 12 13 16 15 20 9"/>
+        </svg>
+      </div>
+      <div class="fr-kpi-label">Valor Total da Frota</div>
+      <div class="fr-kpi-value" id="kpi-total-val">—</div>
+      <div class="fr-kpi-sub" id="kpi-total-sub">calculando…</div>
+    </div>
+    <div class="fr-kpi" id="kpi-var-mes">
+      <div class="fr-kpi-icon green" id="kpi-var-mes-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+          <polyline points="17 6 23 6 23 12"/>
+        </svg>
+      </div>
+      <div class="fr-kpi-label">Variação vs. ABR/26</div>
+      <div class="fr-kpi-value" id="kpi-var-mes-val">—</div>
+      <div class="fr-kpi-sub">MAI/26 vs ABR/26</div>
+    </div>
+    <div class="fr-kpi" id="kpi-var-aq">
+      <div class="fr-kpi-icon green" id="kpi-var-aq-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div class="fr-kpi-label">Variação vs. Aquisição</div>
+      <div class="fr-kpi-value" id="kpi-var-aq-val">—</div>
+      <div class="fr-kpi-sub" id="kpi-var-aq-sub">—</div>
+    </div>
   </div>
 
-  <div id="fr-content" style="display:none">
+  <p class="fr-section">Composição por Modelo</p>
+  <div class="fr-comp" id="fr-comp"></div>
 
-    <p class="fr-section">Resumo da Frota</p>
-    <div class="fr-kpis" id="fr-kpis"></div>
+  <p class="fr-section">Veículos</p>
+  <div class="fr-table-card">
+    <table class="fr-table" id="fr-table">
+      <thead>
+        <tr>
+          <th data-col="modelo">Modelo</th>
+          <th data-col="placa">Placa</th>
+          <th data-col="ano_modelo">Ano</th>
+          <th data-col="cod_fipe">Cód. FIPE</th>
+          <th data-col="dt_aquisicao">Dt. Aquisição</th>
+          <th data-col="vl_aquisicao" class="num">Vl. Aquisição</th>
+          <th data-col="abr26" class="num">ABR/26 (planilha)</th>
+          <th class="num">MAI/26 (editável)</th>
+          <th data-col="var_mes" class="num">Var. vs ABR/26</th>
+          <th data-col="var_aq" class="num">Var. vs Aquisição</th>
+        </tr>
+      </thead>
+      <tbody id="fr-tbody"></tbody>
+    </table>
+  </div>
 
-    <p class="fr-section">Composição por Modelo</p>
-    <div class="fr-comp" id="fr-comp"></div>
-
-    <p class="fr-section">Veículos</p>
-    <div class="fr-table-card">
-      <table class="fr-table" id="fr-table">
-        <thead>
-          <tr>
-            <th data-col="modelo">Modelo</th>
-            <th data-col="placa">Placa</th>
-            <th data-col="ano_modelo">Ano</th>
-            <th data-col="cod_fipe">Cód. FIPE</th>
-            <th data-col="dt_aquisicao">Dt. Aquisição</th>
-            <th data-col="vl_aquisicao" class="num">Vl. Aquisição</th>
-            <th data-col="mar26" class="num">Últ. Manual (MAR/26)</th>
-            <th data-col="fipe_atual" class="num">FIPE Atual (MAI/26)</th>
-            <th data-col="var_mes" class="num">Var. vs Mês Ant.</th>
-            <th data-col="var_aq" class="num">Var. vs Aquisição</th>
-          </tr>
-        </thead>
-        <tbody id="fr-tbody"></tbody>
-      </table>
+  <p class="fr-section">Evolução da Frota</p>
+  <div class="fr-charts">
+    <div class="fr-chart-card">
+      <div class="fr-chart-title">Valor Total da Frota por Mês</div>
+      <div class="fr-chart-wrap"><canvas id="fr-chart-line"></canvas></div>
     </div>
-
-    <p class="fr-section">Evolução da Frota</p>
-    <div class="fr-charts">
-      <div class="fr-chart-card">
-        <div class="fr-chart-title">Valor Total da Frota por Mês</div>
-        <div class="fr-chart-wrap"><canvas id="fr-chart-line"></canvas></div>
-      </div>
-      <div class="fr-chart-card">
-        <div class="fr-chart-title">Composição por Modelo (qtd. veículos)</div>
-        <div class="fr-chart-wrap"><canvas id="fr-chart-doughnut"></canvas></div>
-      </div>
+    <div class="fr-chart-card">
+      <div class="fr-chart-title">Composição por Modelo (qtd. veículos)</div>
+      <div class="fr-chart-wrap"><canvas id="fr-chart-doughnut"></canvas></div>
     </div>
-
-  </div>{# /fr-content #}
+  </div>
 
   {% endif %}
-</div>{# /fr-wrap #}
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
 (function () {
 'use strict';
 
+/* ── Dados do servidor ── */
 var VEICULOS = {{ veiculos | tojson }};
-var CODIGOS  = {{ codigos | tojson }};
+var MANUAL   = {{ manual   | tojson }};   /* {placa: {valor, ref, atualizado_em}} */
 
-var MODELO_COR = {
-  'GOL':     '#22a06b',
-  'VOYAGE':  '#2E6BE6',
-  'SANDERO': '#7B8499',
-  'START':   '#F59E0B',
-  'BROSS':   '#FF4713',
-};
-
-var MES_KEYS   = ['jan25','fev25','mar25','abr25','mai25','jun25','jul25','ago25','set25','out25','nov25','dez25','jan26','fev26','mar26'];
-var MES_LABELS = ['JAN/25','FEV/25','MAR/25','ABR/25','MAI/25','JUN/25','JUL/25','AGO/25','SET/25','OUT/25','NOV/25','DEZ/25','JAN/26','FEV/26','MAR/26'];
+var MODELO_COR = { GOL:'#22a06b', VOYAGE:'#2E6BE6', SANDERO:'#7B8499', START:'#F59E0B', BROSS:'#FF4713' };
+var MES_KEYS   = ['jan25','fev25','mar25','abr25','mai25','jun25','jul25','ago25','set25','out25','nov25','dez25','jan26','fev26','mar26','abr26'];
+var MES_LABELS = ['JAN/25','FEV/25','MAR/25','ABR/25','MAI/25','JUN/25','JUL/25','AGO/25','SET/25','OUT/25','NOV/25','DEZ/25','JAN/26','FEV/26','MAR/26','ABR/26'];
 
 /* ── Formatters ── */
-
 function brl(v, dec) {
-  if (v == null) return '—';
-  var d = (dec !== undefined) ? dec : 2;
+  if (v == null || isNaN(v)) return '—';
+  var d = dec !== undefined ? dec : 2;
   var neg = v < 0;
   var s = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
-  return neg ? '−' + s : s;
+  return (neg ? '−' : '') + s;
+}
+function brlInput(v) {
+  if (v == null || isNaN(v)) return '';
+  return Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function parseBrl(s) {
+  s = String(s || '').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
+  var v = parseFloat(s);
+  return isNaN(v) ? null : v;
+}
+function varHtml(val, pct) {
+  if (val == null) return '<span>—</span>';
+  var up = val >= 0, sign = up ? '+' : '';
+  var cls = up ? 'up' : 'down';
+  var ps = pct != null ? ' (' + sign + pct.toFixed(1) + '%)' : '';
+  return '<span class="' + cls + '">' + sign + 'R$ ' + brl(val) + ps + '</span>';
 }
 
-/* ── Fetch FIPE via Flask proxy (chama FIPE diretamente, cache 4h) ── */
-
-async function fetchAllFipe() {
-  var res  = await fetch('/api/fipe/frota');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  var json = await res.json();
-
-  if (json.erro && !json.precos) throw new Error(json.erro);
-
-  /* Avisar se resultado é de cache antigo / com erro parcial */
-  if (json.erro) {
-    console.warn('[FIPE] cache antigo —', json.erro);
+/* ── Valor atual de cada veículo: manual se existir, senão abr26 ── */
+function valorAtual(v) {
+  var m = MANUAL[v.placa];
+  if (m && m.valor != null) return { val: m.valor, fonte: 'manual', ref: m.ref || 'editado', em: m.atualizado_em };
+  if (v.abr26 != null)      return { val: v.abr26, fonte: 'planilha', ref: 'ABR/26', em: null };
+  /* fallback para o último mês disponível */
+  var keys = ['mar26','fev26','jan26','dez25'];
+  for (var i = 0; i < keys.length; i++) {
+    if (v[keys[i]] != null) return { val: v[keys[i]], fonte: 'planilha', ref: keys[i].toUpperCase().replace('25','/25').replace('26','/26'), em: null };
   }
-  if (json.mes_ref) {
-    var el = document.getElementById('fr-mes-ref');
-    if (el) el.textContent = 'Referência: ' + json.mes_ref;
-  }
-
-  return json.precos || {};
+  return { val: null, fonte: 'planilha', ref: '—', em: null };
 }
 
-/* ── KPI cards ── */
-
-function renderKPIs(fipeMap) {
-  var totalVeiculos = VEICULOS.length;
-  var totalFrota = 0, totalManual = 0, totalAquisicao = 0;
-  var semApi = 0;
-
-  VEICULOS.forEach(function (v) {
-    var curr = fipeMap[v.cod_fipe];
-    if (curr != null) { totalFrota += curr; } else { semApi++; }
-    if (v.mar26 != null)      totalManual   += v.mar26;
-    if (v.vl_aquisicao != null) totalAquisicao += v.vl_aquisicao;
+/* ── KPIs ── */
+function recalcKPIs() {
+  var totalFipe = 0, totalAbr26 = 0, totalAq = 0;
+  VEICULOS.forEach(function(v) {
+    var a = valorAtual(v);
+    if (a.val != null)     totalFipe  += a.val;
+    if (v.abr26 != null)   totalAbr26 += v.abr26;
+    if (v.vl_aquisicao)    totalAq    += v.vl_aquisicao;
   });
+  var varMes = totalFipe - totalAbr26;
+  var varAq  = totalFipe - totalAq;
+  var varAqP = totalAq > 0 ? varAq / totalAq * 100 : 0;
 
-  var varMes    = totalFrota - totalManual;
-  var varAq     = totalFrota - totalAquisicao;
-  var varAqPct  = totalAquisicao > 0 ? (varAq / totalAquisicao * 100) : 0;
+  document.getElementById('kpi-total-val').textContent = 'R$ ' + brl(totalFipe, 0);
+  document.getElementById('kpi-total-sub').textContent = 'FIPE atual';
 
-  var cards = [
-    {
-      icon: _ico('car'),   cls: 'orange',
-      label: 'Total de Veículos',
-      value: String(totalVeiculos),
-      sub: '43 veículos na frota', subCls: '',
-    },
-    {
-      icon: _ico('chart'), cls: 'blue',
-      label: 'Valor Total da Frota',
-      value: 'R$&nbsp;' + brl(totalFrota, 0),
-      sub: semApi > 0 ? '⚠ ' + semApi + ' código(s) sem API' : 'FIPE atual · MAI/26',
-      subCls: semApi > 0 ? 'warn' : '',
-    },
-    {
-      icon: _ico('trend'), cls: varMes >= 0 ? 'green' : 'red',
-      label: 'Variação vs. Mês Anterior',
-      value: (varMes >= 0 ? '+' : '') + 'R$&nbsp;' + brl(varMes, 0),
-      valCls: varMes >= 0 ? 'up' : 'down',
-      sub: 'MAI/26 (API) vs MAR/26',
-      subCls: varMes >= 0 ? 'up' : 'down',
-    },
-    {
-      icon: _ico('dollar'), cls: varAq >= 0 ? 'green' : 'red',
-      label: 'Variação vs. Aquisição',
-      value: (varAq >= 0 ? '+' : '') + 'R$&nbsp;' + brl(varAq, 0),
-      valCls: varAq >= 0 ? 'up' : 'down',
-      sub: (varAqPct >= 0 ? '+' : '') + varAqPct.toFixed(1) + '% vs. custo total',
-      subCls: varAq >= 0 ? 'up' : 'down',
-    },
-  ];
+  var vMesEl = document.getElementById('kpi-var-mes-val');
+  vMesEl.textContent = (varMes >= 0 ? '+' : '') + 'R$ ' + brl(varMes, 0);
+  vMesEl.className = 'fr-kpi-value ' + (varMes >= 0 ? 'up' : 'down');
+  document.getElementById('kpi-var-mes-icon').className = 'fr-kpi-icon ' + (varMes >= 0 ? 'green' : 'red');
 
-  document.getElementById('fr-kpis').innerHTML = cards.map(function (c) {
-    return '<div class="fr-kpi">' +
-      '<div class="fr-kpi-icon ' + c.cls + '">' + c.icon + '</div>' +
-      '<div class="fr-kpi-label">' + c.label + '</div>' +
-      '<div class="fr-kpi-value' + (c.valCls ? ' ' + c.valCls : '') + '">' + c.value + '</div>' +
-      (c.sub ? '<div class="fr-kpi-sub' + (c.subCls ? ' ' + c.subCls : '') + '">' + c.sub + '</div>' : '') +
-    '</div>';
-  }).join('');
+  var vAqEl = document.getElementById('kpi-var-aq-val');
+  vAqEl.textContent = (varAq >= 0 ? '+' : '') + 'R$ ' + brl(varAq, 0);
+  vAqEl.className = 'fr-kpi-value ' + (varAq >= 0 ? 'up' : 'down');
+  document.getElementById('kpi-var-aq-sub').textContent = (varAqP >= 0 ? '+' : '') + varAqP.toFixed(1) + '% vs. custo total';
+  document.getElementById('kpi-var-aq-icon').className = 'fr-kpi-icon ' + (varAq >= 0 ? 'green' : 'red');
 }
 
-/* ── Composição por Modelo ── */
-
-function renderComp(fipeMap) {
+/* ── Composição ── */
+function renderComp() {
   var grouped = {};
-  VEICULOS.forEach(function (v) {
+  VEICULOS.forEach(function(v) {
+    var a = valorAtual(v);
     if (!grouped[v.modelo]) grouped[v.modelo] = { count: 0, total: 0 };
     grouped[v.modelo].count++;
-    var curr = fipeMap[v.cod_fipe];
-    if (curr != null) grouped[v.modelo].total += curr;
+    if (a.val != null) grouped[v.modelo].total += a.val;
   });
-
-  var order = ['GOL', 'VOYAGE', 'SANDERO', 'START', 'BROSS'];
-  document.getElementById('fr-comp').innerHTML = order.filter(function (m) { return grouped[m]; }).map(function (m) {
-    var g   = grouped[m];
-    var cor = MODELO_COR[m] || '#888';
+  var order = ['GOL','VOYAGE','SANDERO','START','BROSS'];
+  document.getElementById('fr-comp').innerHTML = order.filter(function(m){ return grouped[m]; }).map(function(m) {
+    var g = grouped[m], cor = MODELO_COR[m] || '#888';
     return '<div class="fr-comp-card" style="border-left-color:' + cor + '">' +
       '<div class="fr-comp-label" style="color:' + cor + '">' + m + '</div>' +
       '<div class="fr-comp-count">' + g.count + ' <span>veíc.</span></div>' +
@@ -341,128 +340,164 @@ function renderComp(fipeMap) {
   }).join('');
 }
 
-/* ── Tabela de Veículos ── */
+/* ── Tabela ── */
+var _sortCol = 'modelo', _sortAsc = true;
 
-var _sortCol = 'modelo', _sortAsc = true, _tableData = [];
-
-function buildTableData(fipeMap) {
-  return VEICULOS.map(function (v) {
-    var curr   = fipeMap[v.cod_fipe];
-    var ultimo = v.mar26;
-    var varMes    = (curr != null && ultimo != null) ? curr - ultimo : null;
-    var varMesPct = (varMes != null && ultimo > 0) ? (varMes / ultimo * 100) : null;
-    var varAq     = (curr != null && v.vl_aquisicao != null) ? curr - v.vl_aquisicao : null;
-    var varAqPct  = (varAq != null && v.vl_aquisicao > 0) ? (varAq / v.vl_aquisicao * 100) : null;
-    return {
-      modelo: v.modelo, placa: v.placa, ano_modelo: v.ano_modelo,
-      cod_fipe: v.cod_fipe, dt_aquisicao: v.dt_aquisicao,
-      vl_aquisicao: v.vl_aquisicao, mar26: v.mar26,
-      fipe_atual: curr, api_ok: curr != null,
-      var_mes: varMes, var_mes_pct: varMesPct,
-      var_aq:  varAq,  var_aq_pct:  varAqPct,
-    };
+function buildRows() {
+  return VEICULOS.map(function(v) {
+    var a    = valorAtual(v);
+    var abr  = v.abr26;
+    var varM = (a.val != null && abr != null) ? a.val - abr : null;
+    var varMP = (varM != null && abr > 0) ? varM / abr * 100 : null;
+    var varA = (a.val != null && v.vl_aquisicao) ? a.val - v.vl_aquisicao : null;
+    var varAP = (varA != null && v.vl_aquisicao > 0) ? varA / v.vl_aquisicao * 100 : null;
+    return { v: v, a: a, varM: varM, varMP: varMP, varA: varA, varAP: varAP };
   });
 }
 
-function _varHtml(val, pct) {
-  if (val == null) return '<span>—</span>';
-  var up   = val >= 0;
-  var cls  = up ? 'up' : 'down';
-  var sign = up ? '+' : '';
-  var pctStr = pct != null ? ' (' + sign + pct.toFixed(1) + '%)' : '';
-  return '<span class="' + cls + '">' + sign + 'R$ ' + brl(val) + pctStr + '</span>';
-}
-
-function sortTable(col) {
-  if (_sortCol === col) { _sortAsc = !_sortAsc; } else { _sortCol = col; _sortAsc = true; }
-  renderTableBody();
-}
-
-function renderTableBody() {
-  var data = _tableData.slice().sort(function (a, b) {
-    var va = a[_sortCol], vb = b[_sortCol];
+function sortAndRender() {
+  var rows = buildRows().sort(function(x, y) {
+    var col = _sortCol;
+    var va = col === 'var_mes' ? x.varM : col === 'var_aq' ? x.varA : (x.v[col] != null ? x.v[col] : (x.a != null && col === 'fipe_atual' ? x.a.val : null));
+    var vb = col === 'var_mes' ? y.varM : col === 'var_aq' ? y.varA : (y.v[col] != null ? y.v[col] : (y.a != null && col === 'fipe_atual' ? y.a.val : null));
     if (va == null && vb == null) return 0;
-    if (va == null) return 1;
-    if (vb == null) return -1;
-    if (typeof va === 'string') va = va.toLowerCase();
-    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va == null) return 1; if (vb == null) return -1;
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
     return _sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va > vb ? -1 : va < vb ? 1 : 0);
   });
 
-  document.querySelectorAll('.fr-table th[data-col]').forEach(function (th) {
-    th.classList.remove('sorted-asc', 'sorted-desc');
+  document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
+    th.classList.remove('sorted-asc','sorted-desc');
     if (th.dataset.col === _sortCol) th.classList.add(_sortAsc ? 'sorted-asc' : 'sorted-desc');
   });
 
-  document.getElementById('fr-tbody').innerHTML = data.map(function (v) {
-    var fipeHtml;
-    if (v.api_ok) {
-      fipeHtml = '<td class="num fipe-atual">R$ ' + brl(v.fipe_atual) + '</td>';
-    } else {
-      var fb = v.mar26 != null ? 'R$ ' + brl(v.mar26) : '—';
-      fipeHtml = '<td class="num fipe-atual warn" title="API indisponível — exibindo MAR/26">' + fb + ' <span>⚠</span></td>';
-    }
-    return '<tr>' +
-      '<td>' + (v.modelo || '—') + '</td>' +
-      '<td>' + (v.placa  || '—') + '</td>' +
-      '<td>' + (v.ano_modelo || '—') + '</td>' +
-      '<td>' + (v.cod_fipe  || '—') + '</td>' +
-      '<td>' + (v.dt_aquisicao || '—') + '</td>' +
-      '<td class="num">' + (v.vl_aquisicao != null ? 'R$ ' + brl(v.vl_aquisicao) : '—') + '</td>' +
-      '<td class="num">' + (v.mar26 != null ? 'R$ ' + brl(v.mar26) : '—') + '</td>' +
-      fipeHtml +
-      '<td class="num">' + _varHtml(v.var_mes, v.var_mes_pct) + '</td>' +
-      '<td class="num">' + _varHtml(v.var_aq,  v.var_aq_pct)  + '</td>' +
+  document.getElementById('fr-tbody').innerHTML = rows.map(function(r) {
+    var v = r.v, a = r.a;
+    var badgeCls  = a.fonte === 'manual' ? 'manual' : 'planilha';
+    var badgeTxt  = a.fonte === 'manual' ? (a.em ? a.em : 'manual') : a.ref;
+    var inputVal  = a.val != null ? brlInput(a.val) : '';
+    var inputCls  = a.fonte === 'manual' ? 'fr-fipe-input manual' : 'fr-fipe-input';
+    return '<tr data-placa="' + v.placa + '">' +
+      '<td>' + (v.modelo||'—') + '</td>' +
+      '<td>' + (v.placa||'—') + '</td>' +
+      '<td>' + (v.ano_modelo||'—') + '</td>' +
+      '<td>' + (v.cod_fipe||'—') + '</td>' +
+      '<td>' + (v.dt_aquisicao||'—') + '</td>' +
+      '<td class="num">' + (v.vl_aquisicao != null ? 'R$ ' + brl(v.vl_aquisicao) : '—') + '</td>' +
+      '<td class="num">' + (v.abr26 != null ? 'R$ ' + brl(v.abr26) : '—') + '</td>' +
+      '<td class="num">' +
+        '<div class="fr-fipe-cell">' +
+          '<span class="fr-fipe-badge ' + badgeCls + '" data-badge>' + badgeTxt + '</span>' +
+          '<input type="text" class="' + inputCls + '" data-input value="' + inputVal + '" placeholder="0,00" autocomplete="off">' +
+        '</div>' +
+      '</td>' +
+      '<td class="num">' + varHtml(r.varM, r.varMP) + '</td>' +
+      '<td class="num">' + varHtml(r.varA, r.varAP) + '</td>' +
     '</tr>';
   }).join('');
+
+  /* Bind editable inputs */
+  document.querySelectorAll('#fr-tbody tr').forEach(function(tr) {
+    var placa = tr.dataset.placa;
+    var inp   = tr.querySelector('[data-input]');
+    var badge = tr.querySelector('[data-badge]');
+    if (!inp || !placa) return;
+
+    inp.addEventListener('focus', function() { inp.select(); });
+
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { inp.blur(); }
+      if (e.key === 'Escape') {
+        var a = valorAtual(VEICULOS.find(function(x){ return x.placa === placa; }) || {});
+        inp.value = a.val != null ? brlInput(a.val) : '';
+        inp.blur();
+      }
+    });
+
+    inp.addEventListener('blur', function() {
+      var raw = parseBrl(inp.value);
+      if (raw == null) { inp.value = ''; return; }
+      inp.value = brlInput(raw);
+
+      var prev = MANUAL[placa] ? MANUAL[placa].valor : null;
+      if (prev === raw) return; /* sem mudança */
+
+      badge.className = 'fr-fipe-badge saving'; badge.textContent = 'salvando…';
+
+      fetch('/api/frota/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placa: placa, valor: raw, ref: 'MAI/26' })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.ok) {
+          MANUAL[placa] = { valor: raw, ref: 'MAI/26', atualizado_em: new Date().toLocaleDateString('pt-BR') };
+          inp.classList.add('manual');
+          badge.className = 'fr-fipe-badge manual'; badge.textContent = 'MAI/26';
+          recalcKPIs(); renderComp(); updateLineChart();
+        } else {
+          badge.className = 'fr-fipe-badge erro'; badge.textContent = 'erro';
+        }
+      })
+      .catch(function() {
+        badge.className = 'fr-fipe-badge erro'; badge.textContent = 'erro';
+      });
+    });
+  });
 }
 
 /* ── Gráficos ── */
+var _lineChart = null;
 
-function renderLineChart(fipeMap) {
-  var totals = MES_KEYS.map(function (key) {
-    var sum = 0, hasAny = false;
-    VEICULOS.forEach(function (v) { if (v[key] != null) { sum += v[key]; hasAny = true; } });
-    return hasAny ? sum : null;
+function buildMonthlyTotals() {
+  var totals = MES_KEYS.map(function(key) {
+    var sum = 0, any = false;
+    VEICULOS.forEach(function(v) { if (v[key] != null) { sum += v[key]; any = true; } });
+    return any ? sum : null;
   });
+  /* MAI/26 = soma dos valores atuais */
+  var mai26 = 0;
+  VEICULOS.forEach(function(v) { var a = valorAtual(v); if (a.val != null) mai26 += a.val; });
+  return { totals: totals, mai26: mai26 };
+}
 
-  var apiTotal = 0;
-  VEICULOS.forEach(function (v) { var c = fipeMap[v.cod_fipe]; if (c) apiTotal += c; });
+function updateLineChart() {
+  if (!_lineChart) return;
+  var d = buildMonthlyTotals();
+  var all = d.totals.concat([d.mai26]);
+  _lineChart.data.datasets[0].data = all.map(function(v){ return v != null ? v : undefined; });
+  _lineChart.update();
+}
 
-  var labels   = MES_LABELS.concat(['MAI/26']);
-  var chartVals = totals.concat([apiTotal]).map(function (v) { return v != null ? v : undefined; });
+function renderLineChart() {
+  var d = buildMonthlyTotals();
+  var labels = MES_LABELS.concat(['MAI/26']);
+  var data   = d.totals.concat([d.mai26]).map(function(v){ return v != null ? v : undefined; });
 
-  new Chart(document.getElementById('fr-chart-line').getContext('2d'), {
+  _lineChart = new Chart(document.getElementById('fr-chart-line').getContext('2d'), {
     type: 'line',
     data: {
       labels: labels,
       datasets: [{
         label: 'Valor Total',
-        data: chartVals,
+        data: data,
         borderColor: '#2E6BE6',
         backgroundColor: 'rgba(46,107,230,.08)',
         borderWidth: 2,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.3,
-        spanGaps: true,
+        pointRadius: 3, pointHoverRadius: 6,
+        fill: true, tension: 0.3, spanGaps: true,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: function (c) { return 'R$ ' + brl(c.parsed.y, 0); } } }
+        tooltip: { callbacks: { label: function(c){ return 'R$ ' + brl(c.parsed.y, 0); } } }
       },
       scales: {
         x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
-        y: {
-          ticks: {
-            callback: function (v) { return 'R$ ' + (v / 1e6).toFixed(1) + 'M'; },
-            font: { size: 10 }
-          }
-        }
+        y: { ticks: { callback: function(v){ return 'R$ ' + (v/1e6).toFixed(1) + 'M'; }, font: { size: 10 } } }
       }
     }
   });
@@ -470,97 +505,50 @@ function renderLineChart(fipeMap) {
 
 function renderDoughnutChart() {
   var grouped = {};
-  VEICULOS.forEach(function (v) { grouped[v.modelo] = (grouped[v.modelo] || 0) + 1; });
-
+  VEICULOS.forEach(function(v) { grouped[v.modelo] = (grouped[v.modelo]||0) + 1; });
   var order  = ['GOL','VOYAGE','SANDERO','START','BROSS'];
   var labels = [], counts = [], colors = [];
-  order.forEach(function (m) {
+  order.forEach(function(m) {
     if (!grouped[m]) return;
     labels.push(m + ' (' + grouped[m] + ')');
     counts.push(grouped[m]);
     colors.push(MODELO_COR[m] || '#888');
   });
-
   new Chart(document.getElementById('fr-chart-doughnut').getContext('2d'), {
     type: 'doughnut',
     data: {
       labels: labels,
-      datasets: [{
-        data: counts,
-        backgroundColor: colors.map(function (c) { return c + 'cc'; }),
-        borderColor: colors,
-        borderWidth: 2,
-        hoverOffset: 8,
-      }]
+      datasets: [{ data: counts,
+        backgroundColor: colors.map(function(c){ return c + 'cc'; }),
+        borderColor: colors, borderWidth: 2, hoverOffset: 8 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { font: { size: 11 }, padding: 14, usePointStyle: true }
-        },
-        tooltip: {
-          callbacks: {
-            label: function (c) {
-              var tot = c.dataset.data.reduce(function (a, b) { return a + b; }, 0);
-              return c.label + ' — ' + (c.parsed / tot * 100).toFixed(0) + '%';
-            }
-          }
-        }
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 14, usePointStyle: true } },
+        tooltip: { callbacks: { label: function(c){
+          var tot = c.dataset.data.reduce(function(a,b){ return a+b; }, 0);
+          return c.label + ' — ' + (c.parsed/tot*100).toFixed(0) + '%';
+        }}}
       }
     }
   });
 }
 
-/* ── Inline SVG icons ── */
+/* ── Sorting ── */
+document.querySelectorAll('.fr-table th[data-col]').forEach(function(th) {
+  th.addEventListener('click', function() {
+    if (_sortCol === th.dataset.col) { _sortAsc = !_sortAsc; } else { _sortCol = th.dataset.col; _sortAsc = true; }
+    sortAndRender();
+  });
+});
 
-function _ico(name) {
-  var s = { 'stroke-width': '2', fill: 'none', stroke: 'currentColor' };
-  var a = 'width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"';
-  switch (name) {
-    case 'car':
-      return '<svg ' + a + '><path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>';
-    case 'chart':
-      return '<svg ' + a + '><rect x="2" y="3" width="20" height="18" rx="2"/><polyline points="8 17 12 13 16 15 20 9"/></svg>';
-    case 'trend':
-      return '<svg ' + a + '><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
-    case 'dollar':
-      return '<svg ' + a + '><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-    default:
-      return '';
-  }
-}
-
-/* ── Main ── */
-
-async function main() {
-  var loading = document.getElementById('fr-loading');
-  var content = document.getElementById('fr-content');
-
-  try {
-    var fipeMap = await fetchAllFipe();
-
-    _tableData = buildTableData(fipeMap);
-
-    renderKPIs(fipeMap);
-    renderComp(fipeMap);
-    renderTableBody();
-    renderLineChart(fipeMap);
-    renderDoughnutChart();
-
-    document.querySelectorAll('.fr-table th[data-col]').forEach(function (th) {
-      th.addEventListener('click', function () { sortTable(th.dataset.col); });
-    });
-
-    loading.style.display = 'none';
-    content.style.display = '';
-  } catch (e) {
-    loading.innerHTML = '<div class="fr-error">Erro ao buscar dados da API: ' + (e.message || e) + '</div>';
-  }
-}
-
-main();
+/* ── Init ── */
+recalcKPIs();
+renderComp();
+sortAndRender();
+renderLineChart();
+renderDoughnutChart();
 
 })();
 </script>
