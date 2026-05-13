@@ -150,7 +150,7 @@
 
   <div class="fr-header">
     <h1>FROTA</h1>
-    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · Valor atual via BrasilAPI</p>
+    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · <span id="fr-mes-ref">Valor atual via API FIPE</span></p>
   </div>
 
   {% if erro %}
@@ -237,36 +237,25 @@ function brl(v, dec) {
   return neg ? '−' + s : s;
 }
 
-function parseApiVal(str) {
-  if (!str) return null;
-  var cleaned = String(str).replace(/[^0-9,.-]/g, '');
-  if (/,\d{1,2}$/.test(cleaned)) {
-    return parseFloat(cleaned.replace(/\./g, '').replace(',', '.'));
-  }
-  return parseFloat(cleaned.replace(/,/g, ''));
-}
-
-/* ── BrasilAPI fetch ── */
-
-async function fetchFipeCode(cod) {
-  try {
-    var res  = await fetch('https://brasilapi.com.br/api/fipe/preco/v1/' + encodeURIComponent(cod));
-    if (!res.ok) return null;
-    var data = await res.json();
-    if (!Array.isArray(data) || !data.length) return null;
-    return parseApiVal(data[0].valor);
-  } catch (_) {
-    return null;
-  }
-}
+/* ── Fetch FIPE via Flask proxy (chama FIPE diretamente, cache 4h) ── */
 
 async function fetchAllFipe() {
-  var map = {};
-  var promises = CODIGOS.map(function (c) {
-    return fetchFipeCode(c.cod_fipe).then(function (v) { map[c.cod_fipe] = v; });
-  });
-  await Promise.all(promises);
-  return map;
+  var res  = await fetch('/api/fipe/frota');
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var json = await res.json();
+
+  if (json.erro && !json.precos) throw new Error(json.erro);
+
+  /* Avisar se resultado é de cache antigo / com erro parcial */
+  if (json.erro) {
+    console.warn('[FIPE] cache antigo —', json.erro);
+  }
+  if (json.mes_ref) {
+    var el = document.getElementById('fr-mes-ref');
+    if (el) el.textContent = 'Referência: ' + json.mes_ref;
+  }
+
+  return json.precos || {};
 }
 
 /* ── KPI cards ── */

@@ -2583,6 +2583,118 @@ def pagina_frota():
     )
 
 
+# ── FIPE API proxy ────────────────────────────────────────────────────────────
+
+_FIPE_BASE = "https://veiculos.fipe.org.br/api/veiculos/"
+_FIPE_HDR  = {
+    "Content-Type": "application/json;charset=UTF-8",
+    "Accept": "application/json, text/plain, */*",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
+    "Referer": "https://veiculos.fipe.org.br/",
+    "Origin":  "https://veiculos.fipe.org.br",
+}
+# Parâmetros internos da FIPE para cada código da frota
+_FIPE_PARAMS = {
+    "005380-5": {"tipo": 1, "marca": 59, "modelo": 6809,  "ano": "2018-5"},
+    "005455-0": {"tipo": 1, "marca": 59, "modelo": 7522,  "ano": "2017-5"},
+    "005490-9": {"tipo": 1, "marca": 59, "modelo": 8323,  "ano": "2022-5"},
+    "005491-7": {"tipo": 1, "marca": 59, "modelo": 8324,  "ano": "2022-5"},
+    "005492-5": {"tipo": 1, "marca": 59, "modelo": 8325,  "ano": "2023-5"},
+    "005493-3": {"tipo": 1, "marca": 59, "modelo": 8326,  "ano": "2021-5"},
+    "025284-0": {"tipo": 1, "marca": 48, "modelo": 8794,  "ano": "2021-5"},
+    "811130-8": {"tipo": 2, "marca": 80, "modelo": 7110,  "ano": "2024-5"},
+    "811139-1": {"tipo": 2, "marca": 80, "modelo": 7525,  "ano": "2024-1"},
+}
+_FIPE_CACHE = {"ts": 0.0, "mes": "", "data": {}}
+_FIPE_CACHE_TTL = 4 * 3600  # 4 horas
+
+
+def _fipe_parse_valor(s):
+    """'R$ 51.672,00' → 51672.0"""
+    if not s:
+        return None
+    c = s.replace("R$", "").strip().replace(".", "").replace(",", ".")
+    try:
+        return float(c)
+    except ValueError:
+        return None
+
+
+def _fipe_buscar_precos():
+    """Consulta FIPE para todos os 9 códigos. Retorna (dict cod→valor, mes_ref, erro)."""
+    import requests as _req
+    try:
+        r0 = _req.post(_FIPE_BASE + "ConsultarTabelaDeReferencia",
+                       headers=_FIPE_HDR, json={}, timeout=12)
+        r0.raise_for_status()
+        tabela   = r0.json()[0]["Codigo"]
+        mes_ref  = r0.json()[0]["Mes"].strip()
+    except Exception as e:
+        return {}, "", f"Erro ao obter tabela FIPE: {e}"
+
+    precos = {}
+    for cod, p in _FIPE_PARAMS.items():
+        try:
+            r = _req.post(
+                _FIPE_BASE + "ConsultarValorComTodosParametros",
+                headers=_FIPE_HDR,
+                json={
+                    "codigoTabelaReferencia": tabela,
+                    "codigoTipoVeiculo":       p["tipo"],
+                    "codigoMarca":             p["marca"],
+                    "codigoModelo":            p["modelo"],
+                    "ano":                     p["ano"],
+                    "codigoTipoCombustivel":   int(p["ano"].split("-")[1]),
+                    "anoModelo":               int(p["ano"].split("-")[0]),
+                    "tipoConsulta":            "tradicional",
+                },
+                timeout=12,
+            )
+            r.raise_for_status()
+            precos[cod] = _fipe_parse_valor(r.json().get("Valor"))
+        except Exception:
+            precos[cod] = None
+
+    return precos, mes_ref, None
+
+
+@app.route("/api/fipe/frota")
+def api_fipe_frota():
+    now = datetime.now().timestamp()
+    cache_age = now - _FIPE_CACHE["ts"]
+
+    if cache_age < _FIPE_CACHE_TTL and _FIPE_CACHE["data"]:
+        return jsonify({
+            "precos":  _FIPE_CACHE["data"],
+            "mes_ref": _FIPE_CACHE["mes"],
+            "cached":  True,
+            "erro":    None,
+        })
+
+    precos, mes_ref, erro = _fipe_buscar_precos()
+
+    if precos:
+        _FIPE_CACHE["ts"]   = now
+        _FIPE_CACHE["data"] = precos
+        _FIPE_CACHE["mes"]  = mes_ref
+
+    # Se falhou mas há cache antigo, devolve o cache com aviso
+    if erro and _FIPE_CACHE["data"]:
+        return jsonify({
+            "precos":  _FIPE_CACHE["data"],
+            "mes_ref": _FIPE_CACHE["mes"],
+            "cached":  True,
+            "erro":    erro,
+        })
+
+    return jsonify({
+        "precos":  precos,
+        "mes_ref": mes_ref,
+        "cached":  False,
+        "erro":    erro,
+    })
+
+
 # ── Checklist ─────────────────────────────────────────────────────────────────
 
 def _veiculos_xlsx_path():
