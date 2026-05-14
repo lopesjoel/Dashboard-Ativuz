@@ -439,6 +439,50 @@ def dashboard():
             total_docs = rd.count or 0
         except Exception:
             pass
+
+    # ── Frota summary ──────────────────────────────────────
+    frota_total = 0
+    frota_valor_fipe = None
+    try:
+        veiculos_frota, _, _ = _ler_frota_dados()
+        curr_key, _, _, _ = _frota_mes_atual()
+        frota_total = len(veiculos_frota)
+        vals = [v.get(curr_key) for v in veiculos_frota if v.get(curr_key)]
+        if vals:
+            frota_valor_fipe = sum(vals)
+    except Exception:
+        pass
+
+    # ── Checklist: docs incompletas ─────────────────────────
+    ck_pendentes_total = 0
+    ck_pendentes_placas = []
+    try:
+        veiculos_ck, _ = _ler_veiculos()
+        badge_data_ck = {}
+        if sb:
+            contratos_res = sb.table("checklist_contratos").select("id, contrato").execute()
+            if contratos_res.data:
+                ids_map = {r["id"]: r["contrato"] for r in contratos_res.data}
+                itens_res = sb.table("checklist_itens").select("contrato_id, marcado").execute()
+                for item in (itens_res.data or []):
+                    cid  = item["contrato_id"]
+                    cnum = ids_map.get(cid)
+                    if cnum:
+                        if cnum not in badge_data_ck:
+                            badge_data_ck[cnum] = {"total": 0, "marcados": 0}
+                        badge_data_ck[cnum]["total"] += 1
+                        if item["marcado"]:
+                            badge_data_ck[cnum]["marcados"] += 1
+        for v in veiculos_ck:
+            if not v.get("contrato"):
+                continue
+            bd = badge_data_ck.get(v["contrato"])
+            if bd is None or (bd["total"] > 0 and bd["marcados"] < bd["total"]):
+                ck_pendentes_placas.append(v["placa"])
+        ck_pendentes_total = len(ck_pendentes_placas)
+    except Exception:
+        pass
+
     inad = _inad_summary()
     return render_template(
         "dashboard.html",
@@ -449,6 +493,10 @@ def dashboard():
         valor_mensal=valor_mensal,
         contratos=contratos,
         inad=inad,
+        frota_total=frota_total,
+        frota_valor_fipe=frota_valor_fipe,
+        ck_pendentes_total=ck_pendentes_total,
+        ck_pendentes_placas=ck_pendentes_placas,
     )
 
 

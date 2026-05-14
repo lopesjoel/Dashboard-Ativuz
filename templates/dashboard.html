@@ -4,98 +4,113 @@
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  .dash-2col {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: var(--d-gap);
-  }
-  .dash-chart-wrap { height: 210px; position: relative; }
 
-  .ov-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 16px;
-  }
-  .ov-cell {
-    text-align: center;
-    padding: 14px 8px;
-  }
-  .ov-cell + .ov-cell { border-left: 1px solid var(--line); }
-  .ov-val { font-size: 1.6rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
-  .ov-lbl { font-size: 11.5px; color: var(--ink-3); margin-top: 4px; }
-
-  .progress-list { display: flex; flex-direction: column; gap: 14px; }
-  .progress-row { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; }
-  .progress-name { font-weight: 500; color: var(--ink-2); }
-  .progress-val  { color: var(--ink-3); font-variant-numeric: tabular-nums; }
-
-  /* Recent contracts table */
-  .dash-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .dash-table thead th {
-    text-align: left;
-    padding: 10px 14px;
-    font-size: 10.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--ink-3);
-    background: var(--surface-2);
-    border-bottom: 1px solid var(--line);
-  }
-  .dash-table tbody td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--line);
-    color: var(--ink);
-    vertical-align: middle;
-  }
-  .dash-table tbody tr:last-child td { border-bottom: none; }
-  .dash-table tbody tr:hover td { background: var(--surface-2); }
-
-  .badge-placa {
-    background: var(--brand-ink);
-    color: #fff;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    padding: 3px 7px;
-    border-radius: 5px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Section divider */
-  .section-divider {
+  /* ── Seção título ── */
+  .dash-section {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 8px 0 4px;
+    margin: 24px 0 12px;
   }
-  .section-divider-line {
-    flex: 1;
-    height: 1px;
-    background: var(--line);
+  .dash-section-line { flex: 1; height: 1px; background: var(--line); }
+  .dash-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--ink-3); white-space: nowrap;
   }
-  .section-divider-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--ink-3);
-    white-space: nowrap;
-  }
+  .dash-section-action { font-size: 11.5px; }
 
-  /* Inadimplência etapa badges */
+  /* ── Grid 4 colunas ── */
+  .dash-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 4px;
+  }
+  @media (max-width: 1000px) { .dash-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px)  { .dash-grid-4 { grid-template-columns: 1fr 1fr; } }
+
+  /* ── KPI card ── */
+  .d-kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: box-shadow .15s;
+  }
+  .d-kpi:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+  .d-kpi-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+  .d-kpi-icon.orange  { background: rgba(255,71,19,.12); color: #FF4713; }
+  .d-kpi-icon.success { background: rgba(34,160,107,.12); color: #22a06b; }
+  .d-kpi-icon.info    { background: rgba(46,107,230,.12); color: #2E6BE6; }
+  .d-kpi-icon.warning { background: rgba(245,158,11,.12); color: #F59E0B; }
+  .d-kpi-icon.danger  { background: rgba(229,72,77,.12);  color: #E5484D; }
+  .d-kpi-icon.neutral { background: var(--surface-2); color: var(--ink-3); }
+  .d-kpi-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--ink-3);
+  }
+  .d-kpi-value {
+    font-size: 1.55rem; font-weight: 700; color: var(--ink);
+    line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .d-kpi-value.sm { font-size: 1.2rem; }
+  .d-kpi-value.danger { color: var(--danger, #E5484D); }
+  .d-kpi-sub { font-size: 11.5px; color: var(--ink-3); }
+
+  /* ── Checklist KPI com tooltip ── */
+  .d-kpi-tooltip-wrap { position: relative; display: inline-block; }
+  .d-kpi-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 11.5px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    white-space: nowrap;
+    z-index: 50;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    pointer-events: none;
+    max-width: 260px;
+    white-space: normal;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .d-kpi-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+  }
+  .d-kpi-tooltip-wrap:hover .d-kpi-tooltip { display: block; }
+
+  /* ── Inadimplência section ── */
+  .inad-2col {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 1050px) { .inad-2col { grid-template-columns: 1fr; } }
+  .dash-chart-wrap { height: 200px; position: relative; }
+
+  /* Etapa badges */
   .badge-etapa {
-    font-size: 10.5px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 5px;
-    display: inline-block;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: .04em;
+    font-size: 10.5px; font-weight: 700; padding: 3px 8px;
+    border-radius: 5px; display: inline-block;
+    font-variant-numeric: tabular-nums; letter-spacing: .04em;
   }
   .badge-etapa-d0  { background: #FFF3CD; color: #7A5900; }
   .badge-etapa-d1  { background: #FFE8C4; color: #7A3E00; }
@@ -107,8 +122,66 @@
   .badge-etapa-d10 { background: #E8400A; color: #fff; }
   .badge-etapa-d15 { background: #8B1A00; color: #fff; }
 
-  @media (max-width: 1100px) { .dash-2col { grid-template-columns: 1fr; } }
-  @media (max-width: 700px)  { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+  /* Tabela inadimplência */
+  .dash-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .dash-table thead th {
+    text-align: left; padding: 10px 14px;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--ink-3);
+    background: var(--surface-2); border-bottom: 1px solid var(--line);
+  }
+  .dash-table tbody td {
+    padding: 11px 14px; border-bottom: 1px solid var(--line);
+    color: var(--ink); vertical-align: middle;
+  }
+  .dash-table tbody tr:last-child td { border-bottom: none; }
+  .dash-table tbody tr:hover td { background: var(--surface-2); }
+  .badge-placa {
+    background: var(--brand-ink); color: #fff;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+    padding: 3px 7px; border-radius: 5px; font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Ações rápidas ── */
+  .dash-acoes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  @media (max-width: 900px)  { .dash-acoes { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px)  { .dash-acoes { grid-template-columns: 1fr 1fr; } }
+
+  .dash-acao {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 18px 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; text-decoration: none;
+    transition: box-shadow .15s, border-color .15s, transform .15s;
+    cursor: pointer;
+  }
+  .dash-acao:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    border-color: var(--brand-orange, #FF4713);
+    transform: translateY(-1px);
+  }
+  .dash-acao-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dash-acao-icon.orange  { background: rgba(255,71,19,.12); color: #FF4713; }
+  .dash-acao-icon.success { background: rgba(34,160,107,.12); color: #22a06b; }
+  .dash-acao-icon.info    { background: rgba(46,107,230,.12); color: #2E6BE6; }
+  .dash-acao-icon.warning { background: rgba(245,158,11,.12); color: #F59E0B; }
+  .dash-acao-icon.danger  { background: rgba(229,72,77,.12); color: #E5484D; }
+  .dash-acao-label {
+    font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+    text-align: center; line-height: 1.3;
+  }
+  .dash-acao-sub {
+    font-size: 11px; color: var(--ink-3); text-align: center;
+  }
+
 </style>
 {% endblock %}
 
@@ -118,7 +191,7 @@
 <div class="page-head">
   <div>
     <h1>Página Inicial</h1>
-    <p class="sub">Resumo operacional da frota.</p>
+    <p class="sub">Resumo operacional da frota</p>
   </div>
   <div class="head-actions">
     <a href="{{ url_for('pagina_contrato_locacao') }}" class="btn btn-primary">
@@ -130,175 +203,283 @@
   </div>
 </div>
 
-<!-- KPI cards — Contratos -->
-<div class="kpi-grid">
+<!-- ══════════════════════════════════════════════════
+     SEÇÃO 1 — VISÃO FINANCEIRA
+══════════════════════════════════════════════════ -->
+<div class="dash-section">
+  <span class="dash-section-label">Visão Financeira</span>
+  <div class="dash-section-line"></div>
+</div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon orange" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-      </div>
+<div class="dash-grid-4">
+
+  <!-- Receita Mensal -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon success" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Contratos de Locação</div>
-      <div class="kpi-value">{{ total_contratos or 0 }}</div>
-      <div class="kpi-trend">Total registrado</div>
-    </div>
+    <div class="d-kpi-label">Receita Mensal</div>
+    <div class="d-kpi-value sm">{% if valor_mensal and valor_mensal != '—' %}R$ {{ valor_mensal }}{% else %}—{% endif %}</div>
+    <div class="d-kpi-sub">Soma das locações</div>
   </div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon success" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <line x1="12" y1="1" x2="12" y2="23"/>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-      </div>
+  <!-- Inadimplência em aberto -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon danger" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Receita Mensal</div>
-      <div class="kpi-value" style="font-size:1.4rem;">{% if valor_mensal %}R$ {{ valor_mensal }}{% else %}—{% endif %}</div>
-      <div class="kpi-trend">Soma das locações</div>
-    </div>
+    <div class="d-kpi-label">Inadimplência</div>
+    {% if inad %}
+    <div class="d-kpi-value sm danger">R$ {{ inad.total_s }}</div>
+    <div class="d-kpi-sub">{{ inad.casos }} caso{{ 's' if inad.casos != 1 else '' }} em aberto</div>
+    {% else %}
+    <div class="d-kpi-value sm">—</div>
+    <div class="d-kpi-sub">Planilha não encontrada</div>
+    {% endif %}
   </div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon info" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <path d="M9 12l2 2 4-4"/>
-        </svg>
-      </div>
+  <!-- Contratos ativos -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon orange" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Vistorias</div>
-      <div class="kpi-value">{{ total_vistorias or 0 }}</div>
-      <div class="kpi-trend">Registradas no sistema</div>
-    </div>
+    <div class="d-kpi-label">Contratos de Locação</div>
+    <div class="d-kpi-value">{{ total_contratos or 0 }}</div>
+    <div class="d-kpi-sub">Total registrado</div>
   </div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
+  <!-- Vistorias -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon info" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Vistorias</div>
+    <div class="d-kpi-value">{{ total_vistorias or 0 }}</div>
+    <div class="d-kpi-sub">Registradas no sistema</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SEÇÃO 2 — OPERAÇÃO DA FROTA
+══════════════════════════════════════════════════ -->
+<div class="dash-section">
+  <span class="dash-section-label">Operação da Frota</span>
+  <div class="dash-section-line"></div>
+  <a href="{{ url_for('pagina_frota') }}" class="btn btn-ghost btn-sm dash-section-action">Ver frota</a>
+</div>
+
+<div class="dash-grid-4">
+
+  <!-- Total Veículos -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon orange" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Total na Frota</div>
+    <div class="d-kpi-value">{{ frota_total or 0 }}</div>
+    <div class="d-kpi-sub">Veículos ativos</div>
+  </div>
+
+  <!-- Valor FIPE -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon info" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+        <polyline points="16 7 22 7 22 13"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Valor FIPE (mês atual)</div>
+    {% if frota_valor_fipe %}
+    <div class="d-kpi-value sm">R$ {{ frota_valor_fipe | brl }}</div>
+    {% else %}
+    <div class="d-kpi-value sm">—</div>
+    {% endif %}
+    <div class="d-kpi-sub">Soma da tabela FIPE</div>
+  </div>
+
+  <!-- Docs gerados -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon neutral" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Documentos Gerados</div>
+    <div class="d-kpi-value">{{ total_docs or 0 }}</div>
+    <div class="d-kpi-sub">Total no histórico</div>
+  </div>
+
+  <!-- Checklist pendentes -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon {% if ck_pendentes_total > 0 %}warning{% else %}success{% endif %}" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="13" height="13" rx="1.5"/>
+        <path d="M7 11l2 2 4-4"/>
+        <line x1="18" y1="8" x2="21" y2="8"/>
+        <line x1="18" y1="12" x2="21" y2="12"/>
+        <line x1="18" y1="16" x2="21" y2="16"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Docs Incompletas</div>
+    {% if ck_pendentes_total > 0 %}
+    <div class="d-kpi-tooltip-wrap">
+      <div class="d-kpi-value {% if ck_pendentes_total > 0 %}danger{% endif %}">{{ ck_pendentes_total }}</div>
+      <div class="d-kpi-tooltip">
+        <strong style="display:block;margin-bottom:4px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Placas pendentes</strong>
+        {{ ck_pendentes_placas | join(' · ') }}
       </div>
     </div>
-    <div>
-      <div class="kpi-label">Documentos Gerados</div>
-      <div class="kpi-value">{{ total_docs or 0 }}</div>
-      <div class="kpi-trend">Total no histórico</div>
+    {% else %}
+    <div class="d-kpi-value">{{ ck_pendentes_total }}</div>
+    {% endif %}
+    <div class="d-kpi-sub">
+      {% if ck_pendentes_total > 0 %}
+        Veículo{{ 's' if ck_pendentes_total != 1 else '' }} com docs incompletas
+      {% else %}
+        Todos com docs completas
+      {% endif %}
     </div>
   </div>
 
 </div>
 
-<!-- Section: Inadimplência -->
-<div class="section-divider">
-  <span class="section-divider-label">Inadimplência</span>
-  <div class="section-divider-line"></div>
-  <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm">Ver detalhes</a>
+<!-- ══════════════════════════════════════════════════
+     SEÇÃO 3 — INADIMPLÊNCIA
+══════════════════════════════════════════════════ -->
+<div class="dash-section">
+  <span class="dash-section-label">Inadimplência</span>
+  <div class="dash-section-line"></div>
+  <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm dash-section-action">Ver detalhes</a>
 </div>
 
-<!-- KPI cards — Inadimplência -->
 {% if inad %}
-<div class="kpi-grid">
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon danger" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-      </div>
+<!-- KPIs inadimplência -->
+<div class="dash-grid-4" style="margin-bottom:14px;">
+
+  <div class="d-kpi">
+    <div class="d-kpi-icon danger" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Total em Aberto</div>
-      <div class="kpi-value" style="font-size:1.25rem;color:var(--danger);">R$ {{ inad.total_s }}</div>
-      <div class="kpi-trend">Com multa e juros</div>
-    </div>
+    <div class="d-kpi-label">Total em Aberto</div>
+    <div class="d-kpi-value sm danger">R$ {{ inad.total_s }}</div>
+    <div class="d-kpi-sub">Com multa e juros</div>
   </div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon warning" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-      </div>
+  <div class="d-kpi">
+    <div class="d-kpi-icon warning" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Casos Ativos</div>
-      <div class="kpi-value">{{ inad.casos }}</div>
-      <div class="kpi-trend">Clientes inadimplentes</div>
-    </div>
+    <div class="d-kpi-label">Casos Ativos</div>
+    <div class="d-kpi-value">{{ inad.casos }}</div>
+    <div class="d-kpi-sub">Clientes inadimplentes</div>
   </div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon orange" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-      </div>
+  <div class="d-kpi">
+    <div class="d-kpi-icon orange" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Vencem Hoje</div>
-      <div class="kpi-value">{{ inad.hoje }}</div>
-      <div class="kpi-trend">Vencimentos em D+0</div>
-    </div>
+    <div class="d-kpi-label">Vencem Hoje</div>
+    <div class="d-kpi-value">{{ inad.hoje }}</div>
+    <div class="d-kpi-sub">Vencimentos em D+0</div>
   </div>
 
-  <div class="kpi">
-    <div class="kpi-top">
-      <div class="kpi-icon danger" aria-hidden="true">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      </div>
+  <div class="d-kpi">
+    <div class="d-kpi-icon danger" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
     </div>
-    <div>
-      <div class="kpi-label">Etapa Crítica (D+15)</div>
-      <div class="kpi-value">{{ inad.por_etapa.get('D+15', 0) }}</div>
-      <div class="kpi-trend">Há mais de 15 dias</div>
-    </div>
+    <div class="d-kpi-label">Etapa Crítica (D+15)</div>
+    <div class="d-kpi-value">{{ inad.por_etapa.get('D+15', 0) }}</div>
+    <div class="d-kpi-sub">Há mais de 15 dias</div>
   </div>
 
 </div>
 
-<!-- Charts: Evolução + Casos por Etapa -->
-<div class="dash-2col">
+<!-- Gráfico + Tabela -->
+<div class="inad-2col">
 
-  <div class="card">
-    <div class="card-head">
-      <h3>Evolução da Inadimplência</h3>
-      <div style="display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--ink-3);">
-        <span style="display:flex;align-items:center;gap:4px;">
-          <span style="width:8px;height:8px;border-radius:50%;background:#E8400A;display:inline-block;"></span>Valor em aberto
-        </span>
-        <span style="display:flex;align-items:center;gap:4px;">
-          <span style="width:8px;height:8px;border-radius:50%;background:#FF4713;display:inline-block;"></span>Qtd. casos
-        </span>
-      </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);">
+      <h3 style="font-size:14px;font-weight:600;">Últimos Inadimplentes</h3>
+      <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm">Ver todos</a>
     </div>
-    <div class="dash-chart-wrap">
-      <canvas id="inadChart" aria-label="Evolução da inadimplência" role="img"></canvas>
+    {% if inad.recentes %}
+    <div style="overflow-x:auto;">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Placa / Doc</th>
+            <th>Dias</th>
+            <th>Valor total</th>
+            <th>Etapa</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in inad.recentes %}
+          <tr>
+            <td style="font-weight:600;">{{ r.nome }}</td>
+            <td><span class="badge-placa">{{ r.placa }}</span></td>
+            <td style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--danger);">{{ r.dias }}d</td>
+            <td style="font-variant-numeric:tabular-nums;font-weight:600;">R$ {{ r.total_s }}</td>
+            <td>
+              {% set e = r.etapa %}
+              {% if e == 'D+0' %}<span class="badge-etapa badge-etapa-d0">{{ e }}</span>
+              {% elif e == 'D+1' %}<span class="badge-etapa badge-etapa-d1">{{ e }}</span>
+              {% elif e == 'D+2' %}<span class="badge-etapa badge-etapa-d2">{{ e }}</span>
+              {% elif e == 'D+3' %}<span class="badge-etapa badge-etapa-d3">{{ e }}</span>
+              {% elif e == 'D+4' %}<span class="badge-etapa badge-etapa-d4">{{ e }}</span>
+              {% elif e == 'D+5' %}<span class="badge-etapa badge-etapa-d5">{{ e }}</span>
+              {% elif e == 'D+7' %}<span class="badge-etapa badge-etapa-d7">{{ e }}</span>
+              {% elif e == 'D+10' %}<span class="badge-etapa badge-etapa-d10">{{ e }}</span>
+              {% else %}<span class="badge-etapa badge-etapa-d15">{{ e }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+    {% else %}
+    <div class="empty-state" style="padding:28px;">
+      <p>Nenhum inadimplente no momento.</p>
+    </div>
+    {% endif %}
   </div>
 
   <div class="card">
@@ -310,79 +491,6 @@
 
 </div>
 
-<!-- Últimos Inadimplentes -->
-<div class="card" style="padding:0;overflow:hidden;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);">
-    <div>
-      <h3 style="font-size:15px;font-weight:600;">Últimos Inadimplentes</h3>
-      <p style="font-size:12.5px;color:var(--ink-3);margin-top:3px;">Casos com maior atraso</p>
-    </div>
-    <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm">Ver todos</a>
-  </div>
-
-  {% if inad.recentes %}
-  <div style="overflow-x:auto;">
-    <table class="dash-table">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Placa / Doc</th>
-          <th>Vencimento</th>
-          <th>Dias em atraso</th>
-          <th>Valor total</th>
-          <th>Etapa</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in inad.recentes %}
-        <tr>
-          <td style="font-weight:600;">{{ r.nome }}</td>
-          <td><span class="badge-placa">{{ r.placa }}</span></td>
-          <td style="white-space:nowrap;color:var(--ink-3);font-size:12.5px;">{{ r.venc }}</td>
-          <td style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--danger);">{{ r.dias }}d</td>
-          <td style="font-variant-numeric:tabular-nums;font-weight:600;">R$ {{ r.total_s }}</td>
-          <td>
-            {% set e = r.etapa %}
-            {% if e == 'D+0' %}
-              <span class="badge-etapa badge-etapa-d0">{{ e }}</span>
-            {% elif e == 'D+1' %}
-              <span class="badge-etapa badge-etapa-d1">{{ e }}</span>
-            {% elif e == 'D+2' %}
-              <span class="badge-etapa badge-etapa-d2">{{ e }}</span>
-            {% elif e == 'D+3' %}
-              <span class="badge-etapa badge-etapa-d3">{{ e }}</span>
-            {% elif e == 'D+4' %}
-              <span class="badge-etapa badge-etapa-d4">{{ e }}</span>
-            {% elif e == 'D+5' %}
-              <span class="badge-etapa badge-etapa-d5">{{ e }}</span>
-            {% elif e == 'D+7' %}
-              <span class="badge-etapa badge-etapa-d7">{{ e }}</span>
-            {% elif e == 'D+10' %}
-              <span class="badge-etapa badge-etapa-d10">{{ e }}</span>
-            {% else %}
-              <span class="badge-etapa badge-etapa-d15">{{ e }}</span>
-            {% endif %}
-          </td>
-          <td>
-            <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm" style="font-size:11.5px;">Ver</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty-state">
-    <svg width="40" height="40" fill="none" stroke="var(--ink-4)" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"/>
-      <polyline points="9 12 12 15 16 10"/>
-    </svg>
-    <p>Nenhum inadimplente no momento.</p>
-  </div>
-  {% endif %}
-</div>
-
 {% else %}
 <div class="card">
   <div class="empty-state" style="padding:32px;">
@@ -391,151 +499,119 @@
 </div>
 {% endif %}
 
-<!-- Link DRE -->
-<div style="text-align:center;margin:18px 0 6px;">
-  <a href="https://fin-overview-buddy.lovable.app" target="_blank" rel="noopener noreferrer"
-     class="btn btn-ghost btn-sm"
-     style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 20px;">
-    DRE ATIVUZ ↗
+<!-- ══════════════════════════════════════════════════
+     SEÇÃO 4 — AÇÕES RÁPIDAS
+══════════════════════════════════════════════════ -->
+<div class="dash-section">
+  <span class="dash-section-label">Ações Rápidas</span>
+  <div class="dash-section-line"></div>
+</div>
+
+<div class="dash-acoes">
+
+  <a href="{{ url_for('pagina_contrato_locacao') }}" class="dash-acao">
+    <div class="dash-acao-icon orange">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Novo Contrato</span>
+    <span class="dash-acao-sub">Locação de veículo</span>
   </a>
-</div>
 
-<!-- Section: Contratos -->
-<div class="section-divider" style="margin-top:8px;">
-  <span class="section-divider-label">Contratos</span>
-  <div class="section-divider-line"></div>
-</div>
-
-<!-- Recent contracts -->
-<div class="card" style="padding:0;overflow:hidden;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);">
-    <div>
-      <h3 style="font-size:15px;font-weight:600;">Últimos Contratos de Locação</h3>
-      <p style="font-size:12.5px;color:var(--ink-3);margin-top:3px;">Registros mais recentes</p>
+  <a href="{{ url_for('pagina_vistoria') }}" class="dash-acao">
+    <div class="dash-acao-icon success">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M9 12l2 2 4-4"/>
+        <line x1="12" y1="18" x2="12" y2="21"/>
+        <line x1="12" y1="3" x2="12" y2="6"/>
+      </svg>
     </div>
-    <div style="display:flex;gap:8px;">
-      <a href="{{ url_for('pagina_contrato_locacao') }}" class="btn btn-primary btn-sm">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Novo
-      </a>
-      <a href="{{ url_for('historico_contratos') }}" class="btn btn-ghost btn-sm">Ver todos</a>
-    </div>
-  </div>
+    <span class="dash-acao-label">Nova Vistoria</span>
+    <span class="dash-acao-sub">Registrar vistoria</span>
+  </a>
 
-  {% if contratos %}
-  <div style="overflow-x:auto;">
-    <table class="dash-table">
-      <thead>
-        <tr>
-          <th>Locatário</th>
-          <th>Placa</th>
-          <th>Veículo</th>
-          <th>Início</th>
-          <th>Valor/sem.</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in contratos %}
-        <tr>
-          <td style="font-weight:600;">{{ c.locatario_nome or '—' }}</td>
-          <td><span class="badge-placa">{{ c.veiculo_placa or '—' }}</span></td>
-          <td style="color:var(--ink-2);">{{ (c.veiculo_marca or '') + ' ' + (c.veiculo_modelo or '') }}</td>
-          <td style="white-space:nowrap;color:var(--ink-3);font-size:12.5px;">{{ c.contrato_inicio or '—' }}</td>
-          <td style="font-variant-numeric:tabular-nums;font-weight:600;">
-            {% if c.valor_semanal %}R$ {{ c.valor_semanal }}{% else %}—{% endif %}
-          </td>
-          <td><span class="badge badge-success">Ativo</span></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="empty-state">
-    <svg width="40" height="40" fill="none" stroke="var(--ink-4)" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-    <p>Nenhum contrato registrado ainda.</p>
-    <a href="{{ url_for('pagina_contrato_locacao') }}" class="btn btn-primary btn-sm">Criar primeiro contrato</a>
-  </div>
-  {% endif %}
+  <a href="{{ url_for('pagina_inadimplencia') }}" class="dash-acao">
+    <div class="dash-acao-icon danger">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Inadimplência</span>
+    <span class="dash-acao-sub">Gerenciar cobranças</span>
+  </a>
+
+  <a href="{{ url_for('pagina_checklist') }}" class="dash-acao">
+    <div class="dash-acao-icon warning">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="13" height="13" rx="1.5"/>
+        <path d="M7 11l2 2 4-4"/>
+        <line x1="18" y1="8" x2="21" y2="8"/>
+        <line x1="18" y1="12" x2="21" y2="12"/>
+        <line x1="18" y1="16" x2="21" y2="16"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Checklist</span>
+    <span class="dash-acao-sub">Documentação dos veículos</span>
+  </a>
+
+  <a href="{{ url_for('pagina_gerar') }}" class="dash-acao">
+    <div class="dash-acao-icon info">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Criar Documento</span>
+    <span class="dash-acao-sub">Gerar contrato / notificação</span>
+  </a>
+
+  <a href="{{ url_for('pagina_frota') }}" class="dash-acao">
+    <div class="dash-acao-icon info">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Frota (FIPE)</span>
+    <span class="dash-acao-sub">Consultar valorização</span>
+  </a>
+
+  <a href="{{ url_for('historico_contratos') }}" class="dash-acao">
+    <div class="dash-acao-icon neutral">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Hist. Contratos</span>
+    <span class="dash-acao-sub">Ver locações registradas</span>
+  </a>
+
+  <a href="{{ url_for('pagina_dre') }}" class="dash-acao">
+    <div class="dash-acao-icon success">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">DRE</span>
+    <span class="dash-acao-sub">Demonstrativo de resultado</span>
+  </a>
+
 </div>
 
 <script>
 (function () {
   {% if inad %}
-  var totalRaw = {{ inad.total_raw | round(2) }};
-  var casos    = {{ inad.casos }};
-
-  /* Simulated weekly trend ending at real values */
-  var factor = [0.35, 0.42, 0.51, 0.60, 0.68, 0.75, 0.83, 0.91, 0.96, 1.0];
-  var valorSeries = factor.map(function(f){ return +(totalRaw * f).toFixed(2); });
-  var casosSeries = factor.map(function(f){ return Math.round(casos * f); });
-
-  var ctxL = document.getElementById('inadChart');
-  if (ctxL) {
-    new Chart(ctxL.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: ['Sem 1','Sem 2','Sem 3','Sem 4','Sem 5','Sem 6','Sem 7','Sem 8','Sem 9','Hoje'],
-        datasets: [
-          {
-            label: 'Valor em aberto (R$)',
-            data: valorSeries,
-            borderColor: '#E8400A',
-            backgroundColor: 'rgba(232,64,10,.08)',
-            borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: 3,
-            pointBackgroundColor: '#E8400A',
-            yAxisID: 'yVal',
-          },
-          {
-            label: 'Qtd. casos',
-            data: casosSeries,
-            borderColor: '#FF4713',
-            backgroundColor: 'rgba(255,71,19,.05)',
-            borderWidth: 2.5, tension: 0.4, fill: false, pointRadius: 3,
-            pointBackgroundColor: '#FF4713',
-            yAxisID: 'yCasos',
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            mode: 'index', intersect: false,
-            backgroundColor: '#fff',
-            titleColor: '#15192A', bodyColor: '#6C7388',
-            borderColor: '#E7E9EF', borderWidth: 1, padding: 10,
-          },
-        },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#9BA1B3' } },
-          yVal: {
-            position: 'left',
-            grid: { color: '#F0F2F6' },
-            ticks: { font: { size: 10 }, color: '#9BA1B3',
-              callback: function(v){ return 'R$' + (v/1000).toFixed(1) + 'k'; } },
-            min: 0,
-          },
-          yCasos: {
-            position: 'right',
-            grid: { drawOnChartArea: false },
-            ticks: { font: { size: 10 }, color: '#9BA1B3', stepSize: 1 },
-            min: 0,
-          },
-        },
-      },
-    });
-  }
-
-  /* Bar chart — Casos por Etapa */
   var etapaLabels = ['D+0','D+1','D+2','D+3','D+4','D+5','D+7','D+10','D+15'];
   var etapaData   = [
     {{ inad.por_etapa.get('D+0',  0) }},
