@@ -3136,6 +3136,93 @@ def debug_sob_adm_headers():
     )
 
 
+_CONTRATOS_XLSX = Path(__file__).parent / "docx_templates" / "Contratos de Locação.xlsx"
+
+
+def _ler_contratos():
+    import openpyxl
+    if not _CONTRATOS_XLSX.exists():
+        return [], f"Arquivo não encontrado: {_CONTRATOS_XLSX.name}"
+    try:
+        wb = openpyxl.load_workbook(str(_CONTRATOS_XLSX), data_only=True)
+        ws = wb["Relatório"]
+        today = date.today()
+
+        def _fmt(v):
+            if isinstance(v, datetime): return v.strftime('%d/%m/%Y')
+            if isinstance(v, date):     return v.strftime('%d/%m/%Y')
+            return str(v) if v else ''
+
+        rows = []
+        for row in ws.iter_rows(min_row=6, max_row=ws.max_row, values_only=True):
+            if not row[0]:
+                continue
+            termino_raw = row[19]
+            dias_vencer = None
+            if isinstance(termino_raw, datetime):
+                dias_vencer = (termino_raw.date() - today).days
+            rows.append({
+                'contrato_comercial': str(row[0]  or ''),
+                'contrato_locacao':   str(row[3]  or ''),
+                'periodo':            str(row[2]  or ''),
+                'cliente':            str(row[5]  or ''),
+                'unidade_fat':        str(row[7]  or ''),
+                'valor_locacao':      float(row[8]  or 0),
+                'tipo_pessoa':        str(row[9]  or ''),
+                'gasto_total':        float(row[14] or 0),
+                'gasto_sinistros':    float(row[15] or 0),
+                'gasto_manutencao':   float(row[16] or 0),
+                'inicio':             _fmt(row[17]),
+                'termino_previsto':   _fmt(row[19]),
+                'situacao':           str(row[23] or ''),
+                'placa':              str(row[27] or ''),
+                'modelo':             str(row[31] or ''),
+                'km':                 int(row[32]  or 0),
+                'grupo':              str(row[37] or ''),
+                'tipo_contrato':      str(row[44] or ''),
+                'sit_faturamento':    str(row[46] or ''),
+                'valor_inicial':      float(row[53] or 0),
+                'dias_vencer':        dias_vencer,
+            })
+        wb.close()
+        return rows, None
+    except Exception as ex:
+        return [], str(ex)
+
+
+@app.route("/insights/contratos")
+def pagina_contratos():
+    contratos, erro = _ler_contratos()
+    ativos = [c for c in contratos if c['situacao'] == 'EM ANDAMENTO']
+
+    receita_mes    = sum(c['valor_locacao'] for c in ativos)
+    gasto_acum     = sum(c['gasto_total']   for c in contratos)
+    a_vencer_30    = sum(1 for c in ativos
+                         if c['dias_vencer'] is not None and 0 <= c['dias_vencer'] <= 30)
+
+    tipos_count = {}
+    for c in contratos:
+        t = c['tipo_contrato'] or 'Não informado'
+        tipos_count[t] = tipos_count.get(t, 0) + 1
+
+    clientes_rec = {}
+    for c in ativos:
+        clientes_rec[c['cliente']] = clientes_rec.get(c['cliente'], 0) + c['valor_locacao']
+    top10 = sorted(clientes_rec.items(), key=lambda x: -x[1])[:10]
+
+    return render_template("contratos.html",
+        active="contratos",
+        contratos=contratos,
+        erro=erro,
+        kpi_ativos=len(ativos),
+        kpi_receita=receita_mes,
+        kpi_vencer30=a_vencer_30,
+        kpi_gasto=gasto_acum,
+        tipos_count=tipos_count,
+        top10_clientes=top10,
+    )
+
+
 @app.route("/insights/frota")
 def pagina_frota():
     veiculos, codigos, erro = _ler_frota_dados()

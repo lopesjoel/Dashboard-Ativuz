@@ -82,7 +82,7 @@
       </div>
 
       <!-- ── Insights ── -->
-      {% set grp_insights = active in ['dre', 'financiamentos', 'capital_investido', 'frota'] %}
+      {% set grp_insights = active in ['dre', 'financiamentos', 'capital_investido', 'frota', 'contratos'] %}
       <div class="sb-group" id="grp-insights" data-open="{{ 'true' if grp_insights else 'false' }}">
         <button class="sb-group-head" onclick="toggleGroup('grp-insights')"
                 aria-expanded="{{ 'true' if grp_insights else 'false' }}" aria-controls="grp-insights-body">
@@ -140,6 +140,20 @@
                 </svg>
               </span>
               <span class="sb-item-label">Frota (FIPE)</span>
+            </a>
+            <a href="{{ url_for('pagina_contratos') }}" class="sb-item"
+               data-active="{{ 'true' if active == 'contratos' else 'false' }}"
+               aria-current="{{ 'page' if active == 'contratos' else 'false' }}">
+              <span class="sb-item-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </span>
+              <span class="sb-item-label">Contratos</span>
             </a>
           </div>
         </div>
@@ -339,6 +353,7 @@
           {% elif active == 'financiamentos' %}Fin &amp; Con
           {% elif active == 'capital_investido' %}Capital Investido
           {% elif active == 'frota' %}Frota
+          {% elif active == 'contratos' %}Contratos
           {% else %}ATIVUZ
           {% endif %}
         </span>
