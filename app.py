@@ -2097,22 +2097,29 @@ def exportar_inadimplencia():
     if ws1["B3"].value:
         ws1["B3"].value = f"ATIVUZ VEÍCULOS  —  Gerado em: {hoje_str}"
 
-    # Corrige fórmulas dos KPIs
-    n_end = max(10 + len(registros), 59)
-    ws1["B5"].value = f"=COUNTA(B11:B{n_end})"
-    ws1["D5"].value = f"=SUM(F11:F{n_end})"
-    ws1["F5"].value = f"=SUM(G11:G{n_end})"
-    ws1["H5"].value = f"=SUM(H11:H{n_end})"
+    # Fórmulas dos KPIs — células e colunas do modelo atualizado
+    # Dados: linha 9 em diante | B=Cliente C=Etapa D=Venc E=Dias F=Valor G=Juros H=Total I:N=Ação
+    D_INI = 9
+    D_FIM = max(D_INI + len(registros) - 1, D_INI)
+    _safe_set(ws1["C5"], value=f"=COUNTA(B{D_INI}:B{D_FIM})")
+    _safe_set(ws1["E5"], value=f"=SUM(F{D_INI}:F{D_FIM})")   # valor original
+    _safe_set(ws1["H5"], value=f"=SUM(G{D_INI}:G{D_FIM})")   # juros
+    _safe_set(ws1["K5"], value=f"=SUM(H{D_INI}:H{D_FIM})")   # total atualizado
 
-    # Desmescla e limpa linhas de amostra
-    _unmerge_area(ws1, 11, 200, 2, 9)
-    for r in range(11, 200):
-        for c in range(2, 10):
+    # Linha de totais (row 58 no modelo)
+    _safe_set(ws1["F58"], value=f"=SUM(F{D_INI}:F{D_FIM})")
+    _safe_set(ws1["G58"], value=f"=SUM(G{D_INI}:G{D_FIM})")
+    _safe_set(ws1["H58"], value=f"=SUM(H{D_INI}:H{D_FIM})")
+
+    # Desmescla e limpa área de dados (inclui merges I:N por linha)
+    _unmerge_area(ws1, D_INI, 57, 2, 14)
+    for r in range(D_INI, 58):
+        for c in range(2, 15):
             _safe_set(ws1.cell(row=r, column=c), value=None)
 
     # Escreve dados
     for i, rec in enumerate(registros):
-        r    = 11 + i
+        r    = D_INI + i
         base = F_ROW_ODD if i % 2 == 0 else F_ROW_EVN
         bf, bft = badge_dias(rec["dias"])
 
