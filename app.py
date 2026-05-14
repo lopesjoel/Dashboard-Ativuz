@@ -1949,6 +1949,244 @@ def pagina_inadimplencia():
     )
 
 
+@app.route("/inadimplencia/exportar")
+def exportar_inadimplencia():
+    import openpyxl
+    from openpyxl.styles import PatternFill, Font, Alignment
+
+    _base      = Path(__file__).parent / "docx_templates"
+    xlsx_path  = _base / "CONTAS-A-RECEBER.xlsx"
+    modelo     = _base / "relatorio_inadimplencia_modelo.xlsx"
+    hoje       = date.today()
+    hoje_str   = hoje.strftime("%d/%m/%Y")
+
+    # ── Re-lê e calcula registros (mesma lógica de pagina_inadimplencia) ──────
+    registros = []
+    if xlsx_path.exists():
+        try:
+            wb_src = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
+            ws_src = wb_src.active
+            rows   = list(ws_src.iter_rows(values_only=True))
+            wb_src.close()
+
+            def _nh(s):
+                s = unicodedata.normalize("NFD", str(s or "").lower())
+                return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+            header_idx = 0
+            for ri, row in enumerate(rows[:10]):
+                nh_row = [_nh(str(c or "")) for c in row]
+                if sum(1 for t in ["receber de","vencimento","valor"] if any(t in n for n in nh_row)) >= 2:
+                    header_idx = ri; break
+
+            header    = rows[header_idx]
+            data_rows = rows[header_idx + 1:]
+
+            def _ci(kw):
+                nk = _nh(kw)
+                return next((i for i,h in enumerate(header) if h and nk in _nh(str(h))), None)
+
+            i_nome  = _ci("receber de (fantasia)") or _ci("receber de")
+            i_valor = _ci("valor previsto") or _ci("valor")
+            i_venc  = _ci("data de vencimento") or _ci("vencimento")
+            i_sit   = _ci("situacao (data de vencimento)") or _ci("situacao")
+            i_doc   = _ci("numero do documento") or _ci("documento")
+            i_unid  = _ci("unidade")
+
+            def _gv(row, idx):
+                return row[idx] if idx is not None and idx < len(row) else None
+
+            _MULTA_VALS = {600, 630, 650, 680, 700, 800, 1200}
+
+            for row in data_rows:
+                nome_raw = _gv(row, i_nome)
+                if not nome_raw or not str(nome_raw).strip():
+                    continue
+                nome  = str(nome_raw).strip()
+                valor = _parse_valor_excel(_gv(row, i_valor))
+                if valor <= 0:
+                    continue
+
+                venc_raw  = _gv(row, i_venc)
+                sit_raw   = _nh(str(_gv(row, i_sit) or ""))
+                venc_date = None
+                if venc_raw:
+                    if isinstance(venc_raw, datetime): venc_date = venc_raw.date()
+                    elif isinstance(venc_raw, date):   venc_date = venc_raw
+                    else:
+                        for fmt in ["%d/%m/%Y","%Y-%m-%d","%d-%m-%Y"]:
+                            try: venc_date = datetime.strptime(str(venc_raw).strip(), fmt).date(); break
+                            except (ValueError, TypeError): pass
+                if venc_date is None:
+                    continue
+                if "a vencer" in sit_raw and venc_date > hoje:
+                    continue
+                dias = 0 if venc_date == hoje else (hoje - venc_date).days
+                if dias < 0:
+                    continue
+
+                multa = valor * 0.05 if (dias >= 1 and int(round(valor)) in _MULTA_VALS) else 0.0
+                juros = valor * 0.005 * dias if dias >= 1 else 0.0
+                total = valor + multa + juros
+
+                if   dias == 0:     etapa, proxima = "D+0",  "Enviar lembrete de vencimento"
+                elif dias == 1:     etapa, proxima = "D+1",  "Cobrança formal + aplicar multa e juros"
+                elif dias == 2:     etapa, proxima = "D+2",  "Cobrança formal + aplicar multa e juros"
+                elif dias == 3:     etapa, proxima = "D+3",  "Pressão + avisar suspensão em 48h"
+                elif dias == 4:     etapa, proxima = "D+4",  "Suspensão iminente — último aviso"
+                elif dias <= 6:     etapa, proxima = "D+5",  "Bloqueio do veículo"
+                elif dias <= 9:     etapa, proxima = "D+7",  "Notificação formal — prazo 48h para negativação"
+                elif dias <= 14:    etapa, proxima = "D+10", "Negativação + encaminhamento jurídico"
+                else:               etapa, proxima = "D+15", "Recolhimento + protesto em cartório + execução contratual"
+
+                doc = str(_gv(row, i_doc) or "").strip() or str(_gv(row, i_unid) or "").strip()
+                registros.append({
+                    "nome": nome, "etapa": etapa, "proxima": proxima,
+                    "vencimento": venc_date.strftime("%d/%m/%Y"), "dias": dias,
+                    "valor": valor, "juros": juros + multa, "total": total,
+                })
+        except Exception:
+            import traceback; traceback.print_exc()
+
+    # ── Gera Excel ────────────────────────────────────────────────────────────
+    def _fill(hex6): return PatternFill("solid", fgColor=hex6)
+    def _font(bold=False, color="000000", size=10):
+        return Font(bold=bold, color=color, size=size)
+    def _align(h="center", v="center", wrap=False):
+        return Alignment(horizontal=h, vertical=v, wrap_text=wrap)
+
+    F_HEADER  = _fill("1A3A5C"); F_SUBHDR  = _fill("1A5276")
+    F_ROW_ODD = _fill("F2F3F4"); F_ROW_EVN = _fill("FFFFFF")
+    F_ETAPA   = _fill("C0392B"); F_VALOR   = _fill("D6EAF8")
+    F_JUROS   = _fill("FADBD8"); F_TOTAL   = _fill("D5F5E3")
+    F_ACAO    = _fill("FEF9E7"); F_DET_ODD = _fill("D6EAF8")
+    F_WHITE   = Font(color="FFFFFF", bold=True, size=9)
+    F_BLACK   = Font(color="000000", size=10)
+    F_BOLD    = Font(color="000000", bold=True, size=10)
+    FMT_BRL   = '#,##0.00'
+
+    def badge_dias(dias):
+        if dias >= 180: return _fill("C0392B"), Font(color="FFFFFF", bold=True, size=9)
+        if dias >= 60:  return _fill("E67E22"), Font(color="FFFFFF", bold=True, size=9)
+        return _fill("FEF9E7"), Font(color="7D6608", size=10)
+
+    wb = openpyxl.load_workbook(str(modelo))
+
+    # ── Aba 1: Resumo Executivo ───────────────────────────────────────────────
+    ws1 = wb["Resumo Executivo"]
+
+    # Atualiza data de geração
+    if ws1["B3"].value:
+        ws1["B3"].value = f"ATIVUZ VEÍCULOS  —  Gerado em: {hoje_str}"
+
+    # Corrige fórmulas dos KPIs
+    n_end = max(10 + len(registros), 59)
+    ws1["B5"].value = f"=COUNTA(B11:B{n_end})"
+    ws1["D5"].value = f"=SUM(F11:F{n_end})"
+    ws1["F5"].value = f"=SUM(G11:G{n_end})"
+    ws1["H5"].value = f"=SUM(H11:H{n_end})"
+
+    # Limpa linhas de amostra
+    for r in range(11, 60):
+        for c in range(2, 10):
+            ws1.cell(row=r, column=c).value = None
+
+    # Escreve dados
+    for i, rec in enumerate(registros):
+        r    = 11 + i
+        base = F_ROW_ODD if i % 2 == 0 else F_ROW_EVN
+        bf, bft = badge_dias(rec["dias"])
+
+        def _w(col, val, fill=None, font=None, fmt=None, align=None):
+            c = ws1.cell(row=r, column=col)
+            c.value = val
+            if fill:  c.fill  = fill
+            if font:  c.font  = font
+            if fmt:   c.number_format = fmt
+            if align: c.alignment = align
+
+        _w(2, rec["nome"],      base,    F_BLACK, align=_align("left"))
+        _w(3, rec["etapa"],     F_ETAPA, F_WHITE, align=_align("center"))
+        _w(4, rec["vencimento"],base,    F_BLACK, align=_align("center"))
+        _w(5, rec["dias"],      bf,      bft,     align=_align("center"))
+        _w(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
+        _w(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
+        ws1.cell(row=r, column=8).value          = f"=F{r}+G{r}"
+        ws1.cell(row=r, column=8).fill           = F_TOTAL
+        ws1.cell(row=r, column=8).font           = F_BOLD
+        ws1.cell(row=r, column=8).number_format  = FMT_BRL
+        ws1.cell(row=r, column=8).alignment      = _align("right")
+        _w(9, rec["proxima"],   F_ACAO,  F_BLACK, align=_align("left", wrap=True))
+
+    # ── Aba 2: Detalhamento por Cliente ──────────────────────────────────────
+    ws2 = wb["Detalhamento por Cliente"]
+
+    for r in range(6, 200):
+        for c in range(2, 9):
+            ws2.cell(row=r, column=c).value = None
+
+    for i, rec in enumerate(registros):
+        r    = 6 + i
+        base = F_DET_ODD if i % 2 == 0 else F_ROW_EVN
+        bf, bft = badge_dias(rec["dias"])
+
+        def _wd(col, val, fill=None, font=None, fmt=None, align=None):
+            c = ws2.cell(row=r, column=col)
+            c.value = val
+            if fill:  c.fill  = fill
+            if font:  c.font  = font
+            if fmt:   c.number_format = fmt
+            if align: c.alignment = align
+
+        _wd(2, rec["nome"],      base,    F_BLACK, align=_align("left"))
+        _wd(3, rec["etapa"],     F_ETAPA, F_WHITE, align=_align("center"))
+        _wd(4, rec["dias"],      bf,      bft,     align=_align("center"))
+        _wd(5, rec["vencimento"],base,    F_BLACK, align=_align("center"))
+        _wd(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
+        _wd(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
+        ws2.cell(row=r, column=8).value         = f"=F{r}+G{r}"
+        ws2.cell(row=r, column=8).fill          = F_TOTAL
+        ws2.cell(row=r, column=8).font          = F_BOLD
+        ws2.cell(row=r, column=8).number_format = FMT_BRL
+        ws2.cell(row=r, column=8).alignment     = _align("right")
+
+    # ── Aba 3: Análise por Etapa ──────────────────────────────────────────────
+    ws3 = wb["Análise por Etapa"]
+
+    ETAPA_ROWS = {
+        "D+0": 6, "D+1": 7, "D+2": 8, "D+3": 9, "D+4": 10,
+        "D+5": 11, "D+7": 12, "D+10": 13, "D+15": 14,
+    }
+    from collections import defaultdict
+    agrup = defaultdict(lambda: {"n": 0, "valor": 0.0, "juros": 0.0})
+    for rec in registros:
+        g = agrup[rec["etapa"]]
+        g["n"] += 1; g["valor"] += rec["valor"]; g["juros"] += rec["juros"]
+
+    for etapa, row_num in ETAPA_ROWS.items():
+        g = agrup[etapa]
+        ws3.cell(row=row_num, column=3).value = g["n"]
+        ws3.cell(row=row_num, column=4).value = g["valor"]
+        ws3.cell(row=row_num, column=4).number_format = FMT_BRL
+        ws3.cell(row=row_num, column=4).fill  = F_VALOR
+        ws3.cell(row=row_num, column=5).value = g["juros"]
+        ws3.cell(row=row_num, column=5).number_format = FMT_BRL
+        ws3.cell(row=row_num, column=5).fill  = F_JUROS
+
+    # ── Serve o arquivo ───────────────────────────────────────────────────────
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    nome_arquivo = f"relatorio_inadimplencia_{hoje.strftime('%d%m%Y')}.xlsx"
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name=nome_arquivo,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 @app.route("/inadimplencia/upload", methods=["POST"])
 def inadimplencia_upload():
     f = request.files.get("planilha")
