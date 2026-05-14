@@ -2849,6 +2849,25 @@ def _ler_sob_administracao():
         return [], str(e)
 
 
+@app.route("/debug/sob-adm-headers")
+def debug_sob_adm_headers():
+    import openpyxl, json as _json
+    xlsx_path = _veiculos_xlsx_path()
+    if not xlsx_path.exists():
+        return "Arquivo não encontrado", 404
+    wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
+    aba = next((s for s in wb.sheetnames if "relat" in s.lower()), wb.sheetnames[0])
+    ws = wb[aba]
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    headers = {str(i): str(h) for i, h in enumerate(rows[4]) if h}
+    sample = [{str(i): str(r[i]) for i in range(min(len(r), 60)) if rows[4][i]} for r in rows[5:10]]
+    return app.response_class(
+        _json.dumps({"aba": aba, "headers": headers, "sample": sample}, ensure_ascii=False, indent=2),
+        mimetype="application/json"
+    )
+
+
 @app.route("/insights/frota")
 def pagina_frota():
     veiculos, codigos, erro = _ler_frota_dados()
