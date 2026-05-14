@@ -2731,11 +2731,125 @@ def _frota_salvar_manual(placa, valor, ref):
     }, on_conflict="placa,mes_ref").execute()
 
 
+_SOB_ADM_FIPE_VALORES = {
+    "005540-9": 800.0,
+    "095010-6": 1200.0,
+}
+_SOB_ADM_TAXA = 0.15
+_SOB_ADM_EXCLUIR = {"ATIVUZ VEÍCULOS", "AZ EMPREENDIMENTOS"}
+
+
+def _ler_sob_administracao():
+    """Lê veiculos.xlsx aba Relatório, filtra unidades não-Ativuz/AZ."""
+    import openpyxl
+    xlsx_path = _veiculos_xlsx_path()
+    if not xlsx_path.exists():
+        return [], None
+
+    try:
+        wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
+        aba = next((s for s in wb.sheetnames if "relat" in s.lower()), wb.sheetnames[0])
+        ws = wb[aba]
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+
+        header = rows[4]
+
+        def _norm(s):
+            s = unicodedata.normalize("NFD", str(s or "").lower())
+            return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+        def _ci(kw):
+            nk = _norm(kw)
+            return next((i for i, h in enumerate(header) if nk in _norm(str(h or ""))), None)
+
+        i_placa  = _ci("placa")
+        i_mont   = _ci("montadora")
+        i_mod    = _ci("modelo")
+        i_fipe   = _ci("codigo fipe") or _ci("fipe")
+        i_km     = _ci("km confirmado")
+        i_prop   = _ci("unidade do ve")
+        i_loc    = _ci("razao social cliente") or _ci("razao social")
+        i_tipo   = _ci("tipo de contrato")
+        i_ini    = _ci("inicio de contrato")
+        i_fim    = _ci("termino do contrato")
+        i_sit    = _ci("situacao contrato") or _ci("situacao")
+        i_anofab = _ci("ano de fabricacao") or _ci("ano de fab")
+        i_anomod = _ci("ano modelo")
+
+        def _v(row, i):
+            if i is None or i >= len(row): return ""
+            v = row[i]
+            if v is None: return ""
+            if hasattr(v, "strftime"): return v.strftime("%d/%m/%Y")
+            return str(v).strip()
+
+        hoje = date.today()
+        veiculos = []
+        for row in rows[5:]:
+            unid = _v(row, i_prop)
+            if not unid:
+                continue
+            unid_norm = _norm(unid)
+            if any(_norm(exc) in unid_norm for exc in _SOB_ADM_EXCLUIR):
+                continue
+
+            placa   = _v(row, i_placa)
+            if not placa:
+                continue
+            fipe    = _v(row, i_fipe)
+            valor_s = _SOB_ADM_FIPE_VALORES.get(fipe)
+            taxa_s  = round(valor_s * _SOB_ADM_TAXA, 2) if valor_s else None
+
+            ini_raw = row[i_ini] if i_ini is not None and i_ini < len(row) else None
+            ini_date = None
+            if ini_raw:
+                if isinstance(ini_raw, datetime): ini_date = ini_raw.date()
+                elif isinstance(ini_raw, date):   ini_date = ini_raw
+                else:
+                    for fmt in ["%d/%m/%Y", "%Y-%m-%d"]:
+                        try: ini_date = datetime.strptime(str(ini_raw)[:10], fmt).date(); break
+                        except ValueError: pass
+
+            dias_ativos = (hoje - ini_date).days if ini_date else 0
+            receita_acum = round(dias_ativos * (taxa_s / 7), 2) if taxa_s and dias_ativos > 0 else 0.0
+
+            ini_fmt = ini_date.strftime("%d/%m/%Y") if ini_date else ""
+
+            veiculos.append({
+                "placa":        placa,
+                "montadora":    _v(row, i_mont),
+                "modelo":       _v(row, i_mod),
+                "fipe":         fipe,
+                "ano_fab":      _v(row, i_anofab),
+                "ano_mod":      _v(row, i_anomod),
+                "proprietario": unid,
+                "locatario":    _v(row, i_loc),
+                "tipo_contrato":_v(row, i_tipo),
+                "km":           _v(row, i_km),
+                "inicio":       ini_fmt,
+                "termino":      _v(row, i_fim),
+                "situacao":     _v(row, i_sit),
+                "valor_semanal":valor_s,
+                "taxa_semanal": taxa_s,
+                "dias_ativos":  dias_ativos,
+                "receita_acum": receita_acum,
+            })
+
+        veiculos.sort(key=lambda v: (v["proprietario"], v["inicio"]))
+        return veiculos, None
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return [], str(e)
+
+
 @app.route("/insights/frota")
 def pagina_frota():
     veiculos, codigos, erro = _ler_frota_dados()
     manual = _frota_ler_manual()
     curr_key, curr_label, prev_key, prev_label = _frota_mes_atual()
+    sob_adm, sob_adm_erro = _ler_sob_administracao()
     return render_template("frota.html",
         active="frota",
         veiculos=veiculos,
@@ -2746,6 +2860,8 @@ def pagina_frota():
         curr_mes_label=curr_label,
         prev_mes_key=prev_key,
         prev_mes_label=prev_label,
+        sob_adm=sob_adm,
+        sob_adm_erro=sob_adm_erro,
     )
 
 

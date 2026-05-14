@@ -139,6 +139,90 @@
 .fr-chart-wrap  { position:relative; height:260px; }
 
 .fr-error { background:#fff3f3; border:1px solid #fca5a5; border-radius:10px; padding:16px 20px; color:#dc2626; font-size:13px; }
+
+/* ── Sub-abas ── */
+.fr-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0;
+}
+.fr-tab-btn {
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color .15s, border-color .15s;
+  border-radius: 0;
+}
+.fr-tab-btn:hover { color: var(--ink); }
+.fr-tab-btn.active {
+  color: var(--brand-orange, #FF4713);
+  border-bottom-color: var(--brand-orange, #FF4713);
+}
+
+/* ── Sob Administração ── */
+.adm-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+@media (max-width:900px){ .adm-kpis { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:500px){ .adm-kpis { grid-template-columns:1fr; } }
+
+.adm-kpi { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+.adm-kpi-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.adm-kpi-icon.orange { background:rgba(255,71,19,.12); color:#FF4713; }
+.adm-kpi-icon.green  { background:rgba(34,160,107,.12); color:#22a06b; }
+.adm-kpi-icon.blue   { background:rgba(46,107,230,.12); color:#2E6BE6; }
+.adm-kpi-icon.amber  { background:rgba(245,158,11,.12); color:#F59E0B; }
+.adm-kpi-label { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin-bottom:6px; }
+.adm-kpi-value { font-size:1.5rem; font-weight:700; color:var(--ink); line-height:1; font-variant-numeric:tabular-nums; }
+.adm-kpi-value.sm { font-size:1.15rem; }
+.adm-kpi-sub { font-size:11.5px; color:var(--ink-3); margin-top:5px; }
+
+/* Grupo separador */
+.adm-group-hd {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0 6px;
+}
+.adm-group-hd-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--ink-3); white-space: nowrap;
+}
+.adm-group-hd-line { flex:1; height:1px; background: var(--line); }
+
+/* Tabela adm */
+.adm-table-wrap { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow-x:auto; margin-bottom:28px; }
+.adm-table { width:100%; border-collapse:collapse; font-size:12px; min-width:1100px; }
+.adm-table th {
+  background:var(--bg); padding:9px 12px; text-align:center;
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--ink-3);
+  border-bottom:1px solid var(--line); white-space:nowrap;
+  cursor:pointer; user-select:none;
+}
+.adm-table th.sorted-asc::after  { content:' ↑'; opacity:.7; }
+.adm-table th.sorted-desc::after { content:' ↓'; opacity:.7; }
+.adm-table td {
+  padding:9px 12px; text-align:center;
+  border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+  color:var(--ink-2);
+}
+.adm-table tr:last-child td { border-bottom:none; }
+.adm-table tbody tr:hover td { background:#f9f9fb; }
+.adm-table .td-left { text-align:left; }
+
+.adm-badge-locado {
+  display:inline-block; font-size:10px; font-weight:700;
+  padding:2px 8px; border-radius:5px;
+  background:#dcfce7; color:#15803d;
+  letter-spacing:.04em; text-transform:uppercase;
+}
 </style>
 {% endblock %}
 
@@ -147,12 +231,24 @@
 
   <div class="fr-header">
     <h1>FROTA</h1>
-    <p>Acompanhamento de valores FIPE · Histórico 2025–2026 · {{ prev_mes_label }} (planilha) · {{ curr_mes_label }} editável por código</p>
   </div>
 
+  <!-- Sub-abas -->
+  <div class="fr-tabs">
+    <button class="fr-tab-btn active" id="tab-btn-propria" onclick="frTabSwitch('propria')">Frota Própria Ativa</button>
+    <button class="fr-tab-btn" id="tab-btn-adm" onclick="frTabSwitch('adm')">Sob Administração</button>
+  </div>
+
+  <!-- ══ ABA: FROTA PRÓPRIA ATIVA ══ -->
+  <div id="tab-propria">
+
   {% if erro %}
-    <div class="fr-error">Erro ao carregar planilha: {{ erro }}</div>
+    <div class="fr-error">Erro ao carregar dados: {{ erro }}</div>
   {% else %}
+  <p style="font-size:12.5px;color:var(--ink-3);margin:-8px 0 20px;">Acompanhamento de valores FIPE · Histórico 2025–2026 · {{ prev_mes_label }} (planilha) · {{ curr_mes_label }} editável por código</p>
+  {% endif %}
+
+  {% if not erro %}
 
   <p class="fr-section">Resumo da Frota</p>
   <div class="fr-kpis">
@@ -249,7 +345,151 @@
   </div>
 
   {% endif %}
-</div>
+  </div>{# /tab-propria #}
+
+  <!-- ══ ABA: SOB ADMINISTRAÇÃO ══ -->
+  <div id="tab-adm" style="display:none">
+
+  {% if sob_adm_erro %}
+    <div class="fr-error">Erro ao carregar dados: {{ sob_adm_erro }}</div>
+  {% elif not sob_adm %}
+    <div class="fr-error" style="background:#fefce8;border-color:#fde68a;color:#92400e;">Nenhum veículo sob administração encontrado na planilha.</div>
+  {% else %}
+
+  {# ── KPIs ── #}
+  {% set total_vei = sob_adm | length %}
+  {% set proprietarios = sob_adm | map(attribute='proprietario') | list | unique | list %}
+  {% set receita_sem = sob_adm | selectattr('taxa_semanal') | sum(attribute='taxa_semanal') %}
+  {% set receita_mes = receita_sem * 4 %}
+  {% set receita_acum = sob_adm | sum(attribute='receita_acum') %}
+  {% set dias_total = sob_adm | sum(attribute='dias_ativos') %}
+
+  <div class="adm-kpis">
+
+    <div class="adm-kpi">
+      <div class="adm-kpi-icon orange">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+        </svg>
+      </div>
+      <div class="adm-kpi-label">Total de Veículos</div>
+      <div class="adm-kpi-value">{{ total_vei }}</div>
+      <div class="adm-kpi-sub">{{ proprietarios | length }} proprietário{{ 's' if proprietarios | length != 1 else '' }}</div>
+    </div>
+
+    <div class="adm-kpi">
+      <div class="adm-kpi-icon green">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div class="adm-kpi-label">Receita Semanal (Taxa Adm. 15%)</div>
+      <div class="adm-kpi-value sm">R$ {{ receita_sem | brl }}</div>
+      <div class="adm-kpi-sub">15% sobre R$ {{ (receita_sem / 0.15) | brl }}/sem</div>
+    </div>
+
+    <div class="adm-kpi">
+      <div class="adm-kpi-icon blue">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <div class="adm-kpi-label">Receita Mensal Estimada</div>
+      <div class="adm-kpi-value sm">R$ {{ receita_mes | brl }}</div>
+      <div class="adm-kpi-sub">estimativa baseada em 4 semanas</div>
+    </div>
+
+    <div class="adm-kpi">
+      <div class="adm-kpi-icon amber">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div class="adm-kpi-label">Receita Acumulada no Contrato</div>
+      <div class="adm-kpi-value sm">R$ {{ receita_acum | brl }}</div>
+      <div class="adm-kpi-sub">{{ dias_total }} dias de contrato ativo</div>
+    </div>
+
+  </div>
+
+  {# ── Tabela agrupada por proprietário ── #}
+  {% set grupos = {} %}
+  {% for v in sob_adm %}
+    {% if v.proprietario not in grupos %}{% set _ = grupos.update({v.proprietario: []}) %}{% endif %}
+    {% set _ = grupos[v.proprietario].append(v) %}
+  {% endfor %}
+
+  <div class="adm-table-wrap">
+    <table class="adm-table" id="adm-table">
+      <thead>
+        <tr>
+          <th data-col="placa">Placa</th>
+          <th data-col="montadora">Montadora</th>
+          <th data-col="modelo">Modelo</th>
+          <th data-col="ano_fab">Ano Fab.</th>
+          <th data-col="ano_mod">Ano Mod.</th>
+          <th data-col="fipe">Cód. FIPE</th>
+          <th data-col="proprietario">Proprietário</th>
+          <th data-col="locatario">Locatário</th>
+          <th data-col="tipo_contrato">Tipo Contrato</th>
+          <th data-col="valor_semanal">Valor Semanal</th>
+          <th data-col="taxa_semanal">Taxa Adm. Sem.</th>
+          <th data-col="km">KM Confirmado</th>
+          <th data-col="inicio">Início Contrato</th>
+          <th data-col="termino">Término Contrato</th>
+          <th data-col="situacao">Situação</th>
+        </tr>
+      </thead>
+      <tbody id="adm-tbody">
+        {% for prop, veics in grupos.items() %}
+        <tr>
+          <td colspan="15" style="padding:0;">
+            <div class="adm-group-hd" style="padding:10px 12px 6px;">
+              <span class="adm-group-hd-label">{{ prop }}</span>
+              <div class="adm-group-hd-line"></div>
+              <span style="font-size:11px;color:var(--ink-3);white-space:nowrap;">{{ veics | length }} veículo{{ 's' if veics | length != 1 else '' }}</span>
+            </div>
+          </td>
+        </tr>
+        {% for v in veics %}
+        <tr data-prop="{{ v.proprietario }}" data-inicio="{{ v.inicio }}">
+          <td style="font-weight:700;font-family:monospace;letter-spacing:.03em;">{{ v.placa }}</td>
+          <td class="td-left">{{ v.montadora }}</td>
+          <td class="td-left" style="font-weight:600;color:var(--ink);">{{ v.modelo }}</td>
+          <td>{{ v.ano_fab }}</td>
+          <td>{{ v.ano_mod }}</td>
+          <td style="font-family:monospace;">{{ v.fipe }}</td>
+          <td class="td-left" style="font-size:11px;">{{ v.proprietario }}</td>
+          <td class="td-left" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="{{ v.locatario }}">{{ v.locatario }}</td>
+          <td style="font-size:11px;">{{ v.tipo_contrato or '—' }}</td>
+          <td style="font-weight:600;color:var(--ink);">{% if v.valor_semanal %}R$ {{ v.valor_semanal | brl }}{% else %}—{% endif %}</td>
+          <td style="font-weight:600;color:#22a06b;">{% if v.taxa_semanal %}R$ {{ v.taxa_semanal | brl }}{% else %}—{% endif %}</td>
+          <td>{{ v.km or '—' }}</td>
+          <td>{{ v.inicio or '—' }}</td>
+          <td>{{ v.termino or '—' }}</td>
+          <td>
+            {% if 'locado' in v.situacao | lower %}
+              <span class="adm-badge-locado">Locado</span>
+            {% else %}
+              <span style="font-size:11px;color:var(--ink-3);">{{ v.situacao or '—' }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% endif %}
+  </div>{# /tab-adm #}
+
+</div>{# /fr-wrap #}
 
 <!-- Modal de edição por código FIPE -->
 <div id="fr-modal-overlay" class="fr-modal-overlay" style="display:none">
@@ -294,6 +534,15 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+/* ── Troca de sub-abas ── */
+function frTabSwitch(tab) {
+  document.getElementById('tab-propria').style.display = tab === 'propria' ? '' : 'none';
+  document.getElementById('tab-adm').style.display     = tab === 'adm'     ? '' : 'none';
+  document.getElementById('tab-btn-propria').classList.toggle('active', tab === 'propria');
+  document.getElementById('tab-btn-adm').classList.toggle('active', tab === 'adm');
+}
+</script>
 <script>
 (function () {
 'use strict';
