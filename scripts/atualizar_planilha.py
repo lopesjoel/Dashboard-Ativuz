@@ -68,21 +68,28 @@ async def baixar_contas_a_receber(page: Page) -> bool:
     nome = "CONTAS-A-RECEBER.xlsx"
     url  = "https://app.bluefleet.com.br/analytics/report/72?showingAllReports=True"
 
-    log(f"[{nome}] Navegando via menu Gestão → Contas a Receber em Aberto...")
-    await page.goto("https://app.bluefleet.com.br", wait_until="domcontentloaded", timeout=30_000)
-    await page.wait_for_timeout(1_000)
+    log(f"[{nome}] Acessando relatório diretamente...")
+    await page.goto(url, wait_until="networkidle", timeout=40_000)
+    await page.wait_for_timeout(2_000)
 
-    # Clica no menu "Gestão" (pode ser botão, link ou elemento genérico)
-    gestao = page.locator("text=Gestão").first
-    await gestao.wait_for(state="visible", timeout=15_000)
-    await gestao.click()
-    await page.wait_for_timeout(800)
+    # Verifica se caiu na tela de login
+    if "login" in page.url.lower() or await page.locator("input[type='password']").count() > 0:
+        log(f"[{nome}] ERRO: sessão expirada. Rode --setup novamente para fazer login.")
+        return False
 
-    # Clica em "Contas a Receber em Aberto" na seção Financeiro
-    # Há dois cards iguais (Financeiro e Controladoria) — pega o primeiro (Financeiro)
-    await page.get_by_text("Contas a Receber em Aberto", exact=True).first.click()
-    await page.wait_for_load_state("networkidle", timeout=20_000)
-    await page.wait_for_timeout(1_500)
+    # Verifica se precisa navegar pelo menu (se o form de filtros não está visível)
+    form_visivel = await page.locator("input").count() > 2
+    if not form_visivel:
+        log(f"[{nome}] Form não encontrado na URL direta, tentando via menu...")
+        await page.goto("https://app.bluefleet.com.br", wait_until="networkidle", timeout=30_000)
+        await page.wait_for_timeout(1_500)
+        gestao = page.locator("text=Gestão").first
+        await gestao.wait_for(state="visible", timeout=10_000)
+        await gestao.click()
+        await page.wait_for_timeout(800)
+        await page.get_by_text("Contas a Receber em Aberto", exact=True).first.click()
+        await page.wait_for_load_state("networkidle", timeout=20_000)
+        await page.wait_for_timeout(1_500)
 
     # ── Data Inicial ──────────────────────────────────────────────────────────
     log(f"[{nome}] Preenchendo Data Inicial: 01/08/2025")
