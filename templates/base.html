@@ -82,10 +82,9 @@
       </div>
 
       <!-- ── Insights ── -->
-      {% set grp_insights = active in ['dre', 'financiamentos', 'capital_investido', 'frota', 'contratos'] %}
-      <div class="sb-group" id="grp-insights" data-open="{{ 'true' if grp_insights else 'false' }}">
+      <div class="sb-group" id="grp-insights" data-open="true">
         <button class="sb-group-head" onclick="toggleGroup('grp-insights')"
-                aria-expanded="{{ 'true' if grp_insights else 'false' }}" aria-controls="grp-insights-body">
+                aria-expanded="true" aria-controls="grp-insights-body">
           <span>Insights</span>
           <span class="chev" aria-hidden="true">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
