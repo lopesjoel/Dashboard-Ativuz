@@ -68,8 +68,18 @@ async def baixar_contas_a_receber(page: Page) -> bool:
     nome = "CONTAS-A-RECEBER.xlsx"
     url  = "https://app.bluefleet.com.br/analytics/report/72?showingAllReports=True"
 
-    log(f"[{nome}] Acessando {url} ...")
-    await page.goto(url, wait_until="networkidle", timeout=40_000)
+    log(f"[{nome}] Navegando via menu Gestão → Contas a Receber em Aberto...")
+    await page.goto("https://app.bluefleet.com.br", wait_until="domcontentloaded", timeout=30_000)
+    await page.wait_for_timeout(1_000)
+
+    # Clica no menu "Gestão"
+    await page.get_by_role("link", name="Gestão", exact=False).first.click()
+    await page.wait_for_timeout(800)
+
+    # Clica em "Contas a Receber em Aberto" na seção Financeiro
+    # Há dois cards iguais (Financeiro e Controladoria) — pega o primeiro (Financeiro)
+    await page.get_by_text("Contas a Receber em Aberto", exact=True).first.click()
+    await page.wait_for_load_state("networkidle", timeout=20_000)
     await page.wait_for_timeout(1_500)
 
     # ── Data Inicial ──────────────────────────────────────────────────────────
