@@ -174,29 +174,42 @@ ROTINAS = [
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
+STATE_FILE = PERFIL_DIR / "state.json"
+
+
 async def main(setup: bool, visivel: bool):
     PERFIL_DIR.mkdir(parents=True, exist_ok=True)
 
     async with async_playwright() as pw:
-        ctx = await pw.chromium.launch_persistent_context(
-            str(PERFIL_DIR),
+        browser = await pw.chromium.launch(
             headless=(not setup and not visivel),
-            accept_downloads=True,
-            viewport={"width": 1440, "height": 900},
+            args=["--start-maximized"],
         )
 
-        page = ctx.pages[0] if ctx.pages else await ctx.new_page()
-
         if setup:
+            ctx  = await browser.new_context(viewport={"width": 1440, "height": 900}, accept_downloads=True)
+            page = await ctx.new_page()
             log("Modo setup — abrindo Bluefleet para login...")
-            await page.goto("https://app.bluefleet.com.br", wait_until="domcontentloaded", timeout=30_000)
+            await page.goto("https://app.bluefleet.com.br", wait_until="networkidle", timeout=30_000)
             log("Faça login no navegador que abriu.")
-            log("Quando estiver logado, pressione ENTER aqui para salvar a sessão e fechar.")
+            log("Quando a página inicial carregar (menu Gestão visível), pressione ENTER.")
             await asyncio.get_event_loop().run_in_executor(None, input)
-            await ctx.storage_state(path=str(PERFIL_DIR / "state.json"))
-            log("Sessão salva. Rode sem --setup para testar.")
-            await ctx.close()
+            await ctx.storage_state(path=str(STATE_FILE))
+            log(f"Sessão salva em {STATE_FILE}. Rode sem --setup para testar.")
+            await browser.close()
             return
+
+        if not STATE_FILE.exists():
+            log("ERRO: sessão não encontrada. Rode --setup primeiro.")
+            await browser.close()
+            sys.exit(1)
+
+        ctx  = await browser.new_context(
+            storage_state=str(STATE_FILE),
+            viewport={"width": 1440, "height": 900},
+            accept_downloads=True,
+        )
+        page = await ctx.new_page()
 
         erros = []
         for rotina in ROTINAS:
@@ -208,7 +221,9 @@ async def main(setup: bool, visivel: bool):
                 log(f"ERRO inesperado em {rotina.__name__}: {ex}")
                 erros.append(rotina.__name__)
 
-        await ctx.close()
+        # Atualiza o state após execução (renova tokens se o site os atualizou)
+        await ctx.storage_state(path=str(STATE_FILE))
+        await browser.close()
 
         if erros:
             log(f"Concluído com erros: {', '.join(erros)}")
