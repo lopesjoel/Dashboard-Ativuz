@@ -72,8 +72,10 @@ async def baixar_contas_a_receber(page: Page) -> bool:
     await page.goto("https://app.bluefleet.com.br", wait_until="domcontentloaded", timeout=30_000)
     await page.wait_for_timeout(1_000)
 
-    # Clica no menu "Gestão"
-    await page.get_by_role("link", name="Gestão", exact=False).first.click()
+    # Clica no menu "Gestão" (pode ser botão, link ou elemento genérico)
+    gestao = page.locator("text=Gestão").first
+    await gestao.wait_for(state="visible", timeout=15_000)
+    await gestao.click()
     await page.wait_for_timeout(800)
 
     # Clica em "Contas a Receber em Aberto" na seção Financeiro
