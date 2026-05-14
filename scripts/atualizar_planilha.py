@@ -77,19 +77,19 @@ async def baixar_contas_a_receber(page: Page) -> bool:
         log(f"[{nome}] ERRO: sessão expirada. Rode --setup novamente para fazer login.")
         return False
 
-    # Verifica se precisa navegar pelo menu (se o form de filtros não está visível)
-    form_visivel = await page.locator("input").count() > 2
-    if not form_visivel:
-        log(f"[{nome}] Form não encontrado na URL direta, tentando via menu...")
-        await page.goto("https://app.bluefleet.com.br", wait_until="networkidle", timeout=30_000)
-        await page.wait_for_timeout(1_500)
-        gestao = page.locator("text=Gestão").first
-        await gestao.wait_for(state="visible", timeout=10_000)
-        await gestao.click()
-        await page.wait_for_timeout(800)
-        await page.get_by_text("Contas a Receber em Aberto", exact=True).first.click()
-        await page.wait_for_load_state("networkidle", timeout=20_000)
-        await page.wait_for_timeout(1_500)
+    # Screenshot para debug — salvo em scripts/debug_pagina.png
+    screenshot_path = Path(__file__).parent / "debug_pagina.png"
+    await page.screenshot(path=str(screenshot_path), full_page=True)
+    log(f"[{nome}] Screenshot salvo em {screenshot_path}")
+
+    # Lista todos os inputs visíveis na página para diagnóstico
+    inputs = await page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('input')).map(el => ({
+            type: el.type, name: el.name, id: el.id,
+            placeholder: el.placeholder, label: el.getAttribute('aria-label') || ''
+        }));
+    }""")
+    log(f"[{nome}] Inputs encontrados: {inputs}")
 
     # ── Data Inicial ──────────────────────────────────────────────────────────
     log(f"[{nome}] Preenchendo Data Inicial: 01/08/2025")
