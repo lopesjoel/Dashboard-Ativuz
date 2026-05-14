@@ -9,7 +9,8 @@
       "Bash(Get-ChildItem *)",
       "Bash(python -c ' *)",
       "Bash(python -c \"import app; print\\('OK — rotas:', [r.rule for r in app.app.url_map.iter_rules\\(\\) if 'frota' in r.rule]\\)\")",
-      "Bash(python *)"
+      "Bash(python *)",
+      "PowerShell(Remove-Item *)"
     ]
   }
 }
