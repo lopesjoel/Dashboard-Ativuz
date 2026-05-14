@@ -2071,6 +2071,24 @@ def exportar_inadimplencia():
         return _fill("FEF9E7"), Font(color="7D6608", size=10)
 
     wb = openpyxl.load_workbook(str(modelo))
+    from openpyxl.cell.cell import MergedCell
+
+    def _unmerge_area(ws, min_row, max_row, min_col, max_col):
+        """Remove merges que intersectam com a área de dados."""
+        to_remove = [
+            m for m in list(ws.merged_cells.ranges)
+            if m.min_row <= max_row and m.max_row >= min_row
+            and m.min_col <= max_col and m.max_col >= min_col
+        ]
+        for m in to_remove:
+            ws.unmerge_cells(str(m))
+
+    def _safe_set(cell, **kwargs):
+        """Escreve em célula ignorando MergedCell (não-master)."""
+        if isinstance(cell, MergedCell):
+            return
+        for attr, val in kwargs.items():
+            setattr(cell, attr, val)
 
     # ── Aba 1: Resumo Executivo ───────────────────────────────────────────────
     ws1 = wb["Resumo Executivo"]
@@ -2086,10 +2104,11 @@ def exportar_inadimplencia():
     ws1["F5"].value = f"=SUM(G11:G{n_end})"
     ws1["H5"].value = f"=SUM(H11:H{n_end})"
 
-    # Limpa linhas de amostra
-    for r in range(11, 60):
+    # Desmescla e limpa linhas de amostra
+    _unmerge_area(ws1, 11, 200, 2, 9)
+    for r in range(11, 200):
         for c in range(2, 10):
-            ws1.cell(row=r, column=c).value = None
+            _safe_set(ws1.cell(row=r, column=c), value=None)
 
     # Escreve dados
     for i, rec in enumerate(registros):
@@ -2098,12 +2117,14 @@ def exportar_inadimplencia():
         bf, bft = badge_dias(rec["dias"])
 
         def _w(col, val, fill=None, font=None, fmt=None, align=None):
-            c = ws1.cell(row=r, column=col)
-            c.value = val
-            if fill:  c.fill  = fill
-            if font:  c.font  = font
-            if fmt:   c.number_format = fmt
-            if align: c.alignment = align
+            cell = ws1.cell(row=r, column=col)
+            _safe_set(cell,
+                value=val,
+                **({} if fill  is None else {"fill": fill}),
+                **({} if font  is None else {"font": font}),
+                **({} if fmt   is None else {"number_format": fmt}),
+                **({} if align is None else {"alignment": align}),
+            )
 
         _w(2, rec["nome"],      base,    F_BLACK, align=_align("left"))
         _w(3, rec["etapa"],     F_ETAPA, F_WHITE, align=_align("center"))
@@ -2111,19 +2132,16 @@ def exportar_inadimplencia():
         _w(5, rec["dias"],      bf,      bft,     align=_align("center"))
         _w(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
         _w(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
-        ws1.cell(row=r, column=8).value          = f"=F{r}+G{r}"
-        ws1.cell(row=r, column=8).fill           = F_TOTAL
-        ws1.cell(row=r, column=8).font           = F_BOLD
-        ws1.cell(row=r, column=8).number_format  = FMT_BRL
-        ws1.cell(row=r, column=8).alignment      = _align("right")
+        _w(8, f"=F{r}+G{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
         _w(9, rec["proxima"],   F_ACAO,  F_BLACK, align=_align("left", wrap=True))
 
     # ── Aba 2: Detalhamento por Cliente ──────────────────────────────────────
     ws2 = wb["Detalhamento por Cliente"]
 
-    for r in range(6, 200):
+    _unmerge_area(ws2, 6, 500, 2, 8)
+    for r in range(6, 500):
         for c in range(2, 9):
-            ws2.cell(row=r, column=c).value = None
+            _safe_set(ws2.cell(row=r, column=c), value=None)
 
     for i, rec in enumerate(registros):
         r    = 6 + i
@@ -2131,12 +2149,14 @@ def exportar_inadimplencia():
         bf, bft = badge_dias(rec["dias"])
 
         def _wd(col, val, fill=None, font=None, fmt=None, align=None):
-            c = ws2.cell(row=r, column=col)
-            c.value = val
-            if fill:  c.fill  = fill
-            if font:  c.font  = font
-            if fmt:   c.number_format = fmt
-            if align: c.alignment = align
+            cell = ws2.cell(row=r, column=col)
+            _safe_set(cell,
+                value=val,
+                **({} if fill  is None else {"fill": fill}),
+                **({} if font  is None else {"font": font}),
+                **({} if fmt   is None else {"number_format": fmt}),
+                **({} if align is None else {"alignment": align}),
+            )
 
         _wd(2, rec["nome"],      base,    F_BLACK, align=_align("left"))
         _wd(3, rec["etapa"],     F_ETAPA, F_WHITE, align=_align("center"))
@@ -2144,11 +2164,7 @@ def exportar_inadimplencia():
         _wd(5, rec["vencimento"],base,    F_BLACK, align=_align("center"))
         _wd(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
         _wd(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
-        ws2.cell(row=r, column=8).value         = f"=F{r}+G{r}"
-        ws2.cell(row=r, column=8).fill          = F_TOTAL
-        ws2.cell(row=r, column=8).font          = F_BOLD
-        ws2.cell(row=r, column=8).number_format = FMT_BRL
-        ws2.cell(row=r, column=8).alignment     = _align("right")
+        _wd(8, f"=F{r}+G{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
 
     # ── Aba 3: Análise por Etapa ──────────────────────────────────────────────
     ws3 = wb["Análise por Etapa"]
