@@ -77,7 +77,6 @@ async def preencher_campo(page: Page, rotulo: str, valor: str, nth: int = 0):
         campo = page.locator("input:visible").nth(nth)
 
     await campo.click()
-    await campo.triple_click()
     await campo.fill(valor)
     await campo.press("Tab")
 
@@ -107,8 +106,6 @@ async def baixar_contas_a_receber(page: Page) -> bool:
     log(f"[{nome}] Preenchendo Data Inicial: 01/08/2025")
     campo_ini = page.locator("#txtParameterStartDate")
     await campo_ini.wait_for(state="visible", timeout=10_000)
-    await campo_ini.click()
-    await campo_ini.triple_click()
     await campo_ini.fill("01/08/2025")
     await campo_ini.press("Tab")
     await page.wait_for_timeout(400)
@@ -117,8 +114,6 @@ async def baixar_contas_a_receber(page: Page) -> bool:
     data_final = ultimo_dia_mes()
     log(f"[{nome}] Preenchendo Data Final: {data_final}")
     campo_fim = page.locator("#txtParameterEndDate")
-    await campo_fim.click()
-    await campo_fim.triple_click()
     await campo_fim.fill(data_final)
     await campo_fim.press("Tab")
     await page.wait_for_timeout(400)
