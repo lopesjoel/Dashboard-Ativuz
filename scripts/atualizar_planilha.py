@@ -26,7 +26,7 @@ from playwright.async_api import async_playwright, Page
 ROOT        = Path(__file__).parent.parent
 PERFIL_DIR  = Path.home() / ".playwright_ativuz"
 
-DEST_CONTAS = ROOT / "docx_templates" / "CONTAS-A-RECEBER.xlsx"
+DEST_CONTAS = ROOT / "planilhas" / "CONTAS-A-RECEBER.xlsx"
 
 # ─────────────────────────────────────────────────────────────────────────────
 

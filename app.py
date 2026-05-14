@@ -103,7 +103,7 @@ def logout():
 @app.route("/api/clientes")
 def api_clientes():
     import openpyxl
-    path = Path(__file__).parent / "dados_clientes.xlsx"
+    path = Path(__file__).parent / "planilhas" / "dados_clientes.xlsx"
     if not path.exists():
         return jsonify([])
     wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
@@ -1497,7 +1497,7 @@ def _inad_summary():
         s = unicodedata.normalize("NFD", str(s or "").lower())
         return "".join(c for c in s if unicodedata.category(c) != "Mn")
 
-    xlsx_path = Path(__file__).parent / "docx_templates" / "CONTAS-A-RECEBER.xlsx"
+    xlsx_path = Path(__file__).parent / "planilhas" / "CONTAS-A-RECEBER.xlsx"
     if not xlsx_path.exists():
         return None
 
@@ -1685,7 +1685,7 @@ def pagina_inadimplencia():
         s = unicodedata.normalize("NFD", str(s or "").lower())
         return "".join(c for c in s if unicodedata.category(c) != "Mn")
 
-    _base = Path(__file__).parent / "docx_templates"
+    _base = Path(__file__).parent / "planilhas"
     xlsx_path = _base / "CONTAS-A-RECEBER.xlsx"
 
     hoje = date.today()
@@ -1916,7 +1916,7 @@ def pagina_inadimplencia():
             erro_leitura = str(e)
     else:
         erro_leitura = (
-            "Planilha não encontrada em docx_templates/. "
+            "Planilha não encontrada em planilhas/. "
             "Salve o arquivo como CONTAS-A-RECEBER.xlsx nessa pasta."
         )
 
@@ -1954,7 +1954,7 @@ def exportar_inadimplencia():
     import openpyxl
     from openpyxl.styles import PatternFill, Font, Alignment
 
-    _base      = Path(__file__).parent / "docx_templates"
+    _base      = Path(__file__).parent / "planilhas"
     xlsx_path  = _base / "CONTAS-A-RECEBER.xlsx"
     modelo     = _base / "relatorio_inadimplencia_modelo.xlsx"
     hoje       = date.today()
@@ -2220,7 +2220,7 @@ def inadimplencia_upload():
     if not f.filename.lower().endswith(".xlsx"):
         flash("Apenas arquivos .xlsx são aceitos.", "error")
         return redirect(url_for("pagina_inadimplencia"))
-    dest = Path(__file__).parent / "docx_templates" / "CONTAS-A-RECEBER.xlsx"
+    dest = Path(__file__).parent / "planilhas" / "CONTAS-A-RECEBER.xlsx"
     f.save(str(dest))
     flash("Planilha atualizada! Os dados abaixo refletem o arquivo enviado.", "success")
     return redirect(url_for("pagina_inadimplencia"))
@@ -3136,7 +3136,7 @@ def debug_sob_adm_headers():
     )
 
 
-_CONTRATOS_XLSX = Path(__file__).parent / "docx_templates" / "Contratos de Locação.xlsx"
+_CONTRATOS_XLSX = Path(__file__).parent / "planilhas" / "Contratos de Locação.xlsx"
 
 
 def _ler_contratos():
@@ -3306,7 +3306,7 @@ def api_frota_manual_batch():
 
 def _veiculos_xlsx_path():
     base = Path(__file__).resolve().parent
-    return base / "data" / "veiculos.xlsx"
+    return base / "planilhas" / "veiculos.xlsx"
 
 
 _IMAGEM_MAP = [
@@ -3333,7 +3333,7 @@ def _ler_veiculos():
     import openpyxl
     xlsx_path = _veiculos_xlsx_path()
     if not xlsx_path.exists():
-        return [], "Planilha não encontrada em data/veiculos.xlsx."
+        return [], "Planilha não encontrada em planilhas/veiculos.xlsx."
 
     try:
         wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
