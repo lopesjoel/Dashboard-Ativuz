@@ -2771,7 +2771,6 @@ def _ler_sob_administracao():
         i_mod      = _ci("modelo")
         i_fipe     = _ci("codigo fipe") or _ci("fipe")
         i_km       = _ci("km confirmado")
-        i_prop_own = _ci("proprietario")
         i_prop     = _ci("unidade do ve")
         i_loc      = _ci("razao social cliente") or _ci("razao social")
         i_tipo     = _ci("tipo de contrato")
@@ -2788,19 +2787,27 @@ def _ler_sob_administracao():
             if hasattr(v, "strftime"): return v.strftime("%d/%m/%Y")
             return str(v).strip()
 
+        _EXCLUIR = {"ativuz veiculos", "az empreendimentos"}
+        _EXTRA   = _SOB_ADM_PLACA_EXTRA.upper().replace("-", "").replace(" ", "")
+
         hoje = date.today()
         veiculos = []
         for row in rows[5:]:
             placa = _v(row, i_placa)
             if not placa:
                 continue
-            proprio = _v(row, i_prop_own)
-            placa_norm = placa.upper().replace("-", "").replace(" ", "")
-            extra_norm = _SOB_ADM_PLACA_EXTRA.upper().replace("-", "").replace(" ", "")
-            if _norm("terceiro") not in _norm(proprio) and placa_norm != extra_norm:
-                continue
 
-            unid    = _v(row, i_prop)
+            placa_id = placa.upper().replace("-", "").replace(" ", "")
+            unid     = _v(row, i_prop)
+            unid_n   = _norm(unid)
+
+            # inclui: unidade não-Ativuz/AZ  OU  placa especial (QGO-2H58)
+            if placa_id != _EXTRA:
+                if not unid:
+                    continue
+                if any(exc in unid_n for exc in _EXCLUIR):
+                    continue
+
             fipe    = _v(row, i_fipe)
             valor_s = _SOB_ADM_FIPE_VALORES.get(fipe) or _SOB_ADM_PLACA_VALORES.get(placa.upper())
             taxa_s  = round(valor_s * _SOB_ADM_TAXA, 2) if valor_s else None
@@ -2828,7 +2835,6 @@ def _ler_sob_administracao():
                 "ano_fab":      _v(row, i_anofab),
                 "ano_mod":      _v(row, i_anomod),
                 "proprietario": unid,
-                "proprio_legal":proprio,
                 "locatario":    _v(row, i_loc),
                 "tipo_contrato":_v(row, i_tipo),
                 "km":           _v(row, i_km),
