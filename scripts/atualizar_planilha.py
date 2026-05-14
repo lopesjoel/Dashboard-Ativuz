@@ -42,18 +42,44 @@ def ultimo_dia_mes() -> str:
     return f"{ultimo:02d}/{hoje.month:02d}/{hoje.year}"
 
 
-async def preencher_data(page: Page, rotulo: str, valor: str):
-    """Preenche um campo de data por label ou placeholder."""
+async def preencher_campo(page: Page, rotulo: str, valor: str, nth: int = 0):
+    """Preenche um campo por label, placeholder ou posição."""
+    campo = None
+
+    # 1) por label associado (for/id)
     try:
-        campo = page.get_by_label(rotulo, exact=False)
-        await campo.first.click()
-        await campo.first.triple_click()
-        await campo.first.fill(valor)
+        loc = page.get_by_label(rotulo, exact=False)
+        if await loc.count() > 0:
+            campo = loc.first
     except Exception:
-        campo = page.locator(f"input[placeholder*='{rotulo}']")
-        await campo.first.click()
-        await campo.first.triple_click()
-        await campo.first.fill(valor)
+        pass
+
+    # 2) por texto do label como elemento próximo ao input
+    if campo is None:
+        try:
+            loc = page.locator(f"label:has-text('{rotulo}') + input, label:has-text('{rotulo}') ~ input")
+            if await loc.count() > 0:
+                campo = loc.first
+        except Exception:
+            pass
+
+    # 3) por placeholder
+    if campo is None:
+        try:
+            loc = page.locator(f"input[placeholder*='{rotulo}']")
+            if await loc.count() > 0:
+                campo = loc.first
+        except Exception:
+            pass
+
+    # 4) fallback: nth input visível da página
+    if campo is None:
+        campo = page.locator("input:visible").nth(nth)
+
+    await campo.click()
+    await campo.triple_click()
+    await campo.fill(valor)
+    await campo.press("Tab")
 
 
 async def baixar_contas_a_receber(page: Page) -> bool:
@@ -77,51 +103,42 @@ async def baixar_contas_a_receber(page: Page) -> bool:
         log(f"[{nome}] ERRO: sessão expirada. Rode --setup novamente para fazer login.")
         return False
 
-    # Screenshot para debug — salvo em scripts/debug_pagina.png
-    screenshot_path = Path(__file__).parent / "debug_pagina.png"
-    await page.screenshot(path=str(screenshot_path), full_page=True)
-    log(f"[{nome}] Screenshot salvo em {screenshot_path}")
-
-    # Lista todos os inputs visíveis na página para diagnóstico
-    inputs = await page.evaluate("""() => {
-        return Array.from(document.querySelectorAll('input')).map(el => ({
-            type: el.type, name: el.name, id: el.id,
-            placeholder: el.placeholder, label: el.getAttribute('aria-label') || ''
-        }));
-    }""")
-    log(f"[{nome}] Inputs encontrados: {inputs}")
-
     # ── Data Inicial ──────────────────────────────────────────────────────────
     log(f"[{nome}] Preenchendo Data Inicial: 01/08/2025")
-    await preencher_data(page, "Data Inicial", "01/08/2025")
-    await page.wait_for_timeout(500)
+    campo_ini = page.locator("#txtParameterStartDate")
+    await campo_ini.wait_for(state="visible", timeout=10_000)
+    await campo_ini.click()
+    await campo_ini.triple_click()
+    await campo_ini.fill("01/08/2025")
+    await campo_ini.press("Tab")
+    await page.wait_for_timeout(400)
 
     # ── Data Final ────────────────────────────────────────────────────────────
     data_final = ultimo_dia_mes()
     log(f"[{nome}] Preenchendo Data Final: {data_final}")
-    await preencher_data(page, "Data Final", data_final)
-    await page.wait_for_timeout(500)
+    campo_fim = page.locator("#txtParameterEndDate")
+    await campo_fim.click()
+    await campo_fim.triple_click()
+    await campo_fim.fill(data_final)
+    await campo_fim.press("Tab")
+    await page.wait_for_timeout(400)
 
-    # ── Conta de Recebimento ──────────────────────────────────────────────────
-    log(f"[{nome}] Selecionando Conta de Recebimento...")
+    # ── Conta de Recebimento (campo autocomplete type=search) ─────────────────
+    log(f"[{nome}] Preenchendo Conta de Recebimento...")
     conta_texto = "1.0 [OFICIAL] SICREDI | BANCO GESTOR"
-    try:
-        # Tenta select nativo
-        sel = page.locator("select").filter(has_text="SICREDI").first
-        if await sel.count() == 0:
-            sel = page.get_by_label("Conta de Recebimento", exact=False).first
-        await sel.select_option(label=conta_texto)
-    except Exception:
-        # Tenta dropdown customizado (clica e escolhe o item)
-        try:
-            dropdown = page.get_by_label("Conta de Recebimento", exact=False).first
-            await dropdown.click()
-            await page.wait_for_timeout(600)
-            await page.get_by_text(conta_texto, exact=False).first.click()
-        except Exception as ex:
-            log(f"[{nome}] AVISO: não consegui selecionar a conta automaticamente ({ex}). Verifique o seletor.")
-
-    await page.wait_for_timeout(800)
+    campo_conta = page.locator("input[type='search']").first
+    await campo_conta.click()
+    await campo_conta.fill("SICREDI")
+    await page.wait_for_timeout(1_200)
+    # Seleciona o primeiro item da lista que aparecer
+    opcao = page.locator("li, .autocomplete-item, [role='option']").filter(has_text="SICREDI").first
+    if await opcao.count() > 0:
+        await opcao.click()
+    else:
+        # Tenta digitar o texto completo e pressionar Enter
+        await campo_conta.fill(conta_texto)
+        await campo_conta.press("Enter")
+    await page.wait_for_timeout(600)
 
     # ── Gerar Relatório ───────────────────────────────────────────────────────
     log(f"[{nome}] Clicando em Gerar Relatório...")
