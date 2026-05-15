@@ -125,7 +125,18 @@ def gerar_docx(dados: dict, caminho_saida: str, template_path: str = None):
 
         doc_xml = tmp / "word" / "document.xml"
         texto = doc_xml.read_text(encoding="utf-8")
+
+        # Converte " CEP:[ ]" → ", [ ]": o endereço já vem sem CEP e o campo
+        # locatario_cep preenche o marcador separado com apenas o número do CEP.
+        texto = re.sub(r' CEP:(?=(?:<[^>]+>)*\[ \])', ', ', texto)
+
         texto_modificado = substituir_campos(texto, dados)
+
+        # Placeholders nomeados usados no template (não são [ ] simples)
+        for _chave in ("caucao_valor", "caucao_extenso"):
+            _val = dados.get(_chave, "")
+            texto_modificado = texto_modificado.replace(f'[{_chave}]', _val)
+
         doc_xml.write_text(texto_modificado, encoding="utf-8")
 
         saida = Path(caminho_saida)

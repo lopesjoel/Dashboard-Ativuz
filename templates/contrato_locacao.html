@@ -233,8 +233,11 @@ function buildEndereco(prefix) {
   const d = cepData[prefix];
   if (!d) return '';
   const numero = (document.getElementById(prefix + '_numero')?.value || '').trim();
-  return [d.logradouro, numero, d.bairro, d.cidade, d.estado, d.cep]
-    .map(p => p.trim()).filter(Boolean).join(', ').toUpperCase();
+  // CEP do locatário ocupa campo separado no contrato; avalista inclui no endereço
+  const parts = prefix === 'locatario'
+    ? [d.logradouro, numero, d.bairro, d.cidade, d.estado]
+    : [d.logradouro, numero, d.bairro, d.cidade, d.estado, d.cep];
+  return parts.map(p => p.trim()).filter(Boolean).join(', ').toUpperCase();
 }
 
 function updateEndereco(prefix) {
