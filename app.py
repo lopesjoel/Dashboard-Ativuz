@@ -21,6 +21,7 @@ import unicodedata
 import uuid
 
 from gerar_contrato import gerar_docx, gerar_termo_quitacao, gerar_notificacao_avalista, gerar_notificacao_inadimplente, gerar_vistoria_entrega, gerar_vistoria_nova, nome_arquivo_saida
+from gerar_vistoria_entrada_saida import gerar_vistoria_entrada_saida, docx_para_pdf as _docx_para_pdf_es
 
 app = Flask(__name__)
 app.secret_key = _os.environ.get("SECRET_KEY", "ativuz-secret-dev-2026")
@@ -1047,12 +1048,39 @@ def editar_contrato_locacao(contrato_id):
 
 # ── Vistoria de Entrega ───────────────────────────────────────────────────────
 
-VISTORIA_TEMPLATE = DOCX_TEMPLATES / "VISTORIA_TESTE_1.docx"
+VISTORIA_TEMPLATE    = DOCX_TEMPLATES / "VISTORIA_TESTE_1.docx"
+VISTORIA_ES_TEMPLATE = DOCX_TEMPLATES / "VISTORIA_ENTRADA_SAIDA_TEMPLATE.docx"
 
 
 @app.route("/vistoria", methods=["GET"])
 def pagina_vistoria():
-    return render_template("vistoria.html", active="vistoria", vistoria=None, edit_id=None, acessorios={}, usuario=session.get("usuario", ""))
+    return render_template("vistoria.html", active="vistoria", vistoria=None,
+                           contrato_id=None, edit_id=None, acessorios={},
+                           usuario=session.get("usuario", ""))
+
+
+@app.route("/vistoria/<contrato_id>", methods=["GET"])
+def pagina_vistoria_contrato(contrato_id):
+    """Exibe o formulário de vistoria no estado correto (entrada / saida / completa)."""
+    sb = _supabase()
+    vistoria = None
+    if sb:
+        try:
+            res = (sb.table("vistorias")
+                     .select("*")
+                     .eq("contrato_id", contrato_id)
+                     .order("criado_em", desc=True)
+                     .limit(1)
+                     .execute())
+            if res.data:
+                vistoria = res.data[0]
+        except Exception:
+            import traceback; traceback.print_exc()
+    return render_template("vistoria.html", active="vistoria",
+                           vistoria=vistoria, contrato_id=contrato_id,
+                           edit_id=None,
+                           acessorios=(vistoria or {}).get("acessorios") or {},
+                           usuario=session.get("usuario", ""))
 
 
 @app.route("/vistoria", methods=["POST"])
@@ -1175,7 +1203,269 @@ def gerar_vistoria_route():
 
 
 def _gerar_vistoria_impl():
+    import threading, traceback as _tb
     agora = datetime.now(_BRT)
+    etapa = request.form.get("etapa", "").strip()  # "entrada" | "saida" | "" (legado)
+
+    _CHAVES_ACC = [
+        "acc_calotas", "acc_buzina", "acc_doc_crlv", "acc_triangulo", "acc_antena",
+        "acc_sensor_re", "acc_som", "acc_tapetes", "acc_limpadores", "acc_chave_roda",
+        "acc_vidros_eletricos", "acc_oleo_motor", "acc_alarme", "acc_lampadas", "acc_macaco",
+        "acc_estepe", "acc_gnv", "acc_agua", "acc_borr_psg_dir", "acc_borr_mtr_dir",
+        "acc_asa_dd", "acc_asa_td", "acc_tapete_mala", "acc_tampa_parachoque",
+        "acc_borr_psg_tras", "acc_borr_mtr_tras", "acc_asa_de", "acc_asa_te",
+        "acc_bagagito", "acc_lingueta",
+    ]
+
+    def _salvar_foto(file_storage):
+        if not file_storage or not file_storage.filename:
+            return None
+        ext = Path(secure_filename(file_storage.filename)).suffix.lower()
+        if ext not in ('.jpg', '.jpeg', '.png'):
+            return None
+        p = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
+        file_storage.save(str(p))
+        return str(p)
+
+    def _upload_bg(storage_path, docx_bytes, old_storage_path=None):
+        _sp, _db, _ost = storage_path, docx_bytes, old_storage_path
+        def _bg():
+            try:
+                sb2 = _supabase()
+                if not sb2:
+                    return
+                try:
+                    sb2.storage.from_("documentos").upload(
+                        _sp, _db,
+                        {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                         "upsert": "true"},
+                    )
+                except Exception:
+                    _tb.print_exc()
+                if _ost and _ost != _sp:
+                    try:
+                        sb2.storage.from_("documentos").remove([_ost])
+                    except Exception:
+                        pass
+            except Exception:
+                _tb.print_exc()
+        threading.Thread(target=_bg, daemon=True).start()
+
+    dados_fixos = {
+        "contrato_id":      request.form.get("contrato_id", "").strip(),
+        "cliente_nome":     request.form.get("cliente_nome", ""),
+        "cliente_telefone": request.form.get("cliente_telefone", ""),
+        "cliente_endereco": request.form.get("cliente_endereco", ""),
+        "preenchido_por":   request.form.get("preenchido_por", ""),
+        "veiculo":          request.form.get("veiculo", "").strip(),
+        "placa":            request.form.get("placa", "").upper().strip(),
+        "cor":              request.form.get("cor", ""),
+        "ano":              request.form.get("ano", ""),
+        "chassi":           request.form.get("chassi", ""),
+        "numero_motor":     request.form.get("numero_motor", ""),
+    }
+    contrato_id = dados_fixos["contrato_id"]
+    placa_slug  = _slugify(dados_fixos["placa"] or "PLACA")
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # ETAPA ENTRADA  (cliente retira o carro)
+    # ─────────────────────────────────────────────────────────────────────────
+    if etapa == "entrada":
+        fotos_entrada = []
+        for f in list(request.files.getlist("fotos_entrada")) + [request.files.get("foto_painel")]:
+            p = _salvar_foto(f)
+            if p:
+                fotos_entrada.append(p)
+
+        dados = {
+            **dados_fixos,
+            "data_entrada":        agora.strftime("%d/%m/%Y %H:%M"),
+            "hodometro_entrada":   request.form.get("hodometro_entrada", ""),
+            "combustivel_entrada": request.form.get("combustivel_entrada", ""),
+            "obs_entrada":         request.form.get("obs_entrada", ""),
+            "sintomas_entrada":    request.form.get("sintomas_entrada", ""),
+            "responsavel_entrada": dados_fixos["preenchido_por"],
+            "acessorios_entrada":  {k: request.form.get(f"{k}_entrada", "") for k in _CHAVES_ACC},
+            "fotos_entrada":       fotos_entrada,
+        }
+
+        data_slug    = agora.strftime("%d.%m.%Y")
+        nome_docx    = f"VISTORIA_{placa_slug}_{data_slug}.docx"
+        caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
+
+        try:
+            resumo = gerar_vistoria_entrada_saida(
+                dados,
+                caminho_saida=caminho_docx,
+                template_path=str(VISTORIA_ES_TEMPLATE),
+            )
+        except Exception as e:
+            _tb.print_exc()
+            return jsonify({"error": f"Erro ao gerar vistoria (entrada): {e}"}), 500
+        finally:
+            for p in fotos_entrada:
+                Path(p).unlink(missing_ok=True)
+
+        _storage_path = f"vistorias/{nome_docx}"
+        sb = _supabase()
+        if sb:
+            try:
+                sb.table("vistorias").insert({
+                    "contrato_id":          contrato_id or None,
+                    "cliente":              dados["cliente_nome"],
+                    "telefone":             dados["cliente_telefone"],
+                    "endereco":             dados["cliente_endereco"],
+                    "preenchido_por":       dados["preenchido_por"],
+                    "veiculo":              dados["veiculo"],
+                    "placa":                dados["placa"],
+                    "cor":                  dados["cor"],
+                    "ano":                  dados["ano"],
+                    "chassi":               dados["chassi"],
+                    "numero_motor":         dados["numero_motor"],
+                    "data_hora":            agora.strftime("%d/%m/%Y %H:%M"),
+                    "data_entrada":         dados["data_entrada"],
+                    "hodometro_entrada":    dados["hodometro_entrada"],
+                    "combustivel_entrada":  dados["combustivel_entrada"],
+                    "obs_entrada":          dados["obs_entrada"],
+                    "sintomas_entrada":     dados["sintomas_entrada"],
+                    "responsavel_entrada":  dados["responsavel_entrada"],
+                    "acessorios_entrada":   dados["acessorios_entrada"],
+                    "status":               resumo["status"],
+                    "arquivo_entrada_path": _storage_path,
+                    "arquivo_path":         _storage_path,
+                }).execute()
+            except Exception:
+                _tb.print_exc()
+            _upload_bg(_storage_path, Path(caminho_docx).read_bytes())
+
+        try:
+            _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
+        except Exception:
+            _tb.print_exc()
+
+        destino = (url_for("pagina_vistoria_contrato", contrato_id=contrato_id)
+                   if contrato_id else url_for("historico_vistorias"))
+        return jsonify({"redirect_url": destino})
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # ETAPA SAÍDA  (cliente devolve o carro)
+    # ─────────────────────────────────────────────────────────────────────────
+    if etapa == "saida":
+        vistoria_id = request.form.get("vistoria_id", "").strip()
+        sb = _supabase()
+        registro = {}
+        caminho_docx_anterior = None
+
+        if sb:
+            try:
+                if vistoria_id:
+                    res = sb.table("vistorias").select("*").eq("id", vistoria_id).execute()
+                else:
+                    res = (sb.table("vistorias").select("*")
+                             .eq("contrato_id", contrato_id)
+                             .order("criado_em", desc=True)
+                             .limit(1)
+                             .execute())
+                if res.data:
+                    registro = res.data[0]
+                    vistoria_id = registro.get("id", vistoria_id)
+                    caminho_docx_anterior = (registro.get("arquivo_entrada_path")
+                                             or registro.get("arquivo_path"))
+            except Exception:
+                _tb.print_exc()
+
+        fotos_saida = []
+        for f in list(request.files.getlist("fotos_saida")) + [request.files.get("foto_painel_saida")]:
+            p = _salvar_foto(f)
+            if p:
+                fotos_saida.append(p)
+
+        dados = {
+            "contrato_id":      contrato_id or registro.get("contrato_id", ""),
+            "cliente_nome":     registro.get("cliente", dados_fixos["cliente_nome"]),
+            "cliente_telefone": registro.get("telefone", dados_fixos["cliente_telefone"]),
+            "cliente_endereco": registro.get("endereco", dados_fixos["cliente_endereco"]),
+            "preenchido_por":   registro.get("preenchido_por", dados_fixos["preenchido_por"]),
+            "veiculo":          registro.get("veiculo", dados_fixos["veiculo"]),
+            "placa":            registro.get("placa", dados_fixos["placa"]),
+            "cor":              registro.get("cor", dados_fixos["cor"]),
+            "ano":              registro.get("ano", dados_fixos["ano"]),
+            "chassi":           registro.get("chassi", dados_fixos["chassi"]),
+            "numero_motor":     registro.get("numero_motor", dados_fixos["numero_motor"]),
+            # Entrega — do registro existente
+            "data_entrada":        registro.get("data_entrada", ""),
+            "hodometro_entrada":   registro.get("hodometro_entrada", ""),
+            "combustivel_entrada": registro.get("combustivel_entrada", ""),
+            "obs_entrada":         registro.get("obs_entrada", ""),
+            "sintomas_entrada":    registro.get("sintomas_entrada", ""),
+            "responsavel_entrada": registro.get("responsavel_entrada", ""),
+            "acessorios_entrada":  registro.get("acessorios_entrada") or {},
+            # Devolução — do form
+            "data_saida":        agora.strftime("%d/%m/%Y %H:%M"),
+            "hodometro_saida":   request.form.get("hodometro_saida", ""),
+            "combustivel_saida": request.form.get("combustivel_saida", ""),
+            "obs_saida":         request.form.get("obs_saida", ""),
+            "sintomas_saida":    request.form.get("sintomas_saida", ""),
+            "responsavel_saida": dados_fixos["preenchido_por"],
+            "acessorios_saida":  {k: request.form.get(f"{k}_saida", "") for k in _CHAVES_ACC},
+            "fotos_saida":       fotos_saida,
+        }
+
+        if caminho_docx_anterior:
+            nome_docx    = Path(caminho_docx_anterior).name
+            caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
+        else:
+            placa_slug2  = _slugify(dados["placa"] or "PLACA")
+            data_slug    = agora.strftime("%d.%m.%Y")
+            nome_docx    = f"VISTORIA_{placa_slug2}_{data_slug}.docx"
+            caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
+
+        try:
+            resumo = gerar_vistoria_entrada_saida(
+                dados,
+                caminho_saida=caminho_docx,
+                template_path=str(VISTORIA_ES_TEMPLATE),
+            )
+        except Exception as e:
+            _tb.print_exc()
+            return jsonify({"error": f"Erro ao gerar vistoria (saida): {e}"}), 500
+        finally:
+            for p in fotos_saida:
+                Path(p).unlink(missing_ok=True)
+
+        _storage_path = f"vistorias/{nome_docx}"
+        if sb and vistoria_id:
+            try:
+                sb.table("vistorias").update({
+                    "data_saida":            dados["data_saida"],
+                    "hodometro_saida":       dados["hodometro_saida"],
+                    "combustivel_saida":     dados["combustivel_saida"],
+                    "obs_saida":             dados["obs_saida"],
+                    "sintomas_saida":        dados["sintomas_saida"],
+                    "responsavel_saida":     dados["responsavel_saida"],
+                    "acessorios_saida":      dados["acessorios_saida"],
+                    "status":                resumo["status"],
+                    "divergencias":          [list(d) for d in resumo["divergencias"]],
+                    "arquivo_completo_path": _storage_path,
+                    "arquivo_path":          _storage_path,
+                }).eq("id", vistoria_id).execute()
+            except Exception:
+                _tb.print_exc()
+            _upload_bg(_storage_path, Path(caminho_docx).read_bytes())
+
+        try:
+            _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
+        except Exception:
+            _tb.print_exc()
+
+        cid = contrato_id or registro.get("contrato_id", "")
+        destino = (url_for("pagina_vistoria_contrato", contrato_id=cid)
+                   if cid else url_for("historico_vistorias"))
+        return jsonify({"redirect_url": destino})
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # FALLBACK LEGADO  (sem etapa — comportamento antigo com gerar_vistoria_nova)
+    # ─────────────────────────────────────────────────────────────────────────
     dados = {
         "cliente_nome":      request.form.get("cliente_nome", ""),
         "cliente_telefone":  request.form.get("cliente_telefone", ""),
@@ -1192,79 +1482,35 @@ def _gerar_vistoria_impl():
         "hodometro_entrega": request.form.get("hodometro_entrega", ""),
         "hodometro_retorno": request.form.get("hodometro_retorno", ""),
         "combustivel":       request.form.get("combustivel", ""),
-        "acc_calotas":          request.form.get("acc_calotas", ""),
-        "acc_buzina":           request.form.get("acc_buzina", ""),
-        "acc_doc_crlv":         request.form.get("acc_doc_crlv", ""),
-        "acc_triangulo":        request.form.get("acc_triangulo", ""),
-        "acc_antena":           request.form.get("acc_antena", ""),
-        "acc_sensor_re":        request.form.get("acc_sensor_re", ""),
-        "acc_som":              request.form.get("acc_som", ""),
-        "acc_tapetes":          request.form.get("acc_tapetes", ""),
-        "acc_limpadores":       request.form.get("acc_limpadores", ""),
-        "acc_chave_roda":       request.form.get("acc_chave_roda", ""),
-        "acc_vidros_eletricos": request.form.get("acc_vidros_eletricos", ""),
-        "acc_oleo_motor":       request.form.get("acc_oleo_motor", ""),
-        "acc_alarme":           request.form.get("acc_alarme", ""),
-        "acc_lampadas":         request.form.get("acc_lampadas", ""),
-        "acc_macaco":           request.form.get("acc_macaco", ""),
-        "acc_estepe":           request.form.get("acc_estepe", ""),
-        "acc_gnv":              request.form.get("acc_gnv", ""),
-        "acc_agua":             request.form.get("acc_agua", ""),
-        "acc_borr_psg_dir":     request.form.get("acc_borr_psg_dir", ""),
-        "acc_borr_mtr_dir":     request.form.get("acc_borr_mtr_dir", ""),
-        "acc_asa_dd":           request.form.get("acc_asa_dd", ""),
-        "acc_asa_td":           request.form.get("acc_asa_td", ""),
-        "acc_tapete_mala":      request.form.get("acc_tapete_mala", ""),
-        "acc_tampa_parachoque": request.form.get("acc_tampa_parachoque", ""),
-        "acc_borr_psg_tras":    request.form.get("acc_borr_psg_tras", ""),
-        "acc_borr_mtr_tras":    request.form.get("acc_borr_mtr_tras", ""),
-        "acc_asa_de":           request.form.get("acc_asa_de", ""),
-        "acc_asa_te":           request.form.get("acc_asa_te", ""),
-        "acc_bagagito":         request.form.get("acc_bagagito", ""),
-        "acc_lingueta":         request.form.get("acc_lingueta", ""),
-        "obs_gerais":        request.form.get("obs_gerais", ""),
-        "desc_sintomas":     request.form.get("desc_sintomas", ""),
+        **{k: request.form.get(k, "") for k in _CHAVES_ACC},
+        "obs_gerais":    request.form.get("obs_gerais", ""),
+        "desc_sintomas": request.form.get("desc_sintomas", ""),
     }
 
     fotos_paths = []
-
-    def _salvar_foto(file_storage):
-        if not file_storage or not file_storage.filename:
-            return None
-        ext = Path(secure_filename(file_storage.filename)).suffix.lower()
-        if ext not in ('.jpg', '.jpeg', '.png'):
-            return None
-        p = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
-        file_storage.save(str(p))
-        return str(p)
-
     foto_painel = _salvar_foto(request.files.get("foto_painel"))
     if foto_painel:
         fotos_paths.append(foto_painel)
-
     for f in request.files.getlist("fotos_veiculo"):
         p = _salvar_foto(f)
         if p:
             fotos_paths.append(p)
 
-    edit_id    = request.form.get("edit_id", "").strip()
-    placa_slug = _slugify(dados["placa"] or "PLACA")
-    data_slug  = agora.strftime("%d.%m.%Y")
+    edit_id      = request.form.get("edit_id", "").strip()
+    data_slug    = agora.strftime("%d.%m.%Y")
     nome_docx    = f"VISTORIA_{placa_slug}_{data_slug}.docx"
     caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
 
     try:
         gerar_vistoria_nova(dados, fotos_paths, caminho_docx)
     except Exception as e:
-        import traceback; traceback.print_exc()
+        _tb.print_exc()
         return jsonify({"error": f"Erro ao gerar vistoria: {e}"}), 500
     finally:
         for p in fotos_paths:
             Path(p).unlink(missing_ok=True)
 
-    # ── Supabase: INSERT na thread principal (rápido), upload no background ────
     if _os.environ.get("SUPABASE_URL") and _os.environ.get("SUPABASE_KEY"):
-        import threading, traceback as _tb
         _storage_path = f"vistorias/{nome_docx}"
         _docx_bytes   = Path(caminho_docx).read_bytes()
         _insert       = {
@@ -1287,7 +1533,6 @@ def _gerar_vistoria_impl():
             "arquivo_path":      _storage_path,
             "acessorios":        {k: v for k, v in dados.items() if k.startswith('acc_')},
         }
-
         _old_storage_path = None
         sb = _supabase()
         if sb:
@@ -1302,36 +1547,12 @@ def _gerar_vistoria_impl():
                     sb.table("vistorias").delete().eq("id", edit_id).execute()
                 except Exception:
                     _tb.print_exc()
-
-        _ost = _old_storage_path
-
-        def _bg():
-            try:
-                sb2 = _supabase()
-                if not sb2:
-                    return
-                try:
-                    sb2.storage.from_("documentos").upload(
-                        _storage_path, _docx_bytes,
-                        {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                         "upsert": "true"},
-                    )
-                except Exception:
-                    _tb.print_exc()
-                if _ost and _ost != _storage_path:
-                    try:
-                        sb2.storage.from_("documentos").remove([_ost])
-                    except Exception:
-                        pass
-            except Exception:
-                _tb.print_exc()
-
-        threading.Thread(target=_bg, daemon=True).start()
+        _upload_bg(_storage_path, _docx_bytes, _old_storage_path)
 
     try:
         _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
     except Exception:
-        import traceback; traceback.print_exc()
+        _tb.print_exc()
 
     return jsonify({"redirect_url": url_for("historico_vistorias")})
 
