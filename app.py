@@ -1207,6 +1207,12 @@ def _gerar_vistoria_impl():
     agora = datetime.now(_BRT)
     etapa = request.form.get("etapa", "").strip()  # "entrada" | "saida" | "" (legado)
 
+    _ANGULOS_FOTO = [
+        "frontal", "traseira", "lateral_dir", "lateral_esq",
+        "painel", "hodometro", "estepe", "teto",
+        "motor", "mala", "dano_1", "dano_2",
+    ]
+
     _CHAVES_ACC = [
         "acc_calotas", "acc_buzina", "acc_doc_crlv", "acc_triangulo", "acc_antena",
         "acc_sensor_re", "acc_som", "acc_tapetes", "acc_limpadores", "acc_chave_roda",
@@ -1271,11 +1277,11 @@ def _gerar_vistoria_impl():
     # ETAPA ENTRADA  (cliente retira o carro)
     # ─────────────────────────────────────────────────────────────────────────
     if etapa == "entrada":
-        fotos_entrada = []
-        for f in list(request.files.getlist("fotos_entrada")) + [request.files.get("foto_painel")]:
-            p = _salvar_foto(f)
+        fotos_entrada = {}
+        for angulo in _ANGULOS_FOTO:
+            p = _salvar_foto(request.files.get(f"foto_entrada_{angulo}"))
             if p:
-                fotos_entrada.append(p)
+                fotos_entrada[angulo] = p
 
         dados = {
             **dados_fixos,
@@ -1303,7 +1309,7 @@ def _gerar_vistoria_impl():
             _tb.print_exc()
             return jsonify({"error": f"Erro ao gerar vistoria (entrada): {e}"}), 500
         finally:
-            for p in fotos_entrada:
+            for p in fotos_entrada.values():
                 Path(p).unlink(missing_ok=True)
 
         _storage_path = f"vistorias/{nome_docx}"
@@ -1374,11 +1380,11 @@ def _gerar_vistoria_impl():
             except Exception:
                 _tb.print_exc()
 
-        fotos_saida = []
-        for f in list(request.files.getlist("fotos_saida")) + [request.files.get("foto_painel_saida")]:
-            p = _salvar_foto(f)
+        fotos_saida = {}
+        for angulo in _ANGULOS_FOTO:
+            p = _salvar_foto(request.files.get(f"foto_saida_{angulo}"))
             if p:
-                fotos_saida.append(p)
+                fotos_saida[angulo] = p
 
         dados = {
             "contrato_id":      contrato_id or registro.get("contrato_id", ""),
@@ -1430,7 +1436,7 @@ def _gerar_vistoria_impl():
             _tb.print_exc()
             return jsonify({"error": f"Erro ao gerar vistoria (saida): {e}"}), 500
         finally:
-            for p in fotos_saida:
+            for p in fotos_saida.values():
                 Path(p).unlink(missing_ok=True)
 
         _storage_path = f"vistorias/{nome_docx}"
