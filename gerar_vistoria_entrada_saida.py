@@ -372,13 +372,26 @@ def _normalizar_entrada_fotos(fotos) -> dict[str, str]:
     }
 
 
+def _set_tcW(tc, twips: int) -> None:
+    """Define a largura da célula sem gerar elemento <w:tcW> duplicado."""
+    tcPr = tc.get_or_add_tcPr()
+    for existing in tcPr.findall(qn('w:tcW')):
+        tcPr.remove(existing)
+    tcW = OxmlElement('w:tcW')
+    tcW.set(qn('w:w'), str(twips))
+    tcW.set(qn('w:type'), 'dxa')
+    tcPr.append(tcW)
+
+
 def _inserir_fotos_no_marcador(doc: Document, marcador: str, fotos) -> None:
     """
     Localiza o parágrafo `marcador` e o substitui por uma grade de fotos
     padronizadas (FOTO_COLUNAS colunas, FOTO_LARGURA_CM × FOTO_ALTURA_CM por slot).
 
-    Cada slot exibe a foto normalizada (letter-box branco) e a legenda do ângulo.
-    Slots sem foto recebem um retângulo cinza "— sem foto —".
+    Sempre exibe todos os 12 ângulos de ANGULOS_FOTO:
+    • slots com foto → imagem normalizada (letter-box branco)
+    • slots sem foto → retângulo cinza "— sem foto —"
+    Ângulos extras (fora de ANGULOS_FOTO) são acrescentados ao final.
     """
     fotos_dict = _normalizar_entrada_fotos(fotos)
 
@@ -393,19 +406,12 @@ def _inserir_fotos_no_marcador(doc: Document, marcador: str, fotos) -> None:
     for r in list(alvo.runs):
         r._element.getparent().remove(r._element)
 
-    if not fotos_dict:
-        run = alvo.add_run("(sem fotos registradas)")
-        run.italic = True
-        run.font.size = Pt(9)
-        run.font.color.rgb = COR_CINZA_CLARO
-        return
-
-    # ── Monta lista ordenada de slots ────────────────────────────────────────
-    slots: list[tuple[str, str, str]] = []
-    for chave, legenda in ANGULOS_FOTO:
-        if chave in fotos_dict:
-            slots.append((chave, legenda, fotos_dict[chave]))
-
+    # ── Monta lista com TODOS os ângulos padrão + extras ─────────────────────
+    # caminho=None → slot vazio (placeholder cinza)
+    slots: list[tuple[str, str, Optional[str]]] = [
+        (chave, legenda, fotos_dict.get(chave))
+        for chave, legenda in ANGULOS_FOTO
+    ]
     chaves_padrao = {k for k, _ in ANGULOS_FOTO}
     for chave, caminho in fotos_dict.items():
         if chave not in chaves_padrao:
@@ -434,21 +440,25 @@ def _inserir_fotos_no_marcador(doc: Document, marcador: str, fotos) -> None:
         cell_foto    = tabela.cell(linha_foto, col)
         cell_legenda = tabela.cell(linha_legenda, col)
 
-        for tc in (cell_foto._tc, cell_legenda._tc):
-            tcPr = tc.get_or_add_tcPr()
-            tcW  = OxmlElement('w:tcW')
-            tcW.set(qn('w:w'), str(col_w_twips))
-            tcW.set(qn('w:type'), 'dxa')
-            tcPr.append(tcW)
+        _set_tcW(cell_foto._tc,    col_w_twips)
+        _set_tcW(cell_legenda._tc, col_w_twips)
 
         p_foto = cell_foto.paragraphs[0]
         p_foto.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_foto = p_foto.add_run()
         try:
-            buf = _normalizar_foto(caminho)
-            run_foto.add_picture(buf, width=Cm(FOTO_LARGURA_CM))
+            if caminho:
+                buf = _normalizar_foto(caminho)
+            else:
+                buf = _slot_vazio()
+            if buf is not None:
+                run_foto.add_picture(buf, width=Cm(FOTO_LARGURA_CM))
+            else:
+                run_foto.text = "(sem foto)"
+                run_foto.font.size = Pt(8)
+                run_foto.font.color.rgb = COR_CINZA_CLARO
         except Exception as exc:
-            run_foto.add_text(f"(erro: {Path(caminho).name} — {exc})")
+            run_foto.text = f"(erro: {exc})"
             run_foto.font.size = Pt(8)
             run_foto.font.color.rgb = COR_VERMELHO
 
