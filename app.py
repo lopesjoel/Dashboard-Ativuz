@@ -3461,8 +3461,7 @@ def _ler_sob_administracao():
             if hasattr(v, "strftime"): return v.strftime("%d/%m/%Y")
             return str(v).strip()
 
-        _EXCLUIR = {"ativuz veiculos", "az empreendimentos"}
-        _EXTRA   = _SOB_ADM_PLACA_EXTRA.upper().replace("-", "").replace(" ", "")
+        _EXTRA = _SOB_ADM_PLACA_EXTRA.upper().replace("-", "").replace(" ", "")
 
         hoje = date.today()
         veiculos = []
@@ -3472,15 +3471,17 @@ def _ler_sob_administracao():
                 continue
 
             placa_id = placa.upper().replace("-", "").replace(" ", "")
-            unid     = _v(row, i_prop)
-            unid_n   = _norm(unid)
+            marca    = _norm(_v(row, i_marca))
+            modelo   = _norm(_v(row, i_mod))
 
-            # inclui: unidade não-Ativuz/AZ  OU  placa especial
-            if placa_id != _EXTRA:
-                if not unid:
-                    continue
-                if any(exc in unid_n for exc in _EXCLUIR):
-                    continue
+            # inclui: Polo, BYD ou placa especial
+            eh_polo  = "polo" in modelo
+            eh_byd   = "byd" in marca
+            eh_extra = placa_id == _EXTRA
+            if not (eh_polo or eh_byd or eh_extra):
+                continue
+
+            unid = _v(row, i_prop)
 
             valor_s = _SOB_ADM_PLACA_VALORES.get(placa.upper())
             taxa_s  = round(valor_s * _SOB_ADM_TAXA, 2) if valor_s else None
