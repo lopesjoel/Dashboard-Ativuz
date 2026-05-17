@@ -830,7 +830,7 @@ def exportar_historico_excel():
 
 # ── Contrato de Locação — helpers e rotas ────────────────────────────────────
 
-CONTRATO_LOCACAO_TEMPLATE = DOCX_TEMPLATES / "CONTRATO DE LOCAÇÃO EDITADO.docx"
+CONTRATO_LOCACAO_TEMPLATE = Path("planilhas") / "CONTRATO DE LOCAÇÃO EDITADO.docx"
 
 
 def _salvar_contrato_locacao(insert: dict, caminho_docx: str, storage_path: str, edit_id: str = None):
