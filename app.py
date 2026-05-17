@@ -3718,6 +3718,10 @@ def _veiculos_xlsx_path():
     base = Path(__file__).resolve().parent
     return base / "planilhas" / "veiculos.xlsx"
 
+def _clientes_cons_xlsx_path():
+    base = Path(__file__).resolve().parent
+    return base / "planilhas" / "DADOS_CLIENTES_CONS.xlsx"
+
 
 _IMAGEM_MAP = [
     ("GOL",     "gol_sf.png"),
@@ -3741,9 +3745,9 @@ def _imagem_veiculo(modelo):
 
 def _ler_veiculos():
     import openpyxl
-    xlsx_path = _veiculos_xlsx_path()
+    xlsx_path = _clientes_cons_xlsx_path()
     if not xlsx_path.exists():
-        return [], "Planilha não encontrada em planilhas/veiculos.xlsx."
+        return [], "Planilha não encontrada em planilhas/DADOS_CLIENTES_CONS.xlsx."
 
     try:
         wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
@@ -3751,10 +3755,10 @@ def _ler_veiculos():
         rows = list(ws.iter_rows(values_only=True))
         wb.close()
 
-        if len(rows) <= 4:
-            return [], "Planilha sem dados suficientes (cabeçalho esperado na linha 5)."
+        if len(rows) < 1:
+            return [], "Planilha sem dados."
 
-        header_row = rows[4]
+        header_row = rows[0]
 
         def _norm(s):
             s = unicodedata.normalize("NFD", str(s or "").lower())
@@ -3766,8 +3770,12 @@ def _ler_veiculos():
             kn = _norm(keyword)
             return next((i for i, h in enumerate(headers_norm) if kn in h), None)
 
+        def _ci_exact(name):
+            n = _norm(name)
+            return next((i for i, h in enumerate(headers_norm) if h == n), None)
+
         i_placa    = _ci("placa")
-        i_modelo   = _ci("modelo")
+        i_modelo   = _ci_exact("modelo") if _ci_exact("modelo") is not None else _ci("modelo")
         i_cliente  = _ci("razao social cliente") or _ci("razao social") or _ci("cliente")
         i_contrato = _ci("contrato de locacao") or _ci("contrato")
         i_unidade  = _ci("unidade do veiculo") or _ci("unidade")
@@ -3785,7 +3793,7 @@ def _ler_veiculos():
             return str(v).strip()
 
         veiculos = []
-        for row in rows[5:]:
+        for row in rows[1:]:
             placa = _v(row, i_placa)
             if not placa:
                 continue
