@@ -104,7 +104,7 @@ def logout():
 @app.route("/api/clientes")
 def api_clientes():
     import openpyxl
-    path = Path(__file__).parent / "planilhas" / "dados_clientes.xlsx"
+    path = Path(__file__).parent / "planilhas" / "DADOS_CLIENTES_CONS.xlsx"
     if not path.exists():
         return jsonify([])
     wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
