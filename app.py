@@ -1468,13 +1468,26 @@ def _gerar_vistoria_impl():
             "fotos_saida":       fotos_saida,
         }
 
+        # Lê bytes das fotos de SAÍDA antes do finally apagar os temporários
+        placa_saida      = registro.get("placa") or dados_fixos.get("placa") or "PLACA"
+        data_slug_saida  = agora.strftime("%d.%m.%Y")
+        pasta_fotos_saida = f"vistorias/fotos/{_slugify(placa_saida)}_{data_slug_saida}_saida"
+        foto_saida_s_paths = {}   # {angulo: storage_path}
+        foto_saida_s_bytes = {}   # {storage_path: bytes}
+        for angulo, local_p in fotos_saida.items():
+            ext = Path(local_p).suffix.lower() or ".jpg"
+            s_path = f"{pasta_fotos_saida}/{angulo}{ext}"
+            foto_saida_s_paths[angulo] = s_path
+            try:
+                foto_saida_s_bytes[s_path] = Path(local_p).read_bytes()
+            except Exception:
+                pass
+
         if caminho_docx_anterior:
             nome_docx    = Path(caminho_docx_anterior).name
             caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
         else:
-            placa_slug2  = _slugify(dados["placa"] or "PLACA")
-            data_slug    = agora.strftime("%d.%m.%Y")
-            nome_docx    = f"VISTORIA_{placa_slug2}_{data_slug}.docx"
+            nome_docx    = f"VISTORIA_{_slugify(placa_saida)}_{data_slug_saida}.docx"
             caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
 
         try:
@@ -1492,6 +1505,8 @@ def _gerar_vistoria_impl():
             for p in fotos_entrada_recuperadas.values():
                 Path(p).unlink(missing_ok=True)
 
+        fotos_saida_db = [f"{ang}:{pth}" for ang, pth in foto_saida_s_paths.items()]
+
         _storage_path = f"vistorias/{nome_docx}"
         if sb and vistoria_id:
             try:
@@ -1503,6 +1518,7 @@ def _gerar_vistoria_impl():
                     "sintomas_saida":        dados["sintomas_saida"],
                     "responsavel_saida":     dados["responsavel_saida"],
                     "acessorios_saida":      dados["acessorios_saida"],
+                    "fotos_saida":           fotos_saida_db,
                     "status":                resumo["status"],
                     "divergencias":          [list(d) for d in resumo["divergencias"]],
                     "arquivo_completo_path": _storage_path,
@@ -1511,16 +1527,31 @@ def _gerar_vistoria_impl():
             except Exception:
                 _tb.print_exc()
             _upload_bg(_storage_path, Path(caminho_docx).read_bytes())
+            if foto_saida_s_bytes:
+                _fsb2 = foto_saida_s_bytes
+                def _upload_fotos_saida_bg():
+                    try:
+                        sb2 = _supabase()
+                        if not sb2:
+                            return
+                        for s_path, data in _fsb2.items():
+                            ext2 = Path(s_path).suffix.lower()
+                            ct = "image/png" if ext2 == ".png" else "image/jpeg"
+                            try:
+                                sb2.storage.from_("documentos").upload(
+                                    s_path, data, {"content-type": ct, "upsert": "true"})
+                            except Exception:
+                                _tb.print_exc()
+                    except Exception:
+                        _tb.print_exc()
+                threading.Thread(target=_upload_fotos_saida_bg, daemon=True).start()
 
         try:
             _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
         except Exception:
             _tb.print_exc()
 
-        cid = contrato_id or registro.get("contrato_id", "")
-        destino = (url_for("pagina_vistoria_contrato", contrato_id=cid)
-                   if cid else url_for("historico_vistorias"))
-        return jsonify({"redirect_url": destino})
+        return jsonify({"redirect_url": url_for("historico_vistorias")})
 
     # ─────────────────────────────────────────────────────────────────────────
     # FALLBACK LEGADO  (sem etapa — comportamento antigo com gerar_vistoria_nova)
