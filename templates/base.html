@@ -297,7 +297,7 @@
         {{ session.get('usuario', 'AV')[:2] | upper }}
       </div>
       <div class="info">
-        <div class="name">{{ session.get('usuario', 'Usuário') }}</div>
+        <div class="name">{{ session.get('usuario', 'Usuário').split('@')[0].split('.')[0] | upper }}</div>
         <div class="role">Ativuz Veículos</div>
       </div>
       <a href="{{ url_for('logout') }}" class="sb-collapse-btn"
