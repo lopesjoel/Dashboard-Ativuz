@@ -3415,20 +3415,22 @@ _SOB_ADM_PLACA_EXTRA = "QGO-2H58"
 
 
 def _ler_sob_administracao():
-    """Lê veiculos.xlsx aba Relatório: Proprietário=TERCEIRO ou Placa=QGO-2H58."""
+    """Lê DADOS_CLIENTES_CONS.xlsx: veículos cuja unidade não seja Ativuz/AZ ou placa especial."""
     import openpyxl
-    xlsx_path = _veiculos_xlsx_path()
+    xlsx_path = _clientes_cons_xlsx_path()
     if not xlsx_path.exists():
         return [], None
 
     try:
         wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
-        aba = next((s for s in wb.sheetnames if "relat" in s.lower()), wb.sheetnames[0])
-        ws = wb[aba]
+        ws = wb.active
         rows = list(ws.iter_rows(values_only=True))
         wb.close()
 
-        header = rows[4]
+        if not rows:
+            return [], None
+
+        header = rows[0]
 
         def _norm(s):
             s = unicodedata.normalize("NFD", str(s or "").lower())
@@ -3438,18 +3440,18 @@ def _ler_sob_administracao():
             nk = _norm(kw)
             return next((i for i, h in enumerate(header) if nk in _norm(str(h or ""))), None)
 
+        def _ci_exact(name):
+            n = _norm(name)
+            return next((i for i, h in enumerate(header) if _norm(str(h or "")) == n), None)
+
         i_placa    = _ci("placa")
-        i_mont     = _ci("montadora")
-        i_mod      = _ci("modelo")
-        i_fipe     = _ci("codigo fipe") or _ci("fipe")
-        i_km       = _ci("km confirmado")
+        i_mod      = _ci_exact("modelo") if _ci_exact("modelo") is not None else _ci("modelo")
+        i_marca    = _ci("marca")
         i_prop     = _ci("unidade do ve")
-        i_loc      = _ci("razao social cliente") or _ci("razao social")
+        i_loc      = _ci("razao social cliente") or _ci("razao social") or _ci("cliente")
         i_tipo     = _ci("tipo de contrato")
-        i_ini      = _ci("inicio de contrato")
-        i_fim      = _ci("termino do contrato")
-        i_sit      = _ci("situacao contrato") or _ci("situacao")
-        i_anofab   = _ci("ano de fabricacao") or _ci("ano de fab")
+        i_ini      = _ci("inicio do contrato") or _ci("inicio de contrato") or _ci("inicio")
+        i_fim      = _ci("termino do contrato") or _ci("termino")
         i_anomod   = _ci("ano modelo")
 
         def _v(row, i):
@@ -3464,7 +3466,7 @@ def _ler_sob_administracao():
 
         hoje = date.today()
         veiculos = []
-        for row in rows[5:]:
+        for row in rows[1:]:
             placa = _v(row, i_placa)
             if not placa:
                 continue
@@ -3473,15 +3475,14 @@ def _ler_sob_administracao():
             unid     = _v(row, i_prop)
             unid_n   = _norm(unid)
 
-            # inclui: unidade não-Ativuz/AZ  OU  placa especial (QGO-2H58)
+            # inclui: unidade não-Ativuz/AZ  OU  placa especial
             if placa_id != _EXTRA:
                 if not unid:
                     continue
                 if any(exc in unid_n for exc in _EXCLUIR):
                     continue
 
-            fipe    = _v(row, i_fipe)
-            valor_s = _SOB_ADM_FIPE_VALORES.get(fipe) or _SOB_ADM_PLACA_VALORES.get(placa.upper())
+            valor_s = _SOB_ADM_PLACA_VALORES.get(placa.upper())
             taxa_s  = round(valor_s * _SOB_ADM_TAXA, 2) if valor_s else None
 
             ini_raw = row[i_ini] if i_ini is not None and i_ini < len(row) else None
@@ -3501,18 +3502,18 @@ def _ler_sob_administracao():
 
             veiculos.append({
                 "placa":        placa,
-                "montadora":    _v(row, i_mont),
+                "montadora":    _v(row, i_marca),
                 "modelo":       _v(row, i_mod),
-                "fipe":         fipe,
-                "ano_fab":      _v(row, i_anofab),
+                "fipe":         "",
+                "ano_fab":      _v(row, i_anomod),
                 "ano_mod":      _v(row, i_anomod),
                 "proprietario": unid,
                 "locatario":    _v(row, i_loc),
                 "tipo_contrato":_v(row, i_tipo),
-                "km":           _v(row, i_km),
+                "km":           "",
                 "inicio":       ini_fmt,
                 "termino":      _v(row, i_fim),
-                "situacao":     _v(row, i_sit),
+                "situacao":     "EM ANDAMENTO",
                 "valor_semanal":valor_s,
                 "taxa_semanal": taxa_s,
                 "dias_ativos":  dias_ativos,
