@@ -105,6 +105,7 @@
 .prog-fill.yellow { background: #e6a817; }
 .prog-fill.red    { background: var(--danger, #e53e3e); }
 .prog-pct { font-size: 11px; font-weight: 600; min-width: 38px; text-align: right; }
+.col-vencimento { display: none; }
 </style>
 {% endblock %}
 
@@ -177,6 +178,7 @@
         <th>ID Operação</th>
         <th>Contrato</th>
         <th>Placa</th>
+        <th class="col-vencimento">Vencimento</th>
         <th>Restante</th>
         <th>Parcelas</th>
         <th>R$ Parcela</th>
@@ -200,6 +202,11 @@
         </td>
         <td>{{ c.contrato }}</td>
         <td>{{ c.placa }}</td>
+        <td class="col-vencimento">
+          {% if c.data_vencimento %}
+            {{ c.data_vencimento[8:10] }}/{{ c.data_vencimento[5:7] }}/{{ c.data_vencimento[:4] }}
+          {% else %}—{% endif %}
+        </td>
         <td>{{ c.restante }}</td>
         <td>{{ c.parcelas_total }}</td>
         <td>{{ c.valor_parcela | brl }}</td>
