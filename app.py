@@ -1649,18 +1649,112 @@ def excluir_vistoria(vistoria_id):
     return jsonify({"ok": True})
 
 
+def _reconstruir_dados_vistoria(registro: dict, sb) -> tuple:
+    """
+    Monta o dict `dados` para gerar_vistoria_entrada_saida a partir de um
+    registro do banco. Baixa as fotos individuais do Storage quando disponíveis.
+    Retorna (dados, lista_de_caminhos_temp_para_limpar).
+    """
+    r = registro
+    temps: list[str] = []
+
+    def _baixar_fotos(fotos_db):
+        # fotos_db pode ser ["angulo:storage_path", ...] (novo) ou None/[] (sem fotos)
+        result: dict[str, str] = {}
+        if not sb:
+            return result
+        for item in (fotos_db or []):
+            try:
+                angulo, s_path = item.split(":", 1)
+                data = sb.storage.from_("documentos").download(s_path)
+                if data:
+                    ext = Path(s_path).suffix.lower() or ".jpg"
+                    tmp = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
+                    tmp.write_bytes(bytes(data))
+                    result[angulo] = str(tmp)
+                    temps.append(str(tmp))
+            except Exception:
+                import traceback as _trc; _trc.print_exc()
+        return result
+
+    dados = {
+        "contrato_id":       r.get("contrato_id", ""),
+        "cliente_nome":      r.get("cliente", ""),
+        "cliente_telefone":  r.get("telefone", ""),
+        "cliente_endereco":  r.get("endereco", ""),
+        "preenchido_por":    r.get("preenchido_por", ""),
+        "veiculo":           r.get("veiculo", ""),
+        "placa":             r.get("placa", ""),
+        "cor":               r.get("cor", ""),
+        "ano":               str(r.get("ano") or ""),
+        "chassi":            r.get("chassi", ""),
+        "numero_motor":      r.get("numero_motor", ""),
+        # entrada — novos campos com fallback para os antigos
+        "data_entrada":        r.get("data_entrada") or r.get("data_hora", ""),
+        "hodometro_entrada":   r.get("hodometro_entrada") or r.get("hodometro_entrega", ""),
+        "combustivel_entrada": r.get("combustivel_entrada") or r.get("combustivel", ""),
+        "obs_entrada":         r.get("obs_entrada") or r.get("obs_gerais", ""),
+        "sintomas_entrada":    r.get("sintomas_entrada") or r.get("desc_sintomas", ""),
+        "responsavel_entrada": r.get("responsavel_entrada", ""),
+        "acessorios_entrada":  r.get("acessorios_entrada") or r.get("acessorios") or {},
+        "fotos_entrada":       _baixar_fotos(r.get("fotos_entrada")),
+        # saída
+        "data_saida":          r.get("data_saida", ""),
+        "hodometro_saida":     r.get("hodometro_saida") or r.get("hodometro_retorno", ""),
+        "combustivel_saida":   r.get("combustivel_saida", ""),
+        "obs_saida":           r.get("obs_saida", ""),
+        "sintomas_saida":      r.get("sintomas_saida", ""),
+        "responsavel_saida":   r.get("responsavel_saida", ""),
+        "acessorios_saida":    r.get("acessorios_saida") or {},
+        "fotos_saida":         _baixar_fotos(r.get("fotos_saida")),
+    }
+    return dados, temps
+
+
+def _gerar_docx_vistoria_bytes(registro: dict, sb) -> tuple:
+    """
+    Reconstrói e regenera o DOCX de uma vistoria usando o template atual.
+    Retorna (docx_bytes, nome_sugerido_do_arquivo).
+    """
+    dados, temps = _reconstruir_dados_vistoria(registro, sb)
+    placa_slug = _slugify(dados.get("placa") or "PLACA")
+    nome_docx  = f"VISTORIA_{placa_slug}.docx"
+    tmp_docx   = TEMP_FOLDER / f"{uuid.uuid4().hex}.docx"
+    TEMP_FOLDER.mkdir(exist_ok=True)
+    try:
+        gerar_vistoria_entrada_saida(
+            dados,
+            caminho_saida=str(tmp_docx),
+            template_path=str(VISTORIA_ES_TEMPLATE),
+        )
+        return tmp_docx.read_bytes(), nome_docx
+    finally:
+        tmp_docx.unlink(missing_ok=True)
+        for p in temps:
+            Path(p).unlink(missing_ok=True)
+
+
 @app.route("/historico/vistorias/download/<vistoria_id>")
 def download_vistoria_supabase(vistoria_id):
     sb = _supabase()
     if not sb:
         abort(503)
     try:
-        res = sb.table("vistorias").select("arquivo_path").eq("id", vistoria_id).single().execute()
-        path = res.data["arquivo_path"]
-        signed = sb.storage.from_("documentos").create_signed_url(path, 60)
-        return redirect(signed["signedURL"])
+        res = sb.table("vistorias").select("*").eq("id", vistoria_id).single().execute()
+        registro = res.data
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    try:
+        docx_bytes, nome_docx = _gerar_docx_vistoria_bytes(registro, sb)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"Erro ao regenerar vistoria: {e}"}), 500
+    return send_file(
+        BytesIO(docx_bytes),
+        as_attachment=True,
+        download_name=nome_docx,
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
 
 
 @app.route("/historico/vistorias/<vistoria_id>/editar")
@@ -1685,18 +1779,15 @@ def download_vistoria_pdf(vistoria_id):
     if not sb:
         abort(503)
     try:
-        res = sb.table("vistorias").select("arquivo_path").eq("id", vistoria_id).single().execute()
-        docx_storage_path = res.data["arquivo_path"]
-        docx_bytes = sb.storage.from_("documentos").download(docx_storage_path)
+        res = sb.table("vistorias").select("*").eq("id", vistoria_id).single().execute()
+        registro = res.data
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-    if not isinstance(docx_bytes, (bytes, bytearray)):
-        docx_bytes = getattr(docx_bytes, 'content', None) or bytes(docx_bytes)
-    if len(docx_bytes) == 0:
-        return jsonify({"error": f"Download vazio para {docx_storage_path!r}"}), 500
-    if docx_bytes[:4] != b'PK\x03\x04':
-        return jsonify({"error": f"Arquivo baixado não é DOCX válido. Início: {docx_bytes[:20]!r}"}), 500
+    try:
+        docx_bytes, nome_docx = _gerar_docx_vistoria_bytes(registro, sb)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": f"Erro ao regenerar vistoria: {e}"}), 500
 
     TEMP_FOLDER.mkdir(exist_ok=True)
     tmp_docx = TEMP_FOLDER / f"{uuid.uuid4().hex}.docx"
@@ -1711,7 +1802,7 @@ def download_vistoria_pdf(vistoria_id):
         tmp_docx.unlink(missing_ok=True)
         tmp_pdf.unlink(missing_ok=True)
 
-    nome_pdf = Path(docx_storage_path).stem + ".pdf"
+    nome_pdf = nome_docx.replace(".docx", ".pdf")
     return send_file(BytesIO(pdf_bytes), as_attachment=True, download_name=nome_pdf, mimetype="application/pdf")
 
 
