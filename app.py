@@ -20,7 +20,7 @@ import subprocess
 import unicodedata
 import uuid
 
-from gerar_contrato import gerar_docx, gerar_termo_quitacao, gerar_notificacao_avalista, gerar_notificacao_inadimplente, gerar_vistoria_entrega, gerar_vistoria_nova, nome_arquivo_saida
+from gerar_contrato import gerar_docx, gerar_termo_quitacao, gerar_notificacao_avalista, gerar_notificacao_inadimplente, nome_arquivo_saida
 from gerar_vistoria_entrada_saida import gerar_vistoria_entrada_saida, docx_para_pdf as _docx_para_pdf_es
 
 app = Flask(__name__)
@@ -1050,7 +1050,6 @@ def editar_contrato_locacao(contrato_id):
 
 # ── Vistoria de Entrega ───────────────────────────────────────────────────────
 
-VISTORIA_TEMPLATE    = DOCX_TEMPLATES / "VISTORIA_TESTE_1.docx"
 VISTORIA_ES_TEMPLATE = DOCX_TEMPLATES / "VISTORIA_ENTRADA_SAIDA_TEMPLATE.docx"
 
 
@@ -1085,110 +1084,6 @@ def pagina_vistoria_contrato(contrato_id):
                            usuario=session.get("usuario", "").split("@")[0].split(".")[0].upper())
 
 
-@app.route("/vistoria", methods=["POST"])
-def processar_vistoria():
-    if not VISTORIA_TEMPLATE.exists():
-        flash("Template de vistoria não encontrado em docx_templates/.", "erro")
-        return redirect(url_for("pagina_vistoria"))
-
-    dados = {
-        "cliente":                  request.form.get("cliente", ""),
-        "tel":                      request.form.get("tel", ""),
-        "preenchido_por":           request.form.get("preenchido_por", ""),
-        "endereco":                 request.form.get("endereco", ""),
-        "chassi":                   request.form.get("chassi", ""),
-        "motor":                    request.form.get("motor", ""),
-        "veiculo":                  request.form.get("veiculo", ""),
-        "placa":                    request.form.get("placa", ""),
-        "ano":                      request.form.get("ano", ""),
-        "cor":                      request.form.get("cor", ""),
-        "hodometro_entrega":        request.form.get("hodometro_entrega", ""),
-        "hodometro_retorno":        request.form.get("hodometro_retorno", ""),
-        "combustivel":              request.form.get("combustivel", ""),
-        "data":                     datetime.now().strftime("%d/%m/%Y"),
-        "danos":                    request.form.get("danos", ""),
-        "observacoes":              request.form.get("observacoes", ""),
-        "sintomas":                 request.form.get("sintomas", ""),
-        "assinatura_cliente":       request.form.get("assinatura_cliente", ""),
-        "assinatura_responsavel":   request.form.get("assinatura_responsavel", ""),
-        # Acessórios (form fields sem prefixo, mapeados para chaves que gerar_contrato usa)
-        "acc_calotas":          request.form.get("calotas", ""),
-        "acc_buzina":           request.form.get("buzina", ""),
-        "acc_doc_crlv":         request.form.get("doc_crlv", ""),
-        "acc_triangulo":        request.form.get("triangulo", ""),
-        "acc_antena":           request.form.get("antena", ""),
-        "acc_sensor_re":        request.form.get("sensor_re", ""),
-        "acc_som":              request.form.get("som", ""),
-        "acc_tapetes":          request.form.get("tapetes", ""),
-        "acc_limpadores":       request.form.get("limpadores", ""),
-        "acc_chave_roda":       request.form.get("chave_roda", ""),
-        "acc_vidros":           request.form.get("vidros", ""),
-        "acc_oleo_motor":       request.form.get("oleo_motor", ""),
-        "acc_alarme":           request.form.get("alarme", ""),
-        "acc_lampadas":         request.form.get("lampadas", ""),
-        "acc_macaco":           request.form.get("macaco", ""),
-        "acc_estepe":           request.form.get("estepe", ""),
-        "acc_gnv":              request.form.get("gnv", ""),
-        "acc_agua":             request.form.get("agua", ""),
-        "acc_borracha_psg_d":   request.form.get("borracha_psg_d", ""),
-        "acc_borr_mtr":         request.form.get("borracha_mtr_d", ""),
-        "acc_asa_urubu_dd":     request.form.get("asa_urubu_dd", ""),
-        "acc_asa_urub_td":      request.form.get("asa_urubu_td", ""),
-        "acc_tapete_mala":      request.form.get("tapete_mala", ""),
-        "acc_tampa_prx":        request.form.get("tampa_paraxq", ""),
-        "acc_borracha_psg_t":   request.form.get("borracha_psg_t", ""),
-        "acc_borr_mtr_t":       request.form.get("borracha_mtr_t", ""),
-        "acc_asa_urubu_de":     request.form.get("asa_urubu_de", ""),
-        "acc_asa_urub_te":      request.form.get("asa_urubu_te", ""),
-        "acc_bagagito":         request.form.get("bagagito", ""),
-        "acc_linguet":          request.form.get("lingueta", ""),
-    }
-
-    # ── Salvar fotos temporariamente ──────────────────────────────────────────
-    fotos_paths = []
-    for foto in request.files.getlist("fotos"):
-        if foto and foto.filename:
-            safe = secure_filename(foto.filename)
-            ext = Path(safe).suffix.lower()
-            if ext in (".jpg", ".jpeg", ".png"):
-                p = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
-                foto.save(str(p))
-                fotos_paths.append(p)
-
-    formato = request.form.get("formato", "pdf").lower()
-
-    # ── Gerar arquivo ─────────────────────────────────────────────────────────
-    placa = _slugify(dados.get("placa", "PLACA"))
-    data_slug = datetime.now().strftime("%d.%m.%Y")
-    nome_docx = f"VISTORIA_{placa}_{data_slug}.docx"
-    nome_pdf  = f"VISTORIA_{placa}_{data_slug}.pdf"
-    caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
-    caminho_pdf  = str(CONTRATOS_FOLDER / nome_pdf)
-
-    try:
-        gerar_vistoria_entrega(dados, fotos_paths, caminho_docx, str(VISTORIA_TEMPLATE))
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        for p in fotos_paths:
-            p.unlink(missing_ok=True)
-        return jsonify({"error": f"Erro ao gerar vistoria: {e}"}), 500
-
-    for p in fotos_paths:
-        p.unlink(missing_ok=True)
-
-    # ── Histórico + resposta ──────────────────────────────────────────────────
-    if formato == "docx":
-        _historico_append(dados.get("cliente", ""), "VISTORIA", nome_docx)
-        return jsonify({"download_url": url_for("baixar_vistoria", nome=nome_docx)})
-
-    try:
-        _converter_pdf(caminho_docx, caminho_pdf)
-    except Exception as e:
-        flash(f"Erro ao converter para PDF: {e}", "erro")
-        return redirect(url_for("pagina_vistoria"))
-
-    _historico_append(dados.get("cliente", ""), "VISTORIA", nome_pdf)
-    return jsonify({"download_url": url_for("baixar_vistoria", nome=nome_pdf)})
 
 
 @app.route("/vistoria/gerar", methods=["POST"])
@@ -1555,98 +1450,7 @@ def _gerar_vistoria_impl():
 
         return jsonify({"redirect_url": url_for("historico_vistorias")})
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # FALLBACK LEGADO  (sem etapa — comportamento antigo com gerar_vistoria_nova)
-    # ─────────────────────────────────────────────────────────────────────────
-    dados = {
-        "cliente_nome":      request.form.get("cliente_nome", ""),
-        "cliente_telefone":  request.form.get("cliente_telefone", ""),
-        "cliente_endereco":  request.form.get("cliente_endereco", ""),
-        "preenchido_por":    request.form.get("preenchido_por", ""),
-        "data_vistoria":     agora.strftime("%d/%m/%Y"),
-        "veiculo":           request.form.get("veiculo", ""),
-        "placa":             request.form.get("placa", "").upper(),
-        "cor":               request.form.get("cor", ""),
-        "ano":               request.form.get("ano", ""),
-        "chassi":            request.form.get("chassi", ""),
-        "numero_motor":      request.form.get("numero_motor", ""),
-        "data_hora":         agora.strftime("%d/%m/%Y %H:%M"),
-        "hodometro_entrega": request.form.get("hodometro_entrega", ""),
-        "hodometro_retorno": request.form.get("hodometro_retorno", ""),
-        "combustivel":       request.form.get("combustivel", ""),
-        **{k: request.form.get(k, "") for k in _CHAVES_ACC},
-        "obs_gerais":    request.form.get("obs_gerais", ""),
-        "desc_sintomas": request.form.get("desc_sintomas", ""),
-    }
-
-    fotos_paths = []
-    foto_painel = _salvar_foto(request.files.get("foto_painel"))
-    if foto_painel:
-        fotos_paths.append(foto_painel)
-    for f in request.files.getlist("fotos_veiculo"):
-        p = _salvar_foto(f)
-        if p:
-            fotos_paths.append(p)
-
-    edit_id      = request.form.get("edit_id", "").strip()
-    data_slug    = agora.strftime("%d.%m.%Y")
-    nome_docx    = f"VISTORIA_{placa_slug}_{data_slug}.docx"
-    caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
-
-    try:
-        gerar_vistoria_nova(dados, fotos_paths, caminho_docx)
-    except Exception as e:
-        _tb.print_exc()
-        return jsonify({"error": f"Erro ao gerar vistoria: {e}"}), 500
-    finally:
-        for p in fotos_paths:
-            Path(p).unlink(missing_ok=True)
-
-    if _os.environ.get("SUPABASE_URL") and _os.environ.get("SUPABASE_KEY"):
-        _storage_path = f"vistorias/{nome_docx}"
-        _docx_bytes   = Path(caminho_docx).read_bytes()
-        _insert       = {
-            "cliente":           dados["cliente_nome"],
-            "telefone":          dados["cliente_telefone"],
-            "endereco":          dados["cliente_endereco"],
-            "preenchido_por":    dados["preenchido_por"],
-            "veiculo":           dados["veiculo"],
-            "placa":             dados["placa"],
-            "cor":               dados["cor"],
-            "ano":               dados["ano"],
-            "chassi":            dados["chassi"],
-            "numero_motor":      dados["numero_motor"],
-            "data_hora":         dados["data_hora"],
-            "hodometro_entrega": dados["hodometro_entrega"],
-            "hodometro_retorno": dados["hodometro_retorno"],
-            "combustivel":       dados["combustivel"],
-            "obs_gerais":        dados["obs_gerais"],
-            "desc_sintomas":     dados["desc_sintomas"],
-            "arquivo_path":      _storage_path,
-            "acessorios":        {k: v for k, v in dados.items() if k.startswith('acc_')},
-        }
-        _old_storage_path = None
-        sb = _supabase()
-        if sb:
-            try:
-                sb.table("vistorias").insert(_insert).execute()
-            except Exception:
-                _tb.print_exc()
-            if edit_id:
-                try:
-                    old = sb.table("vistorias").select("arquivo_path").eq("id", edit_id).single().execute()
-                    _old_storage_path = (old.data or {}).get("arquivo_path")
-                    sb.table("vistorias").delete().eq("id", edit_id).execute()
-                except Exception:
-                    _tb.print_exc()
-        _upload_bg(_storage_path, _docx_bytes, _old_storage_path)
-
-    try:
-        _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
-    except Exception:
-        _tb.print_exc()
-
-    return jsonify({"redirect_url": url_for("historico_vistorias")})
+    return jsonify({"error": "Etapa de vistoria inválida."}), 400
 
 
 # ── Histórico de Vistorias (Supabase) ─────────────────────────────────────────
