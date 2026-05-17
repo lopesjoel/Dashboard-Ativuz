@@ -204,7 +204,117 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     SEÇÃO 1 — VISÃO FINANCEIRA
+     SEÇÃO 1 — AÇÕES RÁPIDAS
+══════════════════════════════════════════════════ -->
+<div class="dash-section">
+  <span class="dash-section-label">Ações Rápidas</span>
+  <div class="dash-section-line"></div>
+</div>
+
+<div class="dash-acoes">
+
+  <a href="{{ url_for('pagina_contrato_locacao') }}" class="dash-acao">
+    <div class="dash-acao-icon orange">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Novo Contrato</span>
+    <span class="dash-acao-sub">Locação de veículo</span>
+  </a>
+
+  <a href="{{ url_for('pagina_vistoria') }}" class="dash-acao">
+    <div class="dash-acao-icon success">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M9 12l2 2 4-4"/>
+        <line x1="12" y1="18" x2="12" y2="21"/>
+        <line x1="12" y1="3" x2="12" y2="6"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Nova Vistoria</span>
+    <span class="dash-acao-sub">Registrar vistoria</span>
+  </a>
+
+  <a href="{{ url_for('pagina_inadimplencia') }}" class="dash-acao">
+    <div class="dash-acao-icon danger">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Inadimplência</span>
+    <span class="dash-acao-sub">Gerenciar cobranças</span>
+  </a>
+
+  <a href="{{ url_for('pagina_checklist') }}" class="dash-acao">
+    <div class="dash-acao-icon warning">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="13" height="13" rx="1.5"/>
+        <path d="M7 11l2 2 4-4"/>
+        <line x1="18" y1="8" x2="21" y2="8"/>
+        <line x1="18" y1="12" x2="21" y2="12"/>
+        <line x1="18" y1="16" x2="21" y2="16"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Checklist</span>
+    <span class="dash-acao-sub">Documentação dos veículos</span>
+  </a>
+
+  <a href="{{ url_for('pagina_gerar') }}" class="dash-acao">
+    <div class="dash-acao-icon info">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Criar Documento</span>
+    <span class="dash-acao-sub">Gerar contrato / notificação</span>
+  </a>
+
+  <a href="{{ url_for('pagina_frota') }}" class="dash-acao">
+    <div class="dash-acao-icon info">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Frota (FIPE)</span>
+    <span class="dash-acao-sub">Consultar valorização</span>
+  </a>
+
+  <a href="{{ url_for('historico_contratos') }}" class="dash-acao">
+    <div class="dash-acao-icon neutral">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">Hist. Contratos</span>
+    <span class="dash-acao-sub">Ver locações registradas</span>
+  </a>
+
+  <a href="{{ url_for('pagina_dre') }}" class="dash-acao">
+    <div class="dash-acao-icon success">
+      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
+    <span class="dash-acao-label">DRE</span>
+    <span class="dash-acao-sub">Demonstrativo de resultado</span>
+  </a>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SEÇÃO 2 — VISÃO FINANCEIRA
 ══════════════════════════════════════════════════ -->
 <div class="dash-section">
   <span class="dash-section-label">Visão Financeira</span>
@@ -498,116 +608,6 @@
   </div>
 </div>
 {% endif %}
-
-<!-- ══════════════════════════════════════════════════
-     SEÇÃO 4 — AÇÕES RÁPIDAS
-══════════════════════════════════════════════════ -->
-<div class="dash-section">
-  <span class="dash-section-label">Ações Rápidas</span>
-  <div class="dash-section-line"></div>
-</div>
-
-<div class="dash-acoes">
-
-  <a href="{{ url_for('pagina_contrato_locacao') }}" class="dash-acao">
-    <div class="dash-acao-icon orange">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="12" y1="18" x2="12" y2="12"/>
-        <line x1="9" y1="15" x2="15" y2="15"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Novo Contrato</span>
-    <span class="dash-acao-sub">Locação de veículo</span>
-  </a>
-
-  <a href="{{ url_for('pagina_vistoria') }}" class="dash-acao">
-    <div class="dash-acao-icon success">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M9 12l2 2 4-4"/>
-        <line x1="12" y1="18" x2="12" y2="21"/>
-        <line x1="12" y1="3" x2="12" y2="6"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Nova Vistoria</span>
-    <span class="dash-acao-sub">Registrar vistoria</span>
-  </a>
-
-  <a href="{{ url_for('pagina_inadimplencia') }}" class="dash-acao">
-    <div class="dash-acao-icon danger">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Inadimplência</span>
-    <span class="dash-acao-sub">Gerenciar cobranças</span>
-  </a>
-
-  <a href="{{ url_for('pagina_checklist') }}" class="dash-acao">
-    <div class="dash-acao-icon warning">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <rect x="3" y="5" width="13" height="13" rx="1.5"/>
-        <path d="M7 11l2 2 4-4"/>
-        <line x1="18" y1="8" x2="21" y2="8"/>
-        <line x1="18" y1="12" x2="21" y2="12"/>
-        <line x1="18" y1="16" x2="21" y2="16"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Checklist</span>
-    <span class="dash-acao-sub">Documentação dos veículos</span>
-  </a>
-
-  <a href="{{ url_for('pagina_gerar') }}" class="dash-acao">
-    <div class="dash-acao-icon info">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="16"/>
-        <line x1="8" y1="12" x2="16" y2="12"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Criar Documento</span>
-    <span class="dash-acao-sub">Gerar contrato / notificação</span>
-  </a>
-
-  <a href="{{ url_for('pagina_frota') }}" class="dash-acao">
-    <div class="dash-acao-icon info">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-        <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Frota (FIPE)</span>
-    <span class="dash-acao-sub">Consultar valorização</span>
-  </a>
-
-  <a href="{{ url_for('historico_contratos') }}" class="dash-acao">
-    <div class="dash-acao-icon neutral">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">Hist. Contratos</span>
-    <span class="dash-acao-sub">Ver locações registradas</span>
-  </a>
-
-  <a href="{{ url_for('pagina_dre') }}" class="dash-acao">
-    <div class="dash-acao-icon success">
-      <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-      </svg>
-    </div>
-    <span class="dash-acao-label">DRE</span>
-    <span class="dash-acao-sub">Demonstrativo de resultado</span>
-  </a>
-
-</div>
 
 <script>
 (function () {
