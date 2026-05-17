@@ -1902,29 +1902,23 @@ def _parse_valor_excel(raw):
 
 
 def _contratos_vencendo(dias_limite: int = 60):
-    """Return contracts expiring within `dias_limite` days, sorted by termino asc."""
+    """Return EM ANDAMENTO contracts expiring within `dias_limite` days, sorted asc."""
     try:
-        veiculos, _ = _ler_veiculos()
+        contratos, _ = _ler_contratos()
     except Exception:
         return []
-    hoje = date.today()
     resultado = []
-    for v in veiculos:
-        termino_str = v.get("termino", "")
-        if not termino_str or termino_str == "—":
+    for c in contratos:
+        if c.get("situacao") != "EM ANDAMENTO":
             continue
-        try:
-            termino = datetime.strptime(termino_str, "%d/%m/%Y").date()
-        except ValueError:
-            continue
-        dias_rest = (termino - hoje).days
-        if dias_rest < 0 or dias_rest > dias_limite:
+        dias_rest = c.get("dias_vencer")
+        if dias_rest is None or dias_rest < 0 or dias_rest > dias_limite:
             continue
         resultado.append({
-            "placa":         v["placa"],
-            "cliente":       v["cliente"],
-            "modelo":        v["modelo"],
-            "termino":       termino_str,
+            "placa":          c["placa"],
+            "cliente":        c["cliente"],
+            "modelo":         c["modelo"],
+            "termino":        c["termino_previsto"],
             "dias_restantes": dias_rest,
         })
     resultado.sort(key=lambda x: x["dias_restantes"])
