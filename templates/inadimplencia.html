@@ -518,7 +518,7 @@
 <!-- Page header -->
 <div class="page-header" style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:20px;">
   <div>
-    <h1 class="page-title">Controle de Inadimplência</h1>
+    <h1 class="page-title">Inadimplência</h1>
     <p class="page-sub">Planilha CONTAS-A-RECEBER — atualizado em {{ hoje }}</p>
   </div>
   <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
@@ -539,6 +539,25 @@
     </a>
   </div>
 </div>
+
+<!-- ── Abas ── -->
+<div style="display:flex; gap:4px; margin-bottom:24px; border-bottom:2px solid #e2e8f0; padding-bottom:0;">
+  <button id="tab-btn-controle"
+          onclick="inadSwitch('controle')"
+          style="padding:8px 20px; font-size:0.875rem; font-weight:600; border:none; background:none;
+                 cursor:pointer; border-bottom:3px solid #1e3a5f; color:#1e3a5f; margin-bottom:-2px;">
+    Controle Diário
+  </button>
+  <button id="tab-btn-judicializada"
+          onclick="inadSwitch('judicializada')"
+          style="padding:8px 20px; font-size:0.875rem; font-weight:600; border:none; background:none;
+                 cursor:pointer; border-bottom:3px solid transparent; color:#6b7280; margin-bottom:-2px;">
+    Carteira Judicializada
+  </button>
+</div>
+
+<!-- ══════════════ ABA: CONTROLE DIÁRIO ══════════════ -->
+<div id="inad-tab-controle">
 
 {% if erro_leitura %}
 <div class="alert alert-erro">
@@ -1119,6 +1138,39 @@ const _fin = [
     });
   }
 })();
+</script>
+
+</div><!-- /inad-tab-controle -->
+
+<!-- ══════════════ ABA: CARTEIRA JUDICIALIZADA ══════════════ -->
+<div id="inad-tab-judicializada" style="display:none;">
+  <div style="text-align:center; padding:4rem 1rem; color:#94a3b8;">
+    <svg width="48" height="48" fill="none" stroke="#cbd5e1" stroke-width="1.5"
+         viewBox="0 0 24 24" style="margin-bottom:1rem; display:block; margin-left:auto; margin-right:auto;">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <line x1="8" y1="21" x2="16" y2="21"/>
+      <line x1="12" y1="17" x2="12" y2="21"/>
+    </svg>
+    <p style="margin:0; font-size:0.95rem; font-weight:600; color:#64748b;">Carteira Judicializada</p>
+    <p style="margin:6px 0 0; font-size:0.825rem;">Em construção — em breve disponível.</p>
+  </div>
+</div>
+
+<script>
+function inadSwitch(aba) {
+  var abas = ['controle', 'judicializada'];
+  abas.forEach(function(a) {
+    document.getElementById('inad-tab-' + a).style.display = (a === aba ? '' : 'none');
+    var btn = document.getElementById('tab-btn-' + a);
+    if (a === aba) {
+      btn.style.borderBottomColor = '#1e3a5f';
+      btn.style.color = '#1e3a5f';
+    } else {
+      btn.style.borderBottomColor = 'transparent';
+      btn.style.color = '#6b7280';
+    }
+  });
+}
 </script>
 
 {% endblock %}

@@ -82,9 +82,10 @@
       </div>
 
       <!-- ── Insights ── -->
-      <div class="sb-group" id="grp-insights" data-open="true">
+      {% set grp_insights_open = active in ['dre','financiamentos','capital_investido','frota','contratos','inadimplencia'] %}
+      <div class="sb-group" id="grp-insights" data-open="{{ 'true' if grp_insights_open else 'false' }}">
         <button class="sb-group-head" onclick="toggleGroup('grp-insights')"
-                aria-expanded="true" aria-controls="grp-insights-body">
+                aria-expanded="{{ 'true' if grp_insights_open else 'false' }}" aria-controls="grp-insights-body">
           <span>Insights</span>
           <span class="chev" aria-hidden="true">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -94,6 +95,18 @@
         </button>
         <div class="sb-group-body" id="grp-insights-body">
           <div>
+            <a href="{{ url_for('pagina_inadimplencia') }}" class="sb-item"
+               data-active="{{ 'true' if active == 'inadimplencia' else 'false' }}"
+               aria-current="{{ 'page' if active == 'inadimplencia' else 'false' }}">
+              <span class="sb-item-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </span>
+              <span class="sb-item-label">Inadimplência</span>
+            </a>
             <a href="{{ url_for('pagina_dre') }}" class="sb-item"
                data-active="{{ 'true' if active == 'dre' else 'false' }}"
                aria-current="{{ 'page' if active == 'dre' else 'false' }}">
@@ -275,35 +288,6 @@
         </div>
       </div>
 
-      <!-- ── Financeiro ── -->
-      {% set grp_financeiro = active in ['inadimplencia'] %}
-      <div class="sb-group" id="grp-financeiro" data-open="{{ 'true' if grp_financeiro else 'false' }}">
-        <button class="sb-group-head" onclick="toggleGroup('grp-financeiro')"
-                aria-expanded="{{ 'true' if grp_financeiro else 'false' }}" aria-controls="grp-financeiro-body">
-          <span>Financeiro</span>
-          <span class="chev" aria-hidden="true">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </span>
-        </button>
-        <div class="sb-group-body" id="grp-financeiro-body">
-          <div>
-            <a href="{{ url_for('pagina_inadimplencia') }}" class="sb-item"
-               data-active="{{ 'true' if active == 'inadimplencia' else 'false' }}"
-               aria-current="{{ 'page' if active == 'inadimplencia' else 'false' }}">
-              <span class="sb-item-icon" aria-hidden="true">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </span>
-              <span class="sb-item-label">Inadimplência</span>
-            </a>
-          </div>
-        </div>
-      </div>
 
     </nav>
 
