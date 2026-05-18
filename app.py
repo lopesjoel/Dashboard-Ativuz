@@ -2913,8 +2913,35 @@ def _calcular_indicadores_ativuz():
 
     dre = _dre_calcular(filtrados)
 
+    # Saldo devedor da carteira financeira (dívida líquida)
+    saldo_devedor = 0.0
+    try:
+        sb = _supabase()
+        if sb:
+            rows = sb.table("financiamentos_contratos").select("*").execute().data or []
+            hoje_d = hoje.date()
+            from math import ceil
+            for r in rows:
+                try:
+                    vcto = date.fromisoformat(str(r.get("data_vencimento", ""))[:10])
+                    dias = (vcto - hoje_d).days
+                    restante = ceil(dias / 30.44) if dias > 0 else 0
+                    saldo_devedor += restante * float(r["valor_parcela"])
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
     def _pct(v):
         return f"{v * 100:.2f}%".replace(".", ",")
+
+    def _ratio(numerador, denominador):
+        if not denominador:
+            return "N/D"
+        return f"{numerador / denominador:.2f}".replace(".", ",")
+
+    ebitda = dre["ebitda"]
+    ebit   = dre["ebit"]
 
     return {
         "ticker": "ATIVUZ", "nome": "Ativuz", "erro": None, "is_ativuz": True,
@@ -2925,8 +2952,8 @@ def _calcular_indicadores_ativuz():
         "margem_ebitda":  _pct(dre["pct_ebitda"]),
         "margem_ebit":    _pct(dre["pct_ebit"]),
         "margem_liquida": _pct(dre["pct_ll"]),
-        "div_ebitda":     "N/D",
-        "div_ebit":       "N/D",
+        "div_ebitda":     _ratio(saldo_devedor, ebitda),
+        "div_ebit":       _ratio(saldo_devedor, ebit),
     }
 
 
