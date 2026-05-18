@@ -3944,9 +3944,28 @@ def pagina_benchmarking():
                                "margem_ebit","margem_liquida","div_ebitda","div_ebit"]}}
     dados = [ativuz] + concorrentes
     atualizado_em = benchmarking_scraper.cache_info()
+
+    dep_veiculos = 0
+    dep_total = 0.0
+    try:
+        sb = _supabase()
+        if sb:
+            res = sb.table("frota_veiculos").select("vl_aquisicao").eq("ativo", True).execute()
+            rows = res.data or []
+            dep_veiculos = len(rows)
+            dep_total = sum(float(r.get("vl_aquisicao") or 0) for r in rows)
+    except Exception:
+        pass
+
+    def _fmt_brl(v):
+        return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
     return render_template("benchmarking.html", active="benchmarking",
                            dados=dados, atualizado_em=atualizado_em,
-                           indicadores=benchmarking_scraper.INDICADORES)
+                           indicadores=benchmarking_scraper.INDICADORES,
+                           depreciacao_frota_veiculos=dep_veiculos,
+                           depreciacao_frota_total=_fmt_brl(dep_total),
+                           depreciacao_frota_anual=_fmt_brl(dep_total / 5) if dep_total else "0,00")
 
 
 @app.route("/benchmarking/atualizar", methods=["POST"])

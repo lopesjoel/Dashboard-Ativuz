@@ -65,6 +65,16 @@
   border-top: 2px solid var(--brand);
 }
 .bm-na { color: var(--ink-3); font-size: 11px; font-style: italic; }
+
+.bm-nota {
+  margin-top: 24px; padding: 16px 20px;
+  background: color-mix(in srgb, var(--brand) 5%, transparent);
+  border-left: 3px solid var(--brand);
+  border-radius: 6px; font-size: 12px; color: var(--ink-2);
+}
+.bm-nota strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 13px; }
+.bm-nota p { margin: 0 0 6px; line-height: 1.6; }
+.bm-nota p:last-child { margin-bottom: 0; }
 </style>
 {% endblock %}
 
@@ -140,9 +150,27 @@
 {% endif %}
 {% endfor %}
 
+<div class="bm-nota">
+  <strong>Nota sobre o M. EBIT da Ativuz</strong>
+  <p>
+    O M. EBIT da Ativuz é calculado subtraindo a depreciação anual da frota do EBITDA.
+    Com {{ depreciacao_frota_veiculos }} veículos ativos e valor total de aquisição de
+    R$&nbsp;{{ depreciacao_frota_total }}, a depreciação anual estimada é de
+    R$&nbsp;{{ depreciacao_frota_anual }} (vida útil de 5 anos, conforme critério da Receita Federal
+    para veículos leves). Como a Ativuz é uma empresa em fase de crescimento de frota,
+    esse custo contábil consome grande parte do EBITDA — o que é comum em locadoras
+    com frota própria e capital intensivo.
+  </p>
+  <p>
+    Os indicadores P/L, P/VP e ROE não se aplicam por ser uma empresa de capital fechado.
+    As margens são calculadas com base nos lançamentos dos últimos 12 meses.
+  </p>
+</div>
+
 <p class="bm-source">
-  Fonte: <a href="https://statusinvest.com.br" target="_blank" rel="noopener">StatusInvest</a>
-  — dados atualizados a cada 4 horas.
+  Concorrentes: <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>
+  via yfinance — dados atualizados a cada 4 horas.
+  Ativuz: lançamentos internos dos últimos 12 meses.
 </p>
 
 <script>
