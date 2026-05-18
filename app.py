@@ -3726,6 +3726,24 @@ def api_carteira_judicializada_atualizar(registro_id):
         return jsonify({"ok": False, "erro": str(e)}), 500
 
 
+# ── Acordo Judicializado ─────────────────────────────────────────────────────
+
+@app.route("/api/carteira-judicializada/<uuid:registro_id>/acordo", methods=["PUT"])
+def api_jud_acordo_salvar(registro_id):
+    body = request.get_json(silent=True) or {}
+    sb = _supabase()
+    if sb is None:
+        return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
+    try:
+        sb.table("carteira_judicializada").update({
+            "acordo_dados":  body.get("acordo_dados"),
+            "atualizado_em": "now()",
+        }).eq("id", str(registro_id)).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
 # ── Checklist Judicializada ───────────────────────────────────────────────────
 
 @app.route("/api/jud-checklist/<uuid:registro_id>", methods=["GET"])

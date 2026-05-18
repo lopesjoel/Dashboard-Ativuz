@@ -562,6 +562,43 @@
     background: none; border: none; cursor: pointer; color: #94a3b8;
     padding: 2px; display: flex; align-items: center; transition: color .12s;
   }
+
+  /* Acordo badge clicável */
+  .jud-acordo-btn {
+    cursor: pointer; transition: opacity .15s; border-bottom: 1px dashed #065f46;
+  }
+  .jud-acordo-btn:hover { opacity: .75; }
+
+  /* Acordo — parcelas panel */
+  .ac-parcela-row {
+    display: grid; grid-template-columns: 32px 1fr 90px 110px;
+    align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 8px; border: 1px solid #e2e8f0;
+    font-size: .82rem;
+  }
+  .ac-parcela-row.pago     { background: #f0fdf4; border-color: #bbf7d0; }
+  .ac-parcela-row.pendente { background: #fff; }
+  .ac-parcela-row.vencida  { background: #fff7ed; border-color: #fed7aa; }
+
+  .ac-num  { font-weight: 700; color: #64748b; font-size: .75rem; }
+  .ac-data { color: #374151; font-weight: 500; }
+  .ac-val  { color: #374151; font-size: .78rem; }
+
+  .ac-btn-pago {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 6px; border: 1.5px solid;
+    font-size: .72rem; font-weight: 600; font-family: inherit; cursor: pointer;
+    transition: opacity .12s;
+  }
+  .ac-btn-pago.pago     { background: #dcfce7; color: #166534; border-color: #86efac; }
+  .ac-btn-pago.pendente { background: #fff; color: #6b7280; border-color: #d1d5db; }
+  .ac-btn-pago.vencida  { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+  .ac-btn-pago:hover    { opacity: .8; }
+
+  .ac-progress-bar {
+    height: 6px; border-radius: 99px; background: #e2e8f0; overflow: hidden; margin: 4px 0 2px;
+  }
+  .ac-progress-fill { height: 100%; border-radius: 99px; background: #16a34a; transition: width .3s; }
   .jud-ck-del:hover { color: #dc2626; }
 
   .inad-card.c-green { background: linear-gradient(135deg, #166534 0%, #16a34a 100%); }
@@ -1391,6 +1428,95 @@ const _fin = [
   </div>
 </div>
 
+<!-- Modal — Acordo Judicializado -->
+<div id="modal-jud-acordo" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,.55);
+     backdrop-filter:blur(3px); z-index:400; align-items:flex-start; justify-content:center;
+     padding:1.5rem 1rem; overflow-y:auto;">
+  <div style="background:#fff; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.2);
+              padding:2rem 1.75rem 1.5rem; width:100%; max-width:660px; display:flex; flex-direction:column; gap:1.25rem;">
+
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <div>
+        <div style="font-size:.7rem;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:.05em;">Acordo</div>
+        <h2 id="ac-titulo" style="font-size:1.05rem; font-weight:700; margin:4px 0 0; color:#0f172a;"></h2>
+      </div>
+      <button onclick="judFecharAcordo()"
+              style="background:none;border:none;cursor:pointer;color:#64748b;padding:4px;flex-shrink:0;" aria-label="Fechar">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Formulário -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+      <div>
+        <label class="jud-form-label">Valor acordado (R$)</label>
+        <input id="ac-f-valor" type="number" step="0.01" min="0" placeholder="0,00"
+               class="jud-form-input" oninput="acAtualizar()">
+      </div>
+      <div>
+        <label class="jud-form-label">Quantidade de parcelas</label>
+        <input id="ac-f-qtd" type="number" min="1" max="360" placeholder="1"
+               class="jud-form-input" oninput="acAtualizar()">
+      </div>
+      <div>
+        <label class="jud-form-label">Data do acordo</label>
+        <input id="ac-f-data-acordo" type="date" class="jud-form-input">
+      </div>
+      <div>
+        <label class="jud-form-label">Forma de pagamento</label>
+        <select id="ac-f-forma" class="jud-form-input" style="background:#fff;" onchange="acAtualizar()">
+          <option value="mensal">Mensal</option>
+          <option value="semanal">Semanal</option>
+        </select>
+      </div>
+      <div>
+        <label class="jud-form-label">Data da 1ª parcela</label>
+        <input id="ac-f-primeira" type="date" class="jud-form-input" oninput="acAtualizar()">
+      </div>
+    </div>
+
+    <!-- Resumo de progresso -->
+    <div id="ac-resumo" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0;
+         border-radius:10px; padding:12px 14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+        <span style="font-size:.78rem; color:#166534; font-weight:600;" id="ac-res-texto"></span>
+        <span style="font-size:.78rem; color:#166534; font-weight:600;" id="ac-res-valor"></span>
+      </div>
+      <div class="ac-progress-bar"><div class="ac-progress-fill" id="ac-res-bar" style="width:0%"></div></div>
+      <div style="font-size:.7rem; color:#15803d; margin-top:4px;" id="ac-res-proxima"></div>
+    </div>
+
+    <!-- Painel de parcelas -->
+    <div>
+      <div style="font-size:.72rem; font-weight:700; color:#374151; text-transform:uppercase;
+                  letter-spacing:.05em; margin-bottom:8px;">Acompanhamento de Parcelas</div>
+      <div id="ac-parcelas" style="display:flex; flex-direction:column; gap:5px;
+           max-height:320px; overflow-y:auto; padding-right:2px;">
+        <div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:16px 0;">
+          Preencha o formulário acima para gerar as parcelas.
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex; gap:.75rem; padding-top:.25rem; border-top:1px solid #f1f5f9;">
+      <button onclick="judSalvarAcordo()"
+              style="flex:1; padding:.7rem; background:#065f46; color:#fff; border:none;
+                     border-radius:8px; font-weight:600; cursor:pointer; font-size:.875rem; font-family:inherit;">
+        Salvar
+      </button>
+      <button onclick="judFecharAcordo()"
+              style="flex:1; padding:.7rem; background:#f1f5f9; color:#374151; border:none;
+                     border-radius:8px; font-weight:600; cursor:pointer; font-size:.875rem; font-family:inherit;">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal — Checklist do processo judicializado -->
 <div id="modal-jud-checklist" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,.55);
      backdrop-filter:blur(3px); z-index:400; align-items:center; justify-content:center; padding:1rem;">
@@ -1505,7 +1631,9 @@ const _fin = [
       '<td class="jud-td" style="white-space:nowrap; color:#64748b;">'                    + (r.cpf_cnpj || '—')     + '</td>' +
       '<td class="jud-td" style="white-space:nowrap;">'               + _toBR(r.inicio_divida || '') + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#dc2626; font-weight:600;">'  + _brl(r.valor_atual)     + '</td>' +
-      '<td class="jud-td"><span class="' + _badgeCls(r.status) + '">' + r.status         + '</span></td>'          +
+      '<td class="jud-td">' + (r.status === 'Acordo'
+        ? '<span class="' + _badgeCls(r.status) + ' jud-acordo-btn" onclick="judAbrirAcordo(\'' + r.id + '\')" title="Ver / editar acordo">' + r.status + '</span>'
+        : '<span class="' + _badgeCls(r.status) + '">' + r.status + '</span>') + '</td>' +
       '<td class="jud-td" style="font-size:0.8rem; color:#64748b; white-space:nowrap;">' + (r.num_processo || '—') + '</td>' +
       '<td class="jud-td" style="white-space:nowrap;">' +
         '<button onclick="judAbrirModal(\'' + r.id + '\')" ' +
@@ -1638,8 +1766,170 @@ const _fin = [
   };
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { judFecharModal(); judFecharChecklist(); }
+    if (e.key === 'Escape') { judFecharModal(); judFecharChecklist(); judFecharAcordo(); }
   });
+
+  /* ── Acordo Judicializado ── */
+  var _acRegistroId = null;
+  var _acParcelas   = [];
+
+  window.judAbrirAcordo = function (registroId) {
+    _acRegistroId = registroId;
+    var r = _dados.filter(function (d) { return d.id === registroId; })[0] || {};
+    var titulo = document.getElementById('ac-titulo');
+    if (titulo) titulo.textContent = r.cliente || '';
+
+    var ad = r.acordo_dados || {};
+    document.getElementById('ac-f-valor').value       = ad.valor_acordado  || '';
+    document.getElementById('ac-f-qtd').value         = ad.qtd_parcelas    || '';
+    document.getElementById('ac-f-data-acordo').value = ad.data_acordo      || '';
+    document.getElementById('ac-f-forma').value       = ad.forma_pagamento  || 'mensal';
+    document.getElementById('ac-f-primeira').value    = ad.data_primeira_parcela || '';
+    _acParcelas = (ad.parcelas || []).map(function (p) {
+      return { numero: p.numero, data: p.data, pago: !!p.pago };
+    });
+
+    document.getElementById('modal-jud-acordo').style.display = 'flex';
+    acAtualizar();
+  };
+
+  window.judFecharAcordo = function () {
+    var m = document.getElementById('modal-jud-acordo');
+    if (m) m.style.display = 'none';
+    _acRegistroId = null;
+    _acParcelas   = [];
+  };
+
+  function _acAddDias(dateStr, dias) {
+    var d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().split('T')[0];
+  }
+
+  function _acAddMes(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split('T')[0];
+  }
+
+  window.acAtualizar = function () {
+    var qtd      = parseInt(document.getElementById('ac-f-qtd').value)   || 0;
+    var forma    = document.getElementById('ac-f-forma').value;
+    var primeira = document.getElementById('ac-f-primeira').value;
+
+    if (!qtd || !primeira) { _acParcelas = []; _acRenderParcelas(0); return; }
+
+    var prev = _acParcelas.slice();
+    _acParcelas = [];
+    var cur = primeira;
+    for (var i = 0; i < qtd; i++) {
+      _acParcelas.push({
+        numero: i + 1,
+        data:   cur,
+        pago:   (prev[i] && prev[i].data === cur) ? prev[i].pago : false
+      });
+      cur = forma === 'semanal' ? _acAddDias(cur, 7) : _acAddMes(cur);
+    }
+    var valor = parseFloat(document.getElementById('ac-f-valor').value) || 0;
+    _acRenderParcelas(valor);
+  };
+
+  function _acRenderParcelas(valorTotal) {
+    var painel = document.getElementById('ac-parcelas');
+    if (!painel) return;
+    painel.innerHTML = '';
+
+    if (!_acParcelas.length) {
+      painel.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;text-align:center;padding:16px 0;">Preencha o formulário acima para gerar as parcelas.</div>';
+      var res = document.getElementById('ac-resumo');
+      if (res) res.style.display = 'none';
+      return;
+    }
+
+    var qtd        = _acParcelas.length;
+    var valParc    = valorTotal ? valorTotal / qtd : 0;
+    var today      = new Date(); today.setHours(0,0,0,0);
+    var pagas      = 0;
+    var proxima    = null;
+
+    _acParcelas.forEach(function (p, i) {
+      var dt      = new Date(p.data + 'T00:00:00');
+      var vencida = !p.pago && dt < today;
+      var cls     = p.pago ? 'pago' : (vencida ? 'vencida' : 'pendente');
+      if (!p.pago && !proxima) proxima = p.data;
+      if (p.pago) pagas++;
+
+      var row = document.createElement('div');
+      row.className = 'ac-parcela-row ' + cls;
+      row.id = 'ac-row-' + i;
+
+      var btnLabel = p.pago
+        ? '✓ Pago'
+        : (vencida ? '⚠ Vencida' : 'Marcar pago');
+
+      row.innerHTML =
+        '<span class="ac-num">' + p.numero + '/' + qtd + '</span>' +
+        '<span class="ac-data">' + _toBR(p.data) + '</span>' +
+        (valParc ? '<span class="ac-val">' + _brl(valParc) + '</span>' : '<span></span>') +
+        '<button class="ac-btn-pago ' + cls + '" onclick="acToggle(' + i + ',' + valorTotal + ')">' + btnLabel + '</button>';
+      painel.appendChild(row);
+    });
+
+    /* Resumo */
+    var res = document.getElementById('ac-resumo');
+    if (res) {
+      res.style.display = '';
+      var pct = qtd ? Math.round(pagas / qtd * 100) : 0;
+      document.getElementById('ac-res-texto').textContent  = pagas + ' de ' + qtd + ' parcelas pagas (' + pct + '%)';
+      document.getElementById('ac-res-valor').textContent  = valorTotal ? _brl(pagas * valParc) + ' de ' + _brl(valorTotal) : '';
+      document.getElementById('ac-res-bar').style.width    = pct + '%';
+      var proxEl = document.getElementById('ac-res-proxima');
+      if (proxEl) proxEl.textContent = proxima ? 'Próximo vencimento: ' + _toBR(proxima) : 'Todas as parcelas pagas!';
+    }
+  }
+
+  window.acToggle = function (idx, valorTotal) {
+    if (!_acParcelas[idx]) return;
+    _acParcelas[idx].pago = !_acParcelas[idx].pago;
+    _acRenderParcelas(valorTotal || parseFloat(document.getElementById('ac-f-valor').value) || 0);
+  };
+
+  window.judSalvarAcordo = function () {
+    if (!_acRegistroId) return;
+    var payload = {
+      acordo_dados: {
+        valor_acordado:       parseFloat(document.getElementById('ac-f-valor').value) || 0,
+        qtd_parcelas:         parseInt(document.getElementById('ac-f-qtd').value)     || 0,
+        data_acordo:          document.getElementById('ac-f-data-acordo').value       || null,
+        forma_pagamento:      document.getElementById('ac-f-forma').value,
+        data_primeira_parcela: document.getElementById('ac-f-primeira').value         || null,
+        parcelas: _acParcelas.map(function (p) { return { numero: p.numero, data: p.data, pago: p.pago }; })
+      }
+    };
+    var btn = document.querySelector('#modal-jud-acordo button[onclick="judSalvarAcordo()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+    fetch('/api/carteira-judicializada/' + _acRegistroId + '/acordo', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (json) {
+      if (json.ok) {
+        /* atualiza cache local */
+        var rec = _dados.filter(function (d) { return d.id === _acRegistroId; })[0];
+        if (rec) rec.acordo_dados = payload.acordo_dados;
+        judFecharAcordo();
+      } else {
+        alert('Erro ao salvar: ' + (json.erro || 'desconhecido'));
+      }
+    })
+    .catch(function (e) { alert('Erro de conexão: ' + e); })
+    .finally(function () {
+      if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+    });
+  };
 
   /* ── Checklist Judicializada ── */
   var _judCkRegistroId  = null;
