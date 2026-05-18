@@ -3735,11 +3735,9 @@ def api_jud_acordo_salvar(registro_id):
     if sb is None:
         return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
     try:
-        res = sb.table("carteira_judicializada").update({
+        sb.table("carteira_judicializada").update({
             "acordo_dados": body.get("acordo_dados"),
         }).eq("id", str(registro_id)).execute()
-        if not res.data:
-            return jsonify({"ok": False, "erro": "Registro não encontrado ou coluna acordo_dados inexistente"}), 400
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)}), 500
