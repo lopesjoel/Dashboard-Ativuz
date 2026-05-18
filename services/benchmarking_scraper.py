@@ -1,5 +1,5 @@
 import yfinance as yf
-from datetime import datetime, timedelta
+from datetime import datetime
 
 TICKERS = [
     {"ticker": "RENT3", "nome": "Localiza"},
@@ -20,7 +20,6 @@ INDICADORES = [
 ]
 
 _cache: dict = {}
-_CACHE_TTL = timedelta(hours=4)
 
 
 def _nd(v, decimals=2):
@@ -85,7 +84,7 @@ def scrape_ticker(ticker: str) -> dict:
 
 def obter_dados(forcar: bool = False) -> list[dict]:
     agora = datetime.now()
-    if not forcar and _cache.get("dados") and agora - _cache["ts"] < _CACHE_TTL:
+    if not forcar and _cache.get("dados"):
         return _cache["dados"]
 
     dados = []
