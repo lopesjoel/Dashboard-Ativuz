@@ -2865,6 +2865,71 @@ def _dre_calcular(lancamentos):
     }
 
 
+def _ler_lancamentos_jun_jul():
+    """Lê o arquivo histórico de junho/julho 2025 (formato diferente do DRE principal)."""
+    import openpyxl
+    path = Path(__file__).resolve().parent / "planilhas" / "dados_junho_julho.xlsx"
+    if not path.exists():
+        return []
+    registros = []
+    try:
+        wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+        for row in rows[1:]:  # pula cabeçalho
+            if not row[0]:
+                continue
+            try:
+                dt = datetime.strptime(str(row[2]), "%d/%m/%Y")
+                natureza = str(row[3]) if row[3] else ""
+                cod = natureza.split(" - ")[0].strip() if " - " in natureza else natureza.strip()
+                valor_str = str(row[4]).replace("R$", "").replace("-", "").replace(".", "").replace(",", ".").strip()
+                valor = float(valor_str)
+                registros.append({"codigo": cod, "dt": dt, "valor": valor})
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return registros
+
+
+def _calcular_indicadores_ativuz():
+    """Calcula margens da Ativuz usando os últimos 12 meses de lançamentos."""
+    from calendar import monthrange
+    hoje = datetime.now(_BRT)
+    mes_ini = hoje.month + 1
+    ano_ini = hoje.year - 1
+    if mes_ini > 12:
+        mes_ini -= 12
+        ano_ini += 1
+    d_ini = datetime(ano_ini, mes_ini, 1)
+    d_fim = datetime(hoje.year, hoje.month, monthrange(hoje.year, hoje.month)[1], 23, 59, 59)
+
+    todos = _dre_ler_lancamentos() + _ler_lancamentos_jun_jul()
+    filtrados = [l for l in todos if d_ini <= l["dt"] <= d_fim]
+    if not filtrados:
+        return None
+
+    dre = _dre_calcular(filtrados)
+
+    def _pct(v):
+        return f"{v * 100:.2f}%".replace(".", ",")
+
+    return {
+        "ticker": "ATIVUZ", "nome": "Ativuz", "erro": None, "is_ativuz": True,
+        "pl":             "N/A",
+        "pvp":            "N/A",
+        "roe":            "N/D",
+        "margem_bruta":   _pct(dre["pct_margem"]),
+        "margem_ebitda":  _pct(dre["pct_ebitda"]),
+        "margem_ebit":    _pct(dre["pct_ebit"]),
+        "margem_liquida": _pct(dre["pct_ll"]),
+        "div_ebitda":     "N/D",
+        "div_ebit":       "N/D",
+    }
+
+
 @app.route("/dre")
 def pagina_dre():
     from calendar import monthrange
@@ -3829,7 +3894,12 @@ def api_checklist_salvar():
 
 @app.route("/benchmarking")
 def pagina_benchmarking():
-    dados = benchmarking_scraper.obter_dados()
+    concorrentes = benchmarking_scraper.obter_dados()
+    ativuz = _calcular_indicadores_ativuz() or {"ticker": "ATIVUZ", "nome": "Ativuz",
+        "erro": "Sem dados", "is_ativuz": True,
+        **{k: "N/D" for k in ["pl","pvp","roe","margem_bruta","margem_ebitda",
+                               "margem_ebit","margem_liquida","div_ebitda","div_ebit"]}}
+    dados = [ativuz] + concorrentes
     atualizado_em = benchmarking_scraper.cache_info()
     return render_template("benchmarking.html", active="benchmarking",
                            dados=dados, atualizado_em=atualizado_em,

@@ -27,7 +27,10 @@
       "PowerShell(cmd /c \"\"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\\\\.venv\\\\Scripts\\\\pip.exe\"\" install --no-cache-dir beautifulsoup4>=4.12\")",
       "PowerShell(cmd /c \"\"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\\\\.venv\\\\Scripts\\\\pip.exe\"\" install --no-cache-dir \"\"beautifulsoup4>=4.12\"\"\")",
       "PowerShell(cmd /c \"\"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\\\\.venv\\\\Scripts\\\\python.exe\"\" \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\\\\debug_scraper.py\"\" 2>&1\")",
-      "PowerShell(cmd /c \"cd /d \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\"\" && \"\".venv\\\\Scripts\\\\python.exe\"\" debug_scraper.py 2>&1\")"
+      "PowerShell(cmd /c \"cd /d \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\"\" && \"\".venv\\\\Scripts\\\\python.exe\"\" debug_scraper.py 2>&1\")",
+      "PowerShell(cmd /c \"dir /b \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\\\\planilhas\"\"\")",
+      "PowerShell(cmd /c \"cd /d \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\"\" && \"\".venv\\\\Scripts\\\\python.exe\"\" debug_xlsx.py 2>&1\")",
+      "PowerShell(cmd /c \"cd /d \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\"\" && \"\".venv\\\\Scripts\\\\python.exe\"\" debug_ativuz.py 2>&1\")"
     ]
   }
 }

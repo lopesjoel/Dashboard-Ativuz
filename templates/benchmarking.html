@@ -55,6 +55,16 @@
   margin-top: 20px; font-size: 11px; color: var(--ink-3);
 }
 .bm-source a { color: var(--brand); }
+
+.col-ativuz {
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+  font-weight: 700;
+}
+.bm-table th.col-ativuz {
+  color: var(--brand);
+  border-top: 2px solid var(--brand);
+}
+.bm-na { color: var(--ink-3); font-size: 11px; font-style: italic; }
 </style>
 {% endblock %}
 
@@ -82,7 +92,7 @@
       <tr>
         <th class="col-ind">Indicador</th>
         {% for d in dados %}
-        <th>
+        <th {% if d.get('is_ativuz') %}class="col-ativuz"{% endif %}>
           <div class="bm-company-name">{{ d.nome }}</div>
           <div class="bm-ticker">{{ d.ticker }}</div>
         </th>
@@ -105,13 +115,14 @@
       <tr>
         <td class="col-ind">{{ label }}</td>
         {% for d in dados %}
-        <td>
-          {% if d.erro and d.get(chave) == 'N/D' %}
-            <span class="bm-nd">—</span>
-          {% elif d.get(chave, 'N/D') == 'N/D' %}
+        <td {% if d.get('is_ativuz') %}class="col-ativuz"{% endif %}>
+          {% set val = d.get(chave, 'N/D') %}
+          {% if val == 'N/A' %}
+            <span class="bm-na">N/A</span>
+          {% elif val == 'N/D' or (d.erro and val == 'N/D') %}
             <span class="bm-nd">N/D</span>
           {% else %}
-            <span class="bm-val">{{ d.get(chave, '—') }}</span>
+            <span class="bm-val">{{ val }}</span>
           {% endif %}
         </td>
         {% endfor %}
