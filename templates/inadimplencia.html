@@ -1463,6 +1463,7 @@ const _fin = [
     var btn    = document.querySelector('#modal-jud button[onclick="judSalvar()"]');
     if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
+    console.log('[jud] salvando', method, url, payload);
     fetch(url, {
       method:  method,
       headers: { 'Content-Type': 'application/json' },
@@ -1470,6 +1471,7 @@ const _fin = [
     })
     .then(function (r) { return r.json(); })
     .then(function (json) {
+      console.log('[jud] resposta', json);
       if (json.ok) { judFecharModal(); _carregar(); }
       else alert('Erro: ' + (json.erro || 'desconhecido'));
     })

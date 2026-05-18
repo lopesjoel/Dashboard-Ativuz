@@ -4,22 +4,34 @@ from dotenv import load_dotenv; load_dotenv()
 from app import _supabase
 
 sb = _supabase()
-res = sb.table('frota_veiculos').select('placa, modelo, ano_modelo, dt_aquisicao, vl_aquisicao').eq('ativo', True).order('vl_aquisicao', desc=True).execute()
-rows = res.data or []
 
-print(f"{'PLACA':<10} {'MODELO':<30} {'ANO':<6} {'DT COMPRA':<12} {'VL AQUISICAO':>15}")
-print("-" * 78)
-total = 0
-for r in rows:
-    vl = float(r.get('vl_aquisicao') or 0)
-    total += vl
-    placa = r.get('placa') or ''
-    modelo = (r.get('modelo') or '')[:29]
-    ano = str(r.get('ano_modelo') or '')
-    dt = str(r.get('dt_aquisicao') or 'N/D')[:10]
-    print(f"{placa:<10} {modelo:<30} {ano:<6} {dt:<12} R$ {vl:>12,.2f}")
+res = sb.table("carteira_judicializada").select("*").limit(1).execute()
+if not res.data:
+    print("Sem registros."); exit()
 
-print("-" * 78)
-print(f"{'TOTAL':<49} R$ {total:>12,.2f}")
-print(f"{'Depreciacao anual (total/5)':<49} R$ {total/5:>12,.2f}")
-print(f"{'Depreciacao mensal (total/60)':<49} R$ {total/60:>12,.2f}")
+r = res.data[0]
+status_original = r['status']
+status_novo = 'Acordo' if status_original != 'Acordo' else 'Em Análise'
+
+print(f"Status original: {status_original!r}")
+print(f"Tentando mudar para: {status_novo!r}")
+
+upd = sb.table("carteira_judicializada").update({
+    "cliente":       r["cliente"],
+    "cpf_cnpj":      r["cpf_cnpj"] or "",
+    "inicio_divida": r["inicio_divida"],
+    "valor_atual":   r["valor_atual"],
+    "status":        status_novo,
+    "num_processo":  r["num_processo"] or "",
+    "atualizado_em": "now()",
+}).eq("id", r["id"]).execute()
+
+print(f"Retorno do update: {upd.data}")
+
+# Busca novamente para confirmar persistência
+res2 = sb.table("carteira_judicializada").select("status").eq("id", r["id"]).execute()
+print(f"Status após update: {res2.data[0]['status']!r}")
+
+# Reverte
+sb.table("carteira_judicializada").update({"status": status_original}).eq("id", r["id"]).execute()
+print(f"Revertido para: {status_original!r}")
