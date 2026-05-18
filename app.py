@@ -2932,6 +2932,20 @@ def _calcular_indicadores_ativuz():
     except Exception:
         pass
 
+    # Depreciação anual da frota (vida útil 5 anos — Receita Federal veículos leves)
+    depreciacao_anual = 0.0
+    try:
+        sb2 = _supabase()
+        if sb2:
+            res_frota = sb2.table("frota_veiculos").select("vl_aquisicao").eq("ativo", True).execute()
+            for v in (res_frota.data or []):
+                try:
+                    depreciacao_anual += float(v.get("vl_aquisicao") or 0) / 5
+                except (TypeError, ValueError):
+                    continue
+    except Exception:
+        pass
+
     def _pct(v):
         return f"{v * 100:.2f}%".replace(".", ",")
 
@@ -2940,8 +2954,10 @@ def _calcular_indicadores_ativuz():
             return "N/D"
         return f"{numerador / denominador:.2f}".replace(".", ",")
 
+    rl     = dre["rl"]
     ebitda = dre["ebitda"]
-    ebit   = dre["ebit"]
+    ebit   = ebitda - depreciacao_anual
+    pct_ebit = (ebit / rl) if rl else 0
 
     return {
         "ticker": "ATIVUZ", "nome": "Ativuz", "erro": None, "is_ativuz": True,
@@ -2950,7 +2966,7 @@ def _calcular_indicadores_ativuz():
         "roe":            "N/D",
         "margem_bruta":   _pct(dre["pct_margem"]),
         "margem_ebitda":  _pct(dre["pct_ebitda"]),
-        "margem_ebit":    _pct(dre["pct_ebit"]),
+        "margem_ebit":    _pct(pct_ebit),
         "margem_liquida": _pct(dre["pct_ll"]),
         "div_ebitda":     _ratio(saldo_devedor, ebitda),
         "div_ebit":       _ratio(saldo_devedor, ebit),
