@@ -1948,12 +1948,16 @@ const _fin = [
     .then(function (r) { return r.json(); })
     .then(function (json) {
       if (json.ok) {
-        /* atualiza cache local */
         var rec = _dados.filter(function (d) { return d.id === _acRegistroId; })[0];
         if (rec) rec.acordo_dados = payload.acordo_dados;
         judFecharAcordo();
       } else {
-        alert('Erro ao salvar: ' + (json.erro || 'desconhecido'));
+        var msg = json.erro || 'Erro desconhecido';
+        if (msg.indexOf('acordo_dados') !== -1 || msg.indexOf('column') !== -1) {
+          alert('Coluna "acordo_dados" não encontrada no banco.\nExecute o SQL no Supabase:\n\nALTER TABLE carteira_judicializada ADD COLUMN IF NOT EXISTS acordo_dados JSONB DEFAULT NULL;');
+        } else {
+          alert('Erro ao salvar: ' + msg);
+        }
       }
     })
     .catch(function (e) { alert('Erro de conexão: ' + e); })
