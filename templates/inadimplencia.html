@@ -581,7 +581,12 @@
   .ac-parcela-row.vencida  { background: #fff7ed; border-color: #fed7aa; }
 
   .ac-num  { font-weight: 700; color: #64748b; font-size: .75rem; }
-  .ac-data { color: #374151; font-weight: 500; }
+  .ac-data {
+    color: #374151; font-weight: 500; cursor: pointer;
+    border-bottom: 1px dashed #94a3b8; padding-bottom: 1px;
+    transition: border-color .12s, color .12s;
+  }
+  .ac-data:hover { color: #1e3a5f; border-color: #1e3a5f; }
   .ac-val  { color: #374151; font-size: .78rem; }
 
   .ac-btn-pago {
@@ -1869,7 +1874,7 @@ const _fin = [
 
       row.innerHTML =
         '<span class="ac-num">' + p.numero + '/' + qtd + '</span>' +
-        '<span class="ac-data">' + _toBR(p.data) + '</span>' +
+        '<span class="ac-data" id="ac-data-' + i + '" onclick="acEditarData(' + i + ',' + valorTotal + ')" title="Clique para editar a data">' + _toBR(p.data) + '</span>' +
         (valParc ? '<span class="ac-val">' + _brl(valParc) + '</span>' : '<span></span>') +
         '<button class="ac-btn-pago ' + cls + '" onclick="acToggle(' + i + ',' + valorTotal + ')">' + btnLabel + '</button>';
       painel.appendChild(row);
@@ -1892,6 +1897,32 @@ const _fin = [
     if (!_acParcelas[idx]) return;
     _acParcelas[idx].pago = !_acParcelas[idx].pago;
     _acRenderParcelas(valorTotal || parseFloat(document.getElementById('ac-f-valor').value) || 0);
+  };
+
+  window.acEditarData = function (idx, valorTotal) {
+    var span = document.getElementById('ac-data-' + idx);
+    if (!span || !_acParcelas[idx]) return;
+
+    var input = document.createElement('input');
+    input.type = 'date';
+    input.value = _acParcelas[idx].data;
+    input.style.cssText = 'border:1.5px solid #1e3a5f;border-radius:5px;padding:2px 5px;' +
+                          'font-size:.82rem;font-family:inherit;color:#374151;outline:none;width:130px;';
+
+    function _confirmar() {
+      if (input.value) _acParcelas[idx].data = input.value;
+      _acRenderParcelas(valorTotal || parseFloat(document.getElementById('ac-f-valor').value) || 0);
+    }
+
+    input.addEventListener('change', _confirmar);
+    input.addEventListener('blur',   _confirmar);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter')  input.blur();
+      if (e.key === 'Escape') _acRenderParcelas(valorTotal || parseFloat(document.getElementById('ac-f-valor').value) || 0);
+    });
+
+    span.parentNode.replaceChild(input, span);
+    input.focus();
   };
 
   window.judSalvarAcordo = function () {
