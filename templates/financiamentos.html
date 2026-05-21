@@ -195,8 +195,7 @@
       <tr class="{% if c.quitado %}row-quitado{% endif %}"
           data-placa="{{ c.placa | upper }}">
         <td>
-          {{ c.operacao }}
-          {% if c.quitado %}<span class="badge-quitado">Quitado</span>{% endif %}
+          {% if c.quitado %}<span class="badge-quitado">Quitado</span>{% else %}{{ c.operacao }}{% endif %}
         </td>
         <td>{{ c.contrato }}</td>
         <td>{{ c.placa }}</td>
