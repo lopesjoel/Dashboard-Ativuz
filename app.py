@@ -310,6 +310,36 @@ def detectar_tipo(filename: str):
 
 
 def get_templates():
+    sb = _supabase()
+    if sb:
+        try:
+            items = sb.storage.from_("documentos").list("templates") or []
+            data_files = sorted([f for f in items if not f["name"].endswith(".json")], key=lambda x: x["name"])
+            meta_map   = {f["name"]: True for f in items if f["name"].endswith(".json")}
+            result = []
+            for finfo in data_files:
+                fname = finfo["name"]
+                stem  = Path(fname).stem
+                display_name = stem
+                if f"{stem}.json" in meta_map:
+                    try:
+                        mb = sb.storage.from_("documentos").download(f"templates/{stem}.json")
+                        display_name = json.loads(bytes(mb)).get("nome", stem)
+                    except Exception:
+                        pass
+                size_kb = round((finfo.get("metadata") or {}).get("size", 0) / 1024, 1)
+                updated = finfo.get("updated_at") or finfo.get("created_at") or ""
+                try:
+                    dt = datetime.fromisoformat(updated.replace("Z", "+00:00"))
+                    data_fmt = dt.astimezone(_BRT).strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    data_fmt = ""
+                result.append({"filename": fname, "nome": display_name,
+                                "tamanho_kb": size_kb, "data": data_fmt})
+            return result
+        except Exception:
+            import traceback; traceback.print_exc()
+    # fallback local
     result = []
     files = sorted(
         list(UPLOAD_FOLDER.glob("*.docx")) + list(UPLOAD_FOLDER.glob("*.xlsx")),
@@ -327,6 +357,46 @@ def get_templates():
             "data": datetime.fromtimestamp(f.stat().st_mtime).strftime("%d/%m/%Y %H:%M"),
         })
     return result
+
+
+def _resolve_template(filename: str):
+    """
+    Retorna (caminho_local, nome_display, erro).
+    Se Supabase disponível, baixa para arquivo temporário.
+    Caller deve apagar o temp se caminho_local estiver em TEMP_FOLDER.
+    """
+    safe = secure_filename(filename)
+    stem = Path(safe).stem
+    sb   = _supabase()
+    if sb:
+        try:
+            data = sb.storage.from_("documentos").download(f"templates/{safe}")
+            if not data:
+                return None, filename, "Template não encontrado no Storage."
+            TEMP_FOLDER.mkdir(exist_ok=True)
+            tmp = TEMP_FOLDER / f"tpl_{uuid.uuid4().hex}{Path(safe).suffix}"
+            tmp.write_bytes(bytes(data))
+            nome_display = stem
+            try:
+                mb = sb.storage.from_("documentos").download(f"templates/{stem}.json")
+                nome_display = json.loads(bytes(mb)).get("nome", stem)
+            except Exception:
+                pass
+            return str(tmp), nome_display, None
+        except Exception as e:
+            import traceback; traceback.print_exc()
+    # fallback local
+    local = UPLOAD_FOLDER / safe
+    if not local.exists():
+        return None, filename, "Template não encontrado."
+    nome_display = stem
+    meta_local = UPLOAD_FOLDER / f"{stem}.json"
+    if meta_local.exists():
+        try:
+            nome_display = json.loads(meta_local.read_text(encoding="utf-8")).get("nome", stem)
+        except Exception:
+            pass
+    return str(local), nome_display, None
 
 
 def _historico_append(locatario_nome: str, template: str, arquivo: str):
@@ -541,13 +611,35 @@ def upload_template():
         flash("Apenas arquivos .docx ou .xlsx são aceitos.", "erro")
         return redirect(url_for("pagina_templates"))
 
-    uid = uuid.uuid4().hex[:8]
-    safe_stem = secure_filename(f"{nome}_{uid}")
-    dest = UPLOAD_FOLDER / f"{safe_stem}.docx"
-    arquivo.save(str(dest))
+    uid  = uuid.uuid4().hex[:8]
+    ext  = Path(secure_filename(arquivo.filename)).suffix.lower()
+    safe_stem    = secure_filename(f"{nome}_{uid}")
+    storage_path = f"templates/{safe_stem}{ext}"
+    meta_path    = f"templates/{safe_stem}.json"
 
-    meta = UPLOAD_FOLDER / f"{safe_stem}.json"
-    meta.write_text(json.dumps({"nome": nome}, ensure_ascii=False), encoding="utf-8")
+    sb = _supabase()
+    if sb:
+        try:
+            file_bytes = arquivo.read()
+            ct = ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  if ext == ".xlsx"
+                  else "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            sb.storage.from_("documentos").upload(storage_path, file_bytes,
+                                                   {"content-type": ct, "upsert": "true"})
+            sb.storage.from_("documentos").upload(
+                meta_path,
+                json.dumps({"nome": nome}, ensure_ascii=False).encode("utf-8"),
+                {"content-type": "application/json", "upsert": "true"},
+            )
+        except Exception as e:
+            flash(f"Erro ao salvar template: {e}", "erro")
+            return redirect(url_for("pagina_templates"))
+    else:
+        dest = UPLOAD_FOLDER / f"{safe_stem}{ext}"
+        arquivo.save(str(dest))
+        (UPLOAD_FOLDER / f"{safe_stem}.json").write_text(
+            json.dumps({"nome": nome}, ensure_ascii=False), encoding="utf-8"
+        )
 
     flash(f'Template "{nome}" enviado com sucesso!', "ok")
     return redirect(url_for("pagina_templates"))
@@ -556,12 +648,17 @@ def upload_template():
 @app.route("/templates/excluir/<filename>", methods=["POST"])
 def excluir_template(filename):
     safe = secure_filename(filename)
-    docx = UPLOAD_FOLDER / safe
-    meta = UPLOAD_FOLDER / f"{Path(safe).stem}.json"
-    if docx.exists():
-        docx.unlink()
-    if meta.exists():
-        meta.unlink()
+    stem = Path(safe).stem
+    sb   = _supabase()
+    if sb:
+        try:
+            sb.storage.from_("documentos").remove([f"templates/{safe}", f"templates/{stem}.json"])
+        except Exception:
+            import traceback; traceback.print_exc()
+    else:
+        for p in (UPLOAD_FOLDER / safe, UPLOAD_FOLDER / f"{stem}.json"):
+            if p.exists():
+                p.unlink()
     flash("Template excluído.", "ok")
     return redirect(url_for("pagina_templates"))
 
@@ -580,16 +677,16 @@ def gerar_contrato_route():
         flash("Selecione um template.", "erro")
         return redirect(url_for("pagina_gerar"))
 
-    template_path = UPLOAD_FOLDER / secure_filename(template_filename)
-    if not template_path.exists():
-        flash("Template não encontrado.", "erro")
-        return redirect(url_for("pagina_gerar"))
-
     tipo = detectar_tipo(template_filename)
     if tipo is None:
         return jsonify({
             "error": "Template não reconhecido. Renomeie o arquivo com 'locacao', 'quitacao', 'notificacao' ou 'inadimplente' no nome."
         }), 400
+
+    tpl_path, nome_template, tpl_erro = _resolve_template(template_filename)
+    if tpl_erro:
+        flash(tpl_erro, "erro")
+        return redirect(url_for("pagina_gerar"))
 
     formato = request.form.get("formato", "docx")
 
@@ -611,18 +708,13 @@ def gerar_contrato_route():
 
     # ── Gerar documento ───────────────────────────────────
     try:
-        nome_pessoa = _gerar_para_caminho(request.form, tipo, str(template_path), caminho_saida)
+        nome_pessoa = _gerar_para_caminho(request.form, tipo, tpl_path, caminho_saida)
     except Exception as e:
         return jsonify({"error": f"Erro ao gerar contrato: {e}"}), 500
-
-    # ── Histórico local ───────────────────────────────────
-    meta_path = UPLOAD_FOLDER / f"{template_path.stem}.json"
-    nome_template = template_filename
-    if meta_path.exists():
-        try:
-            nome_template = json.loads(meta_path.read_text(encoding="utf-8")).get("nome", template_filename)
-        except Exception:
-            pass
+    finally:
+        # remove temp se foi baixado do Storage
+        if tpl_path and tpl_path.startswith(str(TEMP_FOLDER)):
+            Path(tpl_path).unlink(missing_ok=True)
     try:
         _historico_append(nome_pessoa, nome_template, nome_saida)
     except Exception:
@@ -664,23 +756,26 @@ def preview_contrato():
     if not template_filename:
         return jsonify({"error": "Selecione um template."}), 400
 
-    template_path = UPLOAD_FOLDER / secure_filename(template_filename)
-    if not template_path.exists():
-        return jsonify({"error": "Template não encontrado."}), 400
-
     tipo = detectar_tipo(template_filename)
     if tipo is None:
         return jsonify({"error": "Template não reconhecido."}), 400
     if tipo == "vistoria":
         return jsonify({"error": "Pré-visualização não disponível para vistoria (formato .xlsx)."}), 400
 
+    tpl_path, _, tpl_erro = _resolve_template(template_filename)
+    if tpl_erro:
+        return jsonify({"error": tpl_erro}), 400
+
     temp_id = uuid.uuid4().hex
     caminho_temp = str(TEMP_FOLDER / f"{temp_id}.docx")
 
     try:
-        _gerar_para_caminho(request.form, tipo, str(template_path), caminho_temp)
+        _gerar_para_caminho(request.form, tipo, tpl_path, caminho_temp)
     except Exception as e:
         return jsonify({"error": f"Erro ao gerar pré-visualização: {e}"}), 500
+    finally:
+        if tpl_path and tpl_path.startswith(str(TEMP_FOLDER)) and tpl_path != caminho_temp:
+            Path(tpl_path).unlink(missing_ok=True)
 
     try:
         with open(caminho_temp, "rb") as f:
