@@ -3153,6 +3153,52 @@ def pagina_dre():
     )
 
 
+@app.route("/dre/api/recalcular", methods=["POST"])
+def dre_api_recalcular():
+    from calendar import monthrange
+    try:
+        dados = request.get_json(force=True, silent=True) or {}
+        lancamentos_raw = dados.get("lancamentos", [])
+        mes = int(dados.get("mes", 1))
+        ano = int(dados.get("ano", datetime.now(_BRT).year))
+        acumulado = bool(dados.get("acumulado", False))
+        if not (1 <= mes <= 12):
+            return jsonify({"ok": False, "erro": "Mês inválido"}), 400
+
+        lancamentos = []
+        for item in lancamentos_raw:
+            try:
+                dt = datetime.strptime(str(item.get("dt", "")), "%Y-%m-%d")
+                valor = float(item.get("valor", 0))
+                cod = str(item.get("codigo", "")).strip()
+                if cod:
+                    lancamentos.append({"codigo": cod, "dt": dt, "valor": valor})
+            except Exception:
+                continue
+
+        d_ini = datetime(ano, 1, 1) if acumulado else datetime(ano, mes, 1)
+        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
+        if acumulado:
+            d_ini_prev = datetime(ano - 1, 1, 1)
+            d_fim_prev = datetime(ano - 1, mes, monthrange(ano - 1, mes)[1], 23, 59, 59)
+        else:
+            pm = mes - 1 if mes > 1 else 12
+            py = ano if mes > 1 else ano - 1
+            d_ini_prev = datetime(py, pm, 1)
+            d_fim_prev = datetime(py, pm, monthrange(py, pm)[1], 23, 59, 59)
+
+        def _f(d0, d1):
+            return [l for l in lancamentos if d0 <= l["dt"] <= d1]
+
+        return jsonify({
+            "ok": True,
+            "dre":      _dre_calcular(_f(d_ini, d_fim)),
+            "dre_prev": _dre_calcular(_f(d_ini_prev, d_fim_prev)),
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
 # ── Financiamentos & Consórcios ───────────────────────────────────────────────
 
 @app.route("/financiamentos")

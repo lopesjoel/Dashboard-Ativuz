@@ -141,6 +141,7 @@
 .delta.down { color: var(--danger,#e53e3e); }
 .delta.neu  { color: var(--ink-3); }
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -161,16 +162,27 @@
       {% if acumulado %}checked{% endif %} onchange="this.form.submit()">
     Acumulado
   </label>
+  <button type="button" class="btn btn-ghost btn-sm" id="btn-importar-dre"
+          onclick="document.getElementById('dre-import-file').click()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+         viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    Importar Planilha
+  </button>
+  <input type="file" id="dre-import-file" accept=".xlsx,.csv" hidden>
   <span class="dre-period-label">{{ label_atual }}</span>
 </form>
 
 {# ── KPI cards ────────────────────────────────────────────────────────────── #}
 <div class="dre-kpis">
-{% macro kpi(label, val, pval, is_pct=false) %}
+{% macro kpi(label, val, pval, is_pct=false, kid='') %}
 {% set pv = pval | float %}
 {% set vv = val | float %}
 {% set delta = (vv - pv) / pv if pv else none %}
-<div class="dre-kpi">
+<div class="dre-kpi"{% if kid %} id="{{ kid }}"{% endif %}>
   <div class="dre-kpi-label">{{ label }}</div>
   <div class="dre-kpi-value {% if vv < 0 %}neg{% endif %}">
     {% if is_pct %}{{ vv | pct_fmt }}{% else %}{{ vv | brl }}{% endif %}
@@ -185,10 +197,10 @@
   </div>
 </div>
 {% endmacro %}
-{{ kpi("Receita Bruta",  dre.receita_bruta, dre_prev.receita_bruta) }}
-{{ kpi("Margem Bruta %", dre.pct_margem,    dre_prev.pct_margem, is_pct=true) }}
-{{ kpi("EBITDA",         dre.ebitda,        dre_prev.ebitda) }}
-{{ kpi("Lucro Líquido",  dre.lucro_liquido, dre_prev.lucro_liquido) }}
+{{ kpi("Receita Bruta",  dre.receita_bruta, dre_prev.receita_bruta, kid='kpi-rb') }}
+{{ kpi("Margem Bruta %", dre.pct_margem,    dre_prev.pct_margem, is_pct=true, kid='kpi-margem') }}
+{{ kpi("EBITDA",         dre.ebitda,        dre_prev.ebitda, kid='kpi-ebitda') }}
+{{ kpi("Lucro Líquido",  dre.lucro_liquido, dre_prev.lucro_liquido, kid='kpi-ll') }}
 </div>
 
 {# ── DRE table ────────────────────────────────────────────────────────────── #}
@@ -207,9 +219,9 @@
   {# ── Inline macros ─────────────────────────────────────────────────────── #}
 
   {# Subtotal row — vpct/ppct show %RL in c3/c5 when provided #}
-  {% macro sub(label, val, pval, hi=false, vpct=none, ppct=none) %}
+  {% macro sub(label, val, pval, hi=false, vpct=none, ppct=none, key='') %}
   {% set d = (val - pval) / pval if pval else none %}
-  <div class="dre-row dre-sub {% if hi %}dre-hi{% endif %}">
+  <div class="dre-row dre-sub {% if hi %}dre-hi{% endif %}"{% if key %} data-sub="{{ key }}"{% endif %}>
     <div class="c1">{{ label }}</div>
     <div class="c2 {% if val < 0 and not hi %}neg{% endif %}">{{ val | brl }}</div>
     <div class="c3">{% if vpct is not none %}{{ vpct | pct_fmt }}{% endif %}</div>
@@ -277,7 +289,7 @@
   {# L3: itens #}
   {% for item in grp.itens %}
   {% set item_p = grp_p.itens[loop.index0] %}
-  <div class="dre-row dre-l3" data-parent="{{ grp.id }}">
+  <div class="dre-row dre-l3" data-parent="{{ grp.id }}" data-item="{{ item.codigo }}">
     <div class="c1">{{ item.codigo }} – {{ item.label }}</div>
     <div class="c2 {% if item.val < 0 %}neg{% endif %}">{{ item.val | brl }}</div>
     <div class="c3"></div>
@@ -290,30 +302,30 @@
 
   {# ── Subtotals after specific sections ─────────────────────────────────── #}
   {% if sec.id == 'ded' %}
-    {{ sub("= Receita Operacional Líquida", dre.receita_liquida, dre_prev.receita_liquida) }}
+    {{ sub("= Receita Operacional Líquida", dre.receita_liquida, dre_prev.receita_liquida, key='receita_liquida') }}
     {{ sep() }}
   {% elif sec.id == 'custos' %}
     {{ sub("= Lucro Bruto / Margem de Contribuição", dre.margem, dre_prev.margem,
-           vpct=dre.pct_margem, ppct=dre_prev.pct_margem) }}
+           vpct=dre.pct_margem, ppct=dre_prev.pct_margem, key='margem') }}
     {{ sep() }}
   {% elif sec.id == 'sga' %}
     {{ sub("= EBITDA", dre.ebitda, dre_prev.ebitda, hi=true,
-           vpct=dre.pct_ebitda, ppct=dre_prev.pct_ebitda) }}
+           vpct=dre.pct_ebitda, ppct=dre_prev.pct_ebitda, key='ebitda') }}
     {{ sep() }}
-    {{ sub("(-) Depreciação/Amortização", dre.depreciacao, dre_prev.depreciacao) }}
+    {{ sub("(-) Depreciação/Amortização", dre.depreciacao, dre_prev.depreciacao, key='depreciacao') }}
     {{ sub("= EBIT (Resultado Operacional)", dre.ebit, dre_prev.ebit,
-           vpct=dre.pct_ebit, ppct=dre_prev.pct_ebit) }}
+           vpct=dre.pct_ebit, ppct=dre_prev.pct_ebit, key='ebit') }}
     {{ sep() }}
   {% elif sec.id == 'rnop' %}
     {{ sub("= Lucro Antes do IR", dre.lucro_antes_ir, dre_prev.lucro_antes_ir,
-           vpct=dre.pct_lajir, ppct=dre_prev.pct_lajir) }}
-    {{ sub("(-) IR / CSLL — Simples Nacional", -dre.ir_csll, -dre_prev.ir_csll) }}
+           vpct=dre.pct_lajir, ppct=dre_prev.pct_lajir, key='lucro_antes_ir') }}
+    {{ sub("(-) IR / CSLL — Simples Nacional", -dre.ir_csll, -dre_prev.ir_csll, key='ir_csll') }}
     {{ sub("= Lucro Líquido", dre.lucro_liquido, dre_prev.lucro_liquido, hi=true,
-           vpct=dre.pct_ll, ppct=dre_prev.pct_ll) }}
+           vpct=dre.pct_ll, ppct=dre_prev.pct_ll, key='lucro_liquido') }}
   {% elif sec.id == 'aporte' %}
-    {{ sub("= Fluxo de Caixa do Acionista", dre.fluxo_acionista, dre_prev.fluxo_acionista) }}
+    {{ sub("= Fluxo de Caixa do Acionista", dre.fluxo_acionista, dre_prev.fluxo_acionista, key='fluxo_acionista') }}
   {% elif sec.id == 'distrib' %}
-    {{ sub("= Fluxo de Caixa Livre", dre.fluxo_livre, dre_prev.fluxo_livre, hi=true) }}
+    {{ sub("= Fluxo de Caixa Livre", dre.fluxo_livre, dre_prev.fluxo_livre, hi=true, key='fluxo_livre') }}
   {% endif %}
 
   {% endfor %}
@@ -322,6 +334,7 @@
 
 <script>
 (function () {
+  // ── Toggle expand/collapse ────────────────────────────────────────────────
   function dreTog(id) {
     var row = document.querySelector('[data-id="' + id + '"]');
     if (!row) return;
@@ -347,6 +360,289 @@
       var opt = selMes.options[selMes.selectedIndex];
       if (opt.dataset.ano) inpAno.value = opt.dataset.ano;
       selMes.form.submit();
+    });
+  }
+
+  // ── Import ────────────────────────────────────────────────────────────────
+  function normStr(s) {
+    return String(s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  }
+
+  var HEADER_KEYS = {
+    codigo: ['natureza', 'cod. nat', 'codigo de nat', 'codigo', 'plano de contas'],
+    data:   ['data de competencia', 'data competencia', 'data', 'dt'],
+    valor:  ['valor', 'montante'],
+    num:    ['lancamento', 'numero', 'n°', 'nro', 'nº']
+  };
+
+  function detectarColunas(rows) {
+    for (var i = 0; i < Math.min(10, rows.length); i++) {
+      var row = rows[i];
+      var found = {};
+      for (var j = 0; j < row.length; j++) {
+        var cell = normStr(row[j]);
+        if (!cell) continue;
+        for (var field in HEADER_KEYS) {
+          if (found[field] !== undefined) continue;
+          var kws = HEADER_KEYS[field];
+          for (var k = 0; k < kws.length; k++) {
+            if (cell.indexOf(kws[k]) !== -1) { found[field] = j; break; }
+          }
+        }
+      }
+      if (found.codigo !== undefined && found.valor !== undefined) {
+        var avisos = [];
+        if (found.data === undefined) avisos.push('Data');
+        if (found.num  === undefined) avisos.push('Número do lançamento');
+        return { dataStart: i + 1, iCodigo: found.codigo, iData: found.data,
+                 iNum: found.num, iValor: found.valor,
+                 aviso: avisos.length ? avisos.join(', ') : null };
+      }
+    }
+    // Fallback: posicional (formato padrão do DRE exportado)
+    return { dataStart: 5, iCodigo: 2, iData: 3, iNum: 6, iValor: 9, aviso: null };
+  }
+
+  function parseData(raw) {
+    if (!raw) return null;
+    if (raw instanceof Date) return raw;
+    var s = String(raw).trim();
+    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+    var n = parseFloat(s);
+    if (!isNaN(n) && n > 1000) {
+      var d = new Date(Math.round((n - 25569) * 86400000));
+      return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+    }
+    return null;
+  }
+
+  function brl(v) {
+    if (v == null) return '—';
+    var neg = v < 0;
+    var parts = Math.abs(v).toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    var s = parts[0] + ',' + parts[1];
+    return neg ? '(' + s + ')' : s;
+  }
+
+  function pctFmt(v) {
+    if (v == null) return '—';
+    return (v * 100).toFixed(1) + '%';
+  }
+
+  function deltaHtml(cur, prev, isHi) {
+    if (!prev) return '<span class="delta neu">—</span>';
+    var d = (cur - prev) / prev;
+    var cls = isHi ? 'neu' : (d >= 0 ? 'up' : 'down');
+    return '<span class="delta ' + cls + '">' + (d >= 0 ? '+' : '') + (d * 100).toFixed(1) + '%</span>';
+  }
+
+  function setCell(el, baseCls, text, isNeg) {
+    if (!el) return;
+    el.textContent = text;
+    el.className = baseCls + (isNeg ? ' neg' : '');
+  }
+
+  function mostrarToast(msg, tipo) {
+    document.querySelectorAll('.dre-import-toast').forEach(function(el) { el.remove(); });
+    var div = document.createElement('div');
+    div.className = 'alert alert-' + tipo + ' dre-import-toast';
+    div.setAttribute('role', 'alert');
+    div.innerHTML = msg + ' <button class="alert-close" onclick="this.parentElement.remove()" aria-label="Fechar">&#10005;</button>';
+    var bar = document.querySelector('.dre-bar');
+    bar.parentNode.insertBefore(div, bar);
+  }
+
+  function atualizarKpi(id, val, valPrev, isPct) {
+    var card = document.getElementById(id);
+    if (!card) return;
+    var valEl  = card.querySelector('.dre-kpi-value');
+    var deltaEl = card.querySelector('.dre-kpi-delta');
+    if (valEl) {
+      valEl.textContent = isPct ? pctFmt(val) : brl(val);
+      valEl.className = 'dre-kpi-value' + (val < 0 ? ' neg' : '');
+    }
+    if (deltaEl && valPrev) {
+      var d = (val - valPrev) / valPrev;
+      deltaEl.textContent = (d >= 0 ? '↑' : '↓') + ' ' + Math.abs(d * 100).toFixed(1) + '%';
+      deltaEl.className = 'dre-kpi-delta ' + (d >= 0 ? 'up' : 'down');
+    }
+  }
+
+  function atualizarL1(secId, total, totalPrev, pct, pctPrev) {
+    var el = document.querySelector('.dre-l1[data-id="' + secId + '"]');
+    if (!el) return;
+    setCell(el.querySelector('.c2'), 'c2', brl(total), total < 0);
+    setCell(el.querySelector('.c3'), 'c3', pctFmt(pct), false);
+    setCell(el.querySelector('.c4'), 'c4', brl(totalPrev), totalPrev < 0);
+    setCell(el.querySelector('.c5'), 'c5', pctFmt(pctPrev), false);
+    var c6 = el.querySelector('.c6');
+    if (c6) c6.innerHTML = deltaHtml(total, totalPrev, false);
+  }
+
+  function atualizarL2(grpId, total, totalPrev) {
+    var el = document.querySelector('.dre-l2[data-id="' + grpId + '"]');
+    if (!el) return;
+    setCell(el.querySelector('.c2'), 'c2', brl(total), total < 0);
+    setCell(el.querySelector('.c4'), 'c4', brl(totalPrev), totalPrev < 0);
+  }
+
+  function atualizarL3(codigo, val, valPrev) {
+    var el = document.querySelector('.dre-l3[data-item="' + codigo + '"]');
+    if (!el) return;
+    setCell(el.querySelector('.c2'), 'c2', brl(val), val < 0);
+    setCell(el.querySelector('.c4'), 'c4', brl(valPrev), valPrev < 0);
+  }
+
+  function atualizarSub(key, val, valPrev, vpct, ppct, isHi) {
+    var el = document.querySelector('[data-sub="' + key + '"]');
+    if (!el) return;
+    setCell(el.querySelector('.c2'), 'c2', brl(val), !isHi && val < 0);
+    if (vpct !== undefined) setCell(el.querySelector('.c3'), 'c3', pctFmt(vpct), false);
+    setCell(el.querySelector('.c4'), 'c4', brl(valPrev), !isHi && valPrev < 0);
+    if (ppct !== undefined) setCell(el.querySelector('.c5'), 'c5', pctFmt(ppct), false);
+    var c6 = el.querySelector('.c6');
+    if (c6) c6.innerHTML = deltaHtml(val, valPrev, isHi);
+  }
+
+  function aplicarDRE(dre, drePrev, nLinhas) {
+    atualizarKpi('kpi-rb',     dre.receita_bruta,   drePrev.receita_bruta,   false);
+    atualizarKpi('kpi-margem', dre.pct_margem,      drePrev.pct_margem,      true);
+    atualizarKpi('kpi-ebitda', dre.ebitda,          drePrev.ebitda,          false);
+    atualizarKpi('kpi-ll',     dre.lucro_liquido,   drePrev.lucro_liquido,   false);
+
+    dre.sections.forEach(function(sec, i) {
+      var secP = drePrev.sections[i];
+      atualizarL1(sec.id, sec.total, secP.total, sec.pct, secP.pct);
+      sec.grupos.forEach(function(grp, j) {
+        var grpP = secP.grupos[j];
+        atualizarL2(grp.id, grp.total, grpP.total);
+        grp.itens.forEach(function(item, k) {
+          atualizarL3(item.codigo, item.val, grpP.itens[k].val);
+        });
+      });
+    });
+
+    atualizarSub('receita_liquida', dre.receita_liquida,  drePrev.receita_liquida);
+    atualizarSub('margem',          dre.margem,            drePrev.margem,           dre.pct_margem,  drePrev.pct_margem);
+    atualizarSub('ebitda',          dre.ebitda,            drePrev.ebitda,           dre.pct_ebitda,  drePrev.pct_ebitda,  true);
+    atualizarSub('depreciacao',    -dre.depreciacao,       -drePrev.depreciacao);
+    atualizarSub('ebit',            dre.ebit,              drePrev.ebit,             dre.pct_ebit,    drePrev.pct_ebit);
+    atualizarSub('lucro_antes_ir',  dre.lucro_antes_ir,    drePrev.lucro_antes_ir,   dre.pct_lajir,   drePrev.pct_lajir);
+    atualizarSub('ir_csll',        -dre.ir_csll,          -drePrev.ir_csll);
+    atualizarSub('lucro_liquido',   dre.lucro_liquido,     drePrev.lucro_liquido,    dre.pct_ll,      drePrev.pct_ll,      true);
+    atualizarSub('fluxo_acionista', dre.fluxo_acionista,   drePrev.fluxo_acionista);
+    atualizarSub('fluxo_livre',     dre.fluxo_livre,       drePrev.fluxo_livre,      undefined,       undefined,           true);
+
+    mostrarToast('Dados do DRE atualizados — ' + nLinhas + ' linhas importadas', 'ok');
+  }
+
+  function processarArquivo(file) {
+    if (typeof XLSX === 'undefined') {
+      mostrarToast('Biblioteca de leitura não carregada. Recarregue a página e tente novamente.', 'erro');
+      return;
+    }
+    var mesEl = document.querySelector('[name="mes"]');
+    var mes   = mesEl ? parseInt(mesEl.value, 10) : new Date().getMonth() + 1;
+    var anoEl = document.getElementById('inp-ano');
+    var ano   = anoEl ? parseInt(anoEl.value, 10) : new Date().getFullYear();
+    var acuEl = document.querySelector('[name="acumulado"]');
+    var acumulado = acuEl && acuEl.checked ? 1 : 0;
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = new Uint8Array(e.target.result);
+        var wb   = XLSX.read(data, { type: 'array', cellDates: true });
+        var ws   = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+        var cols = detectarColunas(rows);
+
+        if (cols.aviso) {
+          mostrarToast('Campo não encontrado na planilha: ' + cols.aviso + '. Verifique os cabeçalhos.', 'erro');
+          if (cols.iCodigo === undefined || cols.iValor === undefined) return;
+        }
+
+        var lancamentos = [];
+        var vistos = {};
+        for (var i = cols.dataStart; i < rows.length; i++) {
+          var row = rows[i];
+          if (!row || row[0] == null) continue;
+
+          var codRaw = String(row[cols.iCodigo] || '').trim();
+          var cod = codRaw.indexOf(' - ') !== -1 ? codRaw.split(' - ')[0].trim() : codRaw;
+          if (!cod) continue;
+
+          var dt = cols.iData !== undefined ? parseData(row[cols.iData]) : null;
+          if (!dt) continue;
+
+          var valorRaw = row[cols.iValor];
+          var valor = typeof valorRaw === 'number'
+            ? valorRaw
+            : parseFloat(String(valorRaw || '0').replace(/\./g, '').replace(',', '.'));
+          if (isNaN(valor)) continue;
+
+          var num = (cols.iNum !== undefined && row[cols.iNum]) ? String(row[cols.iNum]).trim() : '';
+          var chave = num + '|' + cod;
+          if (num && vistos[chave]) continue;
+          if (num) vistos[chave] = true;
+
+          lancamentos.push({
+            codigo: cod,
+            dt: dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0'),
+            num: num,
+            valor: valor
+          });
+        }
+
+        if (!lancamentos.length) {
+          mostrarToast('Nenhum lançamento válido encontrado no arquivo.', 'erro');
+          return;
+        }
+
+        var btn = document.getElementById('btn-importar-dre');
+        if (btn) { btn.disabled = true; btn.textContent = 'Calculando…'; }
+
+        fetch('/dre/api/recalcular', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lancamentos: lancamentos, mes: mes, ano: ano, acumulado: acumulado })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importar Planilha'; }
+          if (resp.ok) {
+            aplicarDRE(resp.dre, resp.dre_prev, lancamentos.length);
+          } else {
+            mostrarToast('Erro ao calcular DRE: ' + (resp.erro || 'erro desconhecido'), 'erro');
+          }
+        })
+        .catch(function(err) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Importar Planilha'; }
+          mostrarToast('Erro de comunicação: ' + err.message, 'erro');
+        });
+
+      } catch(err) {
+        mostrarToast('Erro ao ler arquivo: ' + err.message, 'erro');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  var importInput = document.getElementById('dre-import-file');
+  if (importInput) {
+    importInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        processarArquivo(this.files[0]);
+        this.value = '';
+      }
     });
   }
 })();
