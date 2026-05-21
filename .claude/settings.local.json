@@ -32,7 +32,10 @@
       "PowerShell(cmd /c \"cd /d \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\"\" && \"\".venv\\\\Scripts\\\\python.exe\"\" debug_xlsx.py 2>&1\")",
       "PowerShell(cmd /c \"cd /d \"\"C:\\\\Users\\\\anabm\\\\OneDrive\\\\Desktop\\\\projeto_ativuz\"\" && \"\".venv\\\\Scripts\\\\python.exe\"\" debug_ativuz.py 2>&1\")",
       "Bash(.venvScriptspython.exe -c ' *)",
-      "PowerShell(& \"C:\\\\Users\\\\ativu\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install openpyxl; & \"C:\\\\Users\\\\ativu\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -c \"import openpyxl; print\\('ok'\\)\")"
+      "PowerShell(& \"C:\\\\Users\\\\ativu\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install openpyxl; & \"C:\\\\Users\\\\ativu\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -c \"import openpyxl; print\\('ok'\\)\")",
+      "Bash(python3 *)",
+      "Bash(brew install *)",
+      "Skill(update-config)"
     ]
   }
 }

@@ -6,8 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git add -A; git diff --staged --quiet; if ($LASTEXITCODE -ne 0) { git commit -m 'chore: auto-commit via Claude Code hook'; git push }",
-            "shell": "powershell",
+            "command": "git add -A && git diff --staged --quiet || (git commit -m 'chore: auto-commit via Claude Code hook' && git push)",
             "timeout": 60
           }
         ]
