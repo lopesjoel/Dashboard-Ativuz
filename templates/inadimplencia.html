@@ -635,6 +635,17 @@
     <p class="page-sub">Planilha CONTAS-A-RECEBER — atualizado em {{ hoje }}</p>
   </div>
   <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <label class="btn btn-secondary btn-sm" title="Importar nova planilha CONTAS-A-RECEBER.xlsx" style="cursor:pointer;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 5 17 10"/>
+        <line x1="12" y1="5" x2="12" y2="17"/>
+      </svg>
+      Importar Planilha
+      <form id="form-upload-planilha" action="{{ url_for('inadimplencia_upload') }}" method="post" enctype="multipart/form-data" style="display:none;">
+        <input type="file" name="planilha" accept=".xlsx" onchange="this.form.submit()">
+      </form>
+    </label>
     <a href="{{ url_for('exportar_inadimplencia') }}" class="btn btn-primary btn-sm" title="Exportar relatório em Excel">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
