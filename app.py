@@ -3165,16 +3165,28 @@ def dre_api_recalcular():
         if not (1 <= mes <= 12):
             return jsonify({"ok": False, "erro": "Mês inválido"}), 400
 
-        lancamentos = []
+        # Parse novos lançamentos do arquivo importado
+        novos = []
         for item in lancamentos_raw:
             try:
                 dt = datetime.strptime(str(item.get("dt", "")), "%Y-%m-%d")
                 valor = float(item.get("valor", 0))
                 cod = str(item.get("codigo", "")).strip()
+                num = str(item.get("num", "")).strip()
                 if cod:
-                    lancamentos.append({"codigo": cod, "dt": dt, "valor": valor})
+                    novos.append({"codigo": cod, "dt": dt, "valor": valor, "num": num})
             except Exception:
                 continue
+
+        # Mescla: novos têm prioridade; existentes preenchem o restante
+        vistos = {(l["num"], l["codigo"]) for l in novos if l["num"]}
+        existentes = _dre_ler_lancamentos() + _ler_lancamentos_jun_jul()
+        for l in existentes:
+            chave = (l.get("num", ""), l["codigo"])
+            if chave[0] and chave in vistos:
+                continue  # duplicata já presente no arquivo novo
+            vistos.add(chave)
+            novos.append(l)
 
         d_ini = datetime(ano, 1, 1) if acumulado else datetime(ano, mes, 1)
         d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
@@ -3188,7 +3200,7 @@ def dre_api_recalcular():
             d_fim_prev = datetime(py, pm, monthrange(py, pm)[1], 23, 59, 59)
 
         def _f(d0, d1):
-            return [l for l in lancamentos if d0 <= l["dt"] <= d1]
+            return [l for l in novos if d0 <= l["dt"] <= d1]
 
         return jsonify({
             "ok": True,
