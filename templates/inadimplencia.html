@@ -527,8 +527,10 @@
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
   }
-  #jud-tbody tr:last-child .jud-td { border-bottom: none; }
-  #jud-tbody tr:hover { background: #f8fafc; }
+  #jud-tbody tr:last-child .jud-td,
+  #jud-tbody-perdidos tr:last-child .jud-td { border-bottom: none; }
+  #jud-tbody tr:hover,
+  #jud-tbody-perdidos tr:hover { background: #f8fafc; }
 
   .jud-badge {
     display: inline-block;
@@ -541,7 +543,7 @@
   .jud-ajuizado { background: #dbeafe; color: #1d4ed8; }
   .jud-acordo   { background: #d1fae5; color: #065f46; }
   .jud-analise  { background: #f1f5f9; color: #475569; }
-  .jud-perdido  { background: #fce7f3; color: #9d174d; }
+  .jud-perdido  { background: #fee2e2; color: #991b1b; }
 
   .jud-nome-btn {
     background: none; border: none; cursor: pointer;
@@ -1293,11 +1295,11 @@ const _fin = [
         <div class="inad-card-sub" id="jud-card-analise-v">—</div>
       </div>
     </div>
-    <div class="inad-card" style="background:linear-gradient(135deg,#831843 0%,#be185d 100%);">
-      <div class="inad-card-top">Perdidos</div>
+    <div class="inad-card c-dark">
+      <div class="inad-card-top">Total Perdido</div>
       <div>
-        <div class="inad-card-val" id="jud-card-perdido-n">—</div>
-        <div class="inad-card-sub" id="jud-card-perdido-v">—</div>
+        <div class="inad-card-val" style="font-size:1.05rem;" id="jud-card-perdido-v">—</div>
+        <div class="inad-card-sub" id="jud-card-perdido-n">—</div>
       </div>
     </div>
   </div>
@@ -1605,8 +1607,8 @@ const _fin = [
     _set('jud-card-acordo-v',  _brl(acordo.reduce(function (s,r)  { return s + Number(r.valor_atual); }, 0)));
     _set('jud-card-analise-n', analise.length);
     _set('jud-card-analise-v', _brl(analise.reduce(function (s,r) { return s + Number(r.valor_atual); }, 0)));
-    _set('jud-card-perdido-n', perdidos.length);
     _set('jud-card-perdido-v', _brl(perdidos.reduce(function (s,r){ return s + Number(r.valor_atual); }, 0)));
+    _set('jud-card-perdido-n', perdidos.length + (perdidos.length === 1 ? ' processo' : ' processos'));
   }
 
   function _waUrl(r) {
