@@ -41,7 +41,10 @@
       "Bash(awk NR>=3930 && NR<=3980 *)",
       "Bash(awk NR>=2860 && NR<=2900 *)",
       "Bash(awk NR>=100 && NR<=130 *)",
-      "Bash(awk NR>=3600 && NR<=3615 *)"
+      "Bash(awk NR>=3600 && NR<=3615 *)",
+      "Bash(awk NR>=3965 && NR<=4060 *)",
+      "Bash(awk NR>=540 && NR<=580 *)",
+      "Bash(awk NR>=3600 && NR<=3625 *)"
     ]
   }
 }
