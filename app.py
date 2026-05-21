@@ -2268,6 +2268,25 @@ def pagina_inadimplencia():
     reincidentes_criticos = sum(1 for r in registros_vencidos
                                 if r["dias_atraso"] >= 7 and r["reincidente"])
 
+    # Clientes críticos
+    _nome_cnt   = Counter(r["nome"] for r in registros_vencidos)
+    _nome_valor = {}
+    for r in registros_vencidos:
+        _nome_valor[r["nome"]] = _nome_valor.get(r["nome"], 0.0) + r["_total"]
+
+    if _nome_cnt:
+        critico_ocorr_nome = _nome_cnt.most_common(1)[0][0]
+        critico_ocorr_qtd  = _nome_cnt.most_common(1)[0][1]
+    else:
+        critico_ocorr_nome, critico_ocorr_qtd = "—", 0
+
+    if _nome_valor:
+        _cv = max(_nome_valor, key=_nome_valor.get)
+        critico_valor_nome  = _cv
+        critico_valor_total = _brl(_nome_valor[_cv])
+    else:
+        critico_valor_nome, critico_valor_total = "—", "—"
+
     return render_template(
         "inadimplencia.html",
         registros=registros_vencidos,
@@ -2279,6 +2298,10 @@ def pagina_inadimplencia():
         total_a_vencer_val=total_a_vencer_val,
         criticos=criticos,
         reincidentes=reincidentes_criticos,
+        critico_ocorr_nome=critico_ocorr_nome,
+        critico_ocorr_qtd=critico_ocorr_qtd,
+        critico_valor_nome=critico_valor_nome,
+        critico_valor_total=critico_valor_total,
         erro_leitura=erro_leitura,
         hoje=hoje.strftime("%d/%m/%Y"),
         active="inadimplencia",

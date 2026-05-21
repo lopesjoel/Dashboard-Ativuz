@@ -727,6 +727,22 @@
     </div>
   </div>
 
+  <div class="inad-card c-indigo">
+    <div class="inad-card-top">Mais Ocorrências</div>
+    <div>
+      <div class="inad-card-val" style="font-size:0.95rem; line-height:1.3;">{{ critico_ocorr_nome }}</div>
+      <div class="inad-card-sub">{{ critico_ocorr_qtd }} ocorrência{{ 's' if critico_ocorr_qtd != 1 else '' }}</div>
+    </div>
+  </div>
+
+  <div class="inad-card c-green">
+    <div class="inad-card-top">Maior Valor Devido</div>
+    <div>
+      <div class="inad-card-val" style="font-size:0.95rem; line-height:1.3;">{{ critico_valor_nome }}</div>
+      <div class="inad-card-sub">{{ critico_valor_total }}</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Filter bar -->
