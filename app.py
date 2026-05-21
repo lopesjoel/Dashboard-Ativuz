@@ -2276,7 +2276,8 @@ def pagina_inadimplencia():
     )
     _nome_valor = {}
     for r in registros_vencidos:
-        _nome_valor[r["nome"]] = _nome_valor.get(r["nome"], 0.0) + r["_total"]
+        if _nh(r["nome"]) not in _EXCLUIR_OCORR:
+            _nome_valor[r["nome"]] = _nome_valor.get(r["nome"], 0.0) + r["_total"]
 
     if _nome_cnt:
         critico_ocorr_nome = _nome_cnt.most_common(1)[0][0]
