@@ -206,7 +206,7 @@
                   <path d="M3 9h18M9 21V9"/>
                 </svg>
               </span>
-              <span class="sb-item-label">Templates</span>
+              <span class="sb-item-label">Adicionar Documento</span>
             </a>
             <a href="{{ url_for('pagina_gerar') }}" class="sb-item"
                data-active="{{ 'true' if active == 'gerar' else 'false' }}"
@@ -335,7 +335,7 @@
         <span class="sep" aria-hidden="true">›</span>
         <span class="current">
           {% if active == 'dashboard' %}Página Inicial
-          {% elif active == 'templates' %}Templates
+          {% elif active == 'templates' %}Adicionar Documento
           {% elif active == 'gerar' %}Criar Documentos
           {% elif active == 'contrato_locacao' %}Contrato Locação
           {% elif active == 'hist_contratos' %}Hist. Contratos de Locação
