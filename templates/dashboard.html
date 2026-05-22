@@ -29,6 +29,16 @@
   @media (max-width: 1000px) { .dash-grid-4 { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px)  { .dash-grid-4 { grid-template-columns: 1fr 1fr; } }
 
+  /* ── Grid 5 colunas ── */
+  .dash-grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 4px;
+  }
+  @media (max-width: 1200px) { .dash-grid-5 { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px)  { .dash-grid-5 { grid-template-columns: repeat(2, 1fr); } }
+
   /* ── KPI card ── */
   .d-kpi {
     background: var(--surface);
@@ -244,7 +254,7 @@
   <div class="dash-section-line"></div>
 </div>
 
-<div class="dash-grid-4">
+<div class="dash-grid-5">
 
   <!-- Receita Mensal -->
   <div class="d-kpi">
@@ -255,8 +265,13 @@
       </svg>
     </div>
     <div class="d-kpi-label">Receita Mensal</div>
-    <div class="d-kpi-value sm">{% if valor_mensal and valor_mensal != '—' %}R$ {{ valor_mensal }}{% else %}—{% endif %}</div>
-    <div class="d-kpi-sub">Soma das locações</div>
+    {% if valor_mensal %}
+    <div class="d-kpi-value sm">R$ {{ valor_mensal | brl }}</div>
+    <div class="d-kpi-sub">{{ contratos_ativos }} contrato{{ 's' if contratos_ativos != 1 else '' }} ativo{{ 's' if contratos_ativos != 1 else '' }}</div>
+    {% else %}
+    <div class="d-kpi-value sm">—</div>
+    <div class="d-kpi-sub">Planilha não encontrada</div>
+    {% endif %}
   </div>
 
   <!-- Inadimplência em aberto -->
@@ -287,21 +302,45 @@
       </svg>
     </div>
     <div class="d-kpi-label">Contratos de Locação</div>
-    <div class="d-kpi-value">{{ total_contratos or 0 }}</div>
-    <div class="d-kpi-sub">Total registrado</div>
+    <div class="d-kpi-value">{{ contratos_ativos or 0 }}</div>
+    <div class="d-kpi-sub">Ativos · {{ total_contratos or 0 }} no total</div>
   </div>
 
-  <!-- Vistorias -->
+  <!-- Saldo de Financiamentos -->
   <div class="d-kpi">
-    <div class="d-kpi-icon info" aria-hidden="true">
+    <div class="d-kpi-icon warning" aria-hidden="true">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M9 12l2 2 4-4"/>
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        <line x1="12" y1="12" x2="12" y2="16"/>
+        <line x1="10" y1="14" x2="14" y2="14"/>
       </svg>
     </div>
-    <div class="d-kpi-label">Vistorias</div>
-    <div class="d-kpi-value">{{ total_vistorias or 0 }}</div>
-    <div class="d-kpi-sub">Registradas no sistema</div>
+    <div class="d-kpi-label">Saldo de Financiamentos</div>
+    {% if saldo_financiamentos %}
+    <div class="d-kpi-value sm">R$ {{ saldo_financiamentos | brl }}</div>
+    <div class="d-kpi-sub">{{ fin_ativos }} contrato{{ 's' if fin_ativos != 1 else '' }} ativo{{ 's' if fin_ativos != 1 else '' }}</div>
+    {% else %}
+    <div class="d-kpi-value sm">—</div>
+    <div class="d-kpi-sub">Sem contratos ativos</div>
+    {% endif %}
+  </div>
+
+  <!-- Carteira Judicializada -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon danger" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Carteira Judicializada</div>
+    {% if jud_processos > 0 %}
+    <div class="d-kpi-value">{{ jud_processos }}</div>
+    <div class="d-kpi-sub">{% if jud_valor %}R$ {{ jud_valor | brl }} em disputa{% else %}processo{{ 's' if jud_processos != 1 else '' }} ativo{{ 's' if jud_processos != 1 else '' }}{% endif %}</div>
+    {% else %}
+    <div class="d-kpi-value">0</div>
+    <div class="d-kpi-sub">Nenhum processo ativo</div>
+    {% endif %}
   </div>
 
 </div>

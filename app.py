@@ -570,15 +570,69 @@ def dashboard():
     except Exception:
         pass
 
+    # ── Receita mensal real + contratos ativos ─────────────
+    contratos_ativos = 0
+    receita_mensal_real = None
+    try:
+        lista_contratos, _ = _ler_contratos()
+        ativos_lst = [c for c in lista_contratos if c['situacao'] == 'EM ANDAMENTO']
+        contratos_ativos = len(ativos_lst)
+        s = sum(c['valor_locacao'] for c in ativos_lst)
+        if s > 0:
+            receita_mensal_real = s
+    except Exception:
+        pass
+
+    # ── Saldo de financiamentos ─────────────────────────────
+    saldo_financiamentos = None
+    fin_ativos = 0
+    try:
+        from math import ceil as _ceil
+        hoje_fin = datetime.now(_BRT).date()
+        rows_fin = (sb.table("financiamentos_contratos").select(
+            "valor_parcela,data_vencimento,parcelas_total"
+        ).execute().data or []) if sb else []
+        saldo = 0.0
+        for r in rows_fin:
+            try:
+                vcto = date.fromisoformat(str(r.get("data_vencimento", ""))[:10])
+                dias = (vcto - hoje_fin).days
+                restante = _ceil(dias / 30.44) if dias > 0 else 0
+                if restante > 0:
+                    fin_ativos += 1
+                    saldo += restante * float(r["valor_parcela"])
+            except Exception:
+                continue
+        if saldo > 0:
+            saldo_financiamentos = saldo
+    except Exception:
+        pass
+
+    # ── Carteira judicializada ──────────────────────────────
+    jud_processos = 0
+    jud_valor = None
+    try:
+        rows_jud = (sb.table("carteira_judicializada").select(
+            "status,valor_atual"
+        ).execute().data or []) if sb else []
+        ativos_jud = [r for r in rows_jud if (r.get("status") or "").lower() != "perdido"]
+        jud_processos = len(ativos_jud)
+        v = sum(float(r.get("valor_atual") or 0) for r in ativos_jud)
+        if v > 0:
+            jud_valor = v
+    except Exception:
+        pass
+
     inad = _inad_summary()
     contratos_vencendo = _contratos_vencendo(dias_limite=60)
     return render_template(
         "dashboard.html",
         active="dashboard",
         total_contratos=total_contratos,
+        contratos_ativos=contratos_ativos,
         total_vistorias=total_vistorias,
         total_docs=total_docs,
-        valor_mensal=valor_mensal,
+        valor_mensal=receita_mensal_real,
         contratos=contratos,
         inad=inad,
         frota_total=frota_total,
@@ -586,6 +640,10 @@ def dashboard():
         ck_pendentes_total=ck_pendentes_total,
         ck_pendentes_placas=ck_pendentes_placas,
         contratos_vencendo=contratos_vencendo,
+        saldo_financiamentos=saldo_financiamentos,
+        fin_ativos=fin_ativos,
+        jud_processos=jud_processos,
+        jud_valor=jud_valor,
     )
 
 
