@@ -660,6 +660,63 @@
     transition: border-color .12s;
   }
   .jud-form-input:focus { border-color: #1e3a5f; }
+
+  /* ── Observações por devedor ── */
+  .inad-obs-wrap {
+    margin-top: 6px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 6px;
+  }
+  .inad-obs-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: none; border: none; cursor: pointer;
+    font-size: 0.76rem; font-weight: 600; color: #64748b;
+    font-family: inherit; padding: 2px 0;
+    transition: color .12s;
+  }
+  .inad-obs-toggle:hover { color: #1e3a5f; }
+  .obs-dot {
+    display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; background: #f59e0b; flex-shrink: 0;
+  }
+  .inad-obs-body {
+    margin-top: 6px;
+  }
+  .inad-obs-textarea {
+    width: 100%; min-height: 64px; resize: vertical;
+    border: 1.5px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 10px; font-size: 0.82rem; font-family: inherit;
+    color: #374151; outline: none; box-sizing: border-box;
+    transition: border-color .12s;
+    line-height: 1.5;
+  }
+  .inad-obs-textarea:focus { border-color: #1e3a5f; }
+  .obs-status {
+    font-size: 0.72rem; color: #15803d;
+    margin-top: 3px; min-height: 1em; display: block;
+  }
+  .obs-status.err { color: #dc2626; }
+
+  /* ── Totais persistentes na barra de contagem ── */
+  .sort-meta-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 6px;
+  }
+  .sort-meta-totals {
+    font-size: 0.78rem; color: var(--text-muted);
+    display: flex; gap: 14px; flex-wrap: wrap;
+  }
+  .sort-meta-totals strong { color: #0f172a; }
+
+  /* ── Filtro de valor ── */
+  .filter-val-input {
+    width: 88px; padding: 4px 8px;
+    border: 1.5px solid var(--border); border-radius: 7px;
+    font-size: 0.8rem; font-family: inherit;
+    outline: none; transition: border-color .12s;
+    background: #fff;
+  }
+  .filter-val-input:focus { border-color: var(--primary); }
 </style>
 {% endblock %}
 
@@ -821,6 +878,16 @@
       <button class="fpill"     data-filter-sit="a-vencer">A Vencer</button>
     </div>
   </div>
+  <!-- 3. Faixa de valor -->
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-lbl">Valor</span>
+      <span style="font-size:.75rem;color:var(--text-muted);">De</span>
+      <input type="number" id="filter-val-min" class="filter-val-input" placeholder="0" min="0">
+      <span style="font-size:.75rem;color:var(--text-muted);">Até</span>
+      <input type="number" id="filter-val-max" class="filter-val-input" placeholder="∞" min="0">
+    </div>
+  </div>
   <!-- 4. Busca -->
   <div class="filter-bottom">
     <div class="filter-search" style="flex-direction:column; align-items:stretch;">
@@ -880,6 +947,10 @@
     Exibindo <strong id="visible-count">{{ total_registros }}</strong>
     de {{ total_registros }} registro(s) em atraso
   </span>
+  <div class="sort-meta-totals">
+    <span>Original: <strong id="vis-orig">R$ {{ total_valor_orig | brl }}</strong></span>
+    <span>Atualizado: <strong id="vis-total">R$ {{ total_valor_atual | brl }}</strong></span>
+  </div>
 </div>
 
 <!-- ═══════════════ VENCIDOS SECTION ══════════════ -->
@@ -895,7 +966,10 @@
          data-reincidente="{{ 'true' if r.reincidente else 'false' }}"
          data-nome="{{ r.nome | lower | e }}"
          data-dias="{{ r.dias_atraso }}"
-         data-situacao="{{ r.situacao_key }}">
+         data-situacao="{{ r.situacao_key }}"
+         data-chave="{{ r.num_doc | e }}"
+         data-orig="{{ r._valor }}"
+         data-total="{{ r._total }}">
 
       <!-- Header -->
       <div class="inad-item-header">
@@ -1035,6 +1109,28 @@
         {% endif %}
 
       </div><!-- .inad-actions -->
+
+      <!-- Observações -->
+      <div class="inad-obs-wrap">
+        <button class="inad-obs-toggle" onclick="obsToggle(this)">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Observações
+          {% if obs_map.get(r.num_doc) %}<span class="obs-dot" title="Tem observação"></span>{% endif %}
+        </button>
+        <div class="inad-obs-body" style="display:none;">
+          <textarea class="inad-obs-textarea"
+                    placeholder="Anotações sobre este cliente… (ligou, prometeu pagar, não atende…)"
+                    maxlength="500"
+                    data-chave="{{ r.num_doc | e }}"
+                    onblur="obsSalvar(this)">{{ obs_map.get(r.num_doc, '') }}</textarea>
+          <span class="obs-status"></span>
+        </div>
+      </div>
 
     </div><!-- .inad-item -->
     {% endfor %}
@@ -1183,6 +1279,8 @@ const _fin = [
   var activeEtapa = 'all';
   var searchTxt   = '';
   var sortOrder   = 'desc';
+  var filterValMin = NaN;
+  var filterValMax = NaN;
 
   function applyAll() {
     /* ── Filter vencidos items ── */
@@ -1194,6 +1292,9 @@ const _fin = [
       if (activeSit === 'vence-hoje'  && item.dataset.situacao !== 'vence-hoje') return false;
       if (activeEtapa !== 'all'       && item.dataset.etapa    !== activeEtapa)  return false;
       if (searchTxt && item.dataset.nome.indexOf(searchTxt) === -1) return false;
+      var tot = parseFloat(item.dataset.total) || 0;
+      if (!isNaN(filterValMin) && tot < filterValMin) return false;
+      if (!isNaN(filterValMax) && tot > filterValMax) return false;
       return true;
     });
 
@@ -1208,6 +1309,14 @@ const _fin = [
     }
 
     if (countEl) countEl.textContent = visV.length;
+
+    /* ── Update totals bar ── */
+    var somaOrig  = visV.reduce(function (s, i) { return s + (parseFloat(i.dataset.orig)  || 0); }, 0);
+    var somaTotal = visV.reduce(function (s, i) { return s + (parseFloat(i.dataset.total) || 0); }, 0);
+    var elOrig  = document.getElementById('vis-orig');
+    var elTotal = document.getElementById('vis-total');
+    if (elOrig)  elOrig.textContent  = _brlFmt(somaOrig);
+    if (elTotal) elTotal.textContent = _brlFmt(somaTotal);
 
     /* ── Filter a-vencer items ── */
     var showAVSection = (activeSit === 'all' || activeSit === 'a-vencer');
@@ -1314,6 +1423,62 @@ const _fin = [
       applyAll();
     });
   }
+
+  /* Filtro de valor */
+  var inValMin = document.getElementById('filter-val-min');
+  var inValMax = document.getElementById('filter-val-max');
+  function _lerFiltroValor() {
+    filterValMin = inValMin && inValMin.value !== '' ? parseFloat(inValMin.value) : NaN;
+    filterValMax = inValMax && inValMax.value !== '' ? parseFloat(inValMax.value) : NaN;
+    applyAll();
+  }
+  if (inValMin) inValMin.addEventListener('input', _lerFiltroValor);
+  if (inValMax) inValMax.addEventListener('input', _lerFiltroValor);
+
+  /* ── Observações ── */
+  window.obsToggle = function (btn) {
+    var body = btn.parentElement.querySelector('.inad-obs-body');
+    if (!body) return;
+    var open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : '';
+    if (!open) body.querySelector('textarea').focus();
+  };
+
+  window.obsSalvar = function (ta) {
+    var chave = ta.dataset.chave;
+    var texto = ta.value.trim();
+    var statusEl = ta.parentElement.querySelector('.obs-status');
+    if (!chave) return;
+    fetch('/api/inad/obs', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chave: chave, texto: texto }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (statusEl) {
+          statusEl.textContent = d.ok ? '✓ Salvo' : (d.error || 'Erro');
+          statusEl.className = 'obs-status' + (d.ok ? '' : ' err');
+          setTimeout(function () { statusEl.textContent = ''; }, 2000);
+        }
+        /* Update dot indicator */
+        var dot = ta.closest('.inad-obs-wrap').querySelector('.obs-dot');
+        if (d.ok) {
+          var toggle = ta.closest('.inad-obs-wrap').querySelector('.inad-obs-toggle');
+          if (texto && !dot) {
+            var nd = document.createElement('span');
+            nd.className = 'obs-dot'; nd.title = 'Tem observação';
+            toggle.appendChild(nd);
+          } else if (!texto && dot) {
+            dot.remove();
+          }
+        }
+      })
+      .catch(function () {
+        if (statusEl) { statusEl.textContent = 'Erro de conexão'; statusEl.className = 'obs-status err'; }
+      });
+  };
+
 })();
 </script>
 
@@ -1482,6 +1647,16 @@ const _fin = [
       <div>
         <label class="jud-form-label">Nº processo</label>
         <input id="jud-f-processo" type="text" placeholder="0000000-00.0000.0.00.0000" class="jud-form-input">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+        <div>
+          <label class="jud-form-label">Próximo prazo</label>
+          <input id="jud-f-prazo" type="date" class="jud-form-input">
+        </div>
+        <div>
+          <label class="jud-form-label">Descrição do prazo</label>
+          <input id="jud-f-prazo-desc" type="text" placeholder="Ex: audiência, contestação…" class="jud-form-input">
+        </div>
       </div>
     </div>
     <div style="display:flex; gap:.75rem; margin-top:1.5rem;">
@@ -1746,6 +1921,19 @@ const _fin = [
     var tr = document.createElement('tr');
     var clienteEsc = r.cliente.replace(/'/g, "\\'");
     var resumoAcordo = _acResumoHtml(r);
+
+    /* Próximo prazo */
+    var prazoHtml = '';
+    if (r.proximo_prazo) {
+      var pd = new Date(r.proximo_prazo + 'T00:00:00');
+      var hoje0 = new Date(); hoje0.setHours(0,0,0,0);
+      var vencido = pd < hoje0;
+      prazoHtml = '<div style="font-size:0.72rem;margin-top:3px;color:' + (vencido ? '#dc2626' : '#64748b') + ';">' +
+        (vencido ? '⚠ ' : '⏰ ') + _toBR(r.proximo_prazo) +
+        (r.descricao_prazo ? ' — ' + r.descricao_prazo : '') +
+      '</div>';
+    }
+
     tr.innerHTML =
       '<td class="jud-td">' +
         '<button class="jud-nome-btn" onclick="judAbrirChecklist(\'' + r.id + '\', \'' + clienteEsc + '\')">' +
@@ -1758,7 +1946,7 @@ const _fin = [
       '<td class="jud-td">' + (r.status === 'Acordo'
         ? '<span class="' + _badgeCls(r.status) + ' jud-acordo-btn" onclick="judAbrirAcordo(\'' + r.id + '\')" title="Ver / editar acordo">' + r.status + '</span>' + resumoAcordo
         : '<span class="' + _badgeCls(r.status) + '">' + r.status + '</span>') + '</td>' +
-      '<td class="jud-td" style="font-size:0.8rem; color:#64748b; white-space:nowrap;">' + (r.num_processo || '—') + '</td>' +
+      '<td class="jud-td" style="font-size:0.8rem; color:#64748b;">' + (r.num_processo || '—') + prazoHtml + '</td>' +
       '<td class="jud-td" style="white-space:nowrap;">' +
         '<button onclick="judAbrirModal(\'' + r.id + '\')" ' +
                 'style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;' +
@@ -1828,10 +2016,12 @@ const _fin = [
       document.getElementById('jud-f-cpf-avalista').value = r.cpf_avalista  || '';
       document.getElementById('jud-f-inicio').value       = _toISO(r.inicio_divida || '');
       document.getElementById('jud-f-valor').value        = r.valor_atual   || '';
-      document.getElementById('jud-f-status').value       = r.status        || 'Ajuizado';
-      document.getElementById('jud-f-processo').value     = r.num_processo  || '';
+      document.getElementById('jud-f-status').value       = r.status          || 'Ajuizado';
+      document.getElementById('jud-f-processo').value     = r.num_processo    || '';
+      document.getElementById('jud-f-prazo').value        = r.proximo_prazo   || '';
+      document.getElementById('jud-f-prazo-desc').value   = r.descricao_prazo || '';
     } else {
-      ['jud-f-cliente','jud-f-cpf','jud-f-avalista','jud-f-cpf-avalista','jud-f-inicio','jud-f-valor','jud-f-processo']
+      ['jud-f-cliente','jud-f-cpf','jud-f-avalista','jud-f-cpf-avalista','jud-f-inicio','jud-f-valor','jud-f-processo','jud-f-prazo','jud-f-prazo-desc']
         .forEach(function (id) { document.getElementById(id).value = ''; });
       document.getElementById('jud-f-status').value = 'Ajuizado';
     }
@@ -1852,18 +2042,22 @@ const _fin = [
     var valorRaw  = document.getElementById('jud-f-valor').value;
     var status    = document.getElementById('jud-f-status').value;
     var processo  = (document.getElementById('jud-f-processo').value     || '').trim();
+    var prazo     = (document.getElementById('jud-f-prazo').value        || '').trim();
+    var prazoDesc = (document.getElementById('jud-f-prazo-desc').value   || '').trim();
 
     if (!cliente) { alert('Informe o nome do cliente.'); return; }
 
     var payload = {
-      cliente:       cliente,
-      cpf_cnpj:      cpf,
-      avalista:      avalista,
-      cpf_avalista:  cpfAval,
-      inicio_divida: inicio || null,
-      valor_atual:   parseFloat(valorRaw) || 0,
-      status:        status,
-      num_processo:  processo
+      cliente:         cliente,
+      cpf_cnpj:        cpf,
+      avalista:        avalista,
+      cpf_avalista:    cpfAval,
+      inicio_divida:   inicio || null,
+      valor_atual:     parseFloat(valorRaw) || 0,
+      status:          status,
+      num_processo:    processo,
+      proximo_prazo:   prazo || null,
+      descricao_prazo: prazoDesc,
     };
 
     var url    = _editId ? '/api/carteira-judicializada/' + _editId : '/api/carteira-judicializada';

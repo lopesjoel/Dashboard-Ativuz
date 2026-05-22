@@ -2352,6 +2352,16 @@ def pagina_inadimplencia():
     else:
         critico_valor_nome, critico_valor_total = "—", "—"
 
+    # ── Observações por devedor ────────────────────────────────
+    obs_map = {}
+    try:
+        sb_obs = _supabase()
+        if sb_obs:
+            obs_res = sb_obs.table("inad_observacoes").select("chave,texto").execute()
+            obs_map = {r["chave"]: r["texto"] for r in (obs_res.data or [])}
+    except Exception:
+        pass
+
     return render_template(
         "inadimplencia.html",
         registros=registros_vencidos,
@@ -2370,6 +2380,7 @@ def pagina_inadimplencia():
         erro_leitura=erro_leitura,
         hoje=hoje.strftime("%d/%m/%Y"),
         active="inadimplencia",
+        obs_map=obs_map,
     )
 
 
@@ -4040,14 +4051,16 @@ def api_carteira_judicializada_inserir():
         return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
     try:
         res = sb.table("carteira_judicializada").insert({
-            "cliente":       cliente,
-            "cpf_cnpj":      (body.get("cpf_cnpj")     or "").strip(),
-            "avalista":      (body.get("avalista")      or "").strip(),
-            "cpf_avalista":  (body.get("cpf_avalista")  or "").strip(),
-            "inicio_divida": body.get("inicio_divida")  or None,
-            "valor_atual":   float(body.get("valor_atual") or 0),
-            "status":        body.get("status")         or "Ajuizado",
-            "num_processo":  (body.get("num_processo")  or "").strip(),
+            "cliente":          cliente,
+            "cpf_cnpj":         (body.get("cpf_cnpj")        or "").strip(),
+            "avalista":         (body.get("avalista")         or "").strip(),
+            "cpf_avalista":     (body.get("cpf_avalista")     or "").strip(),
+            "inicio_divida":    body.get("inicio_divida")     or None,
+            "valor_atual":      float(body.get("valor_atual") or 0),
+            "status":           body.get("status")            or "Ajuizado",
+            "num_processo":     (body.get("num_processo")     or "").strip(),
+            "proximo_prazo":    body.get("proximo_prazo")     or None,
+            "descricao_prazo":  (body.get("descricao_prazo")  or "").strip(),
         }).execute()
         return jsonify({"ok": True, "data": res.data[0] if res.data else {}})
     except Exception as e:
@@ -4065,15 +4078,17 @@ def api_carteira_judicializada_atualizar(registro_id):
         return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
     try:
         res = sb.table("carteira_judicializada").update({
-            "cliente":        cliente,
-            "cpf_cnpj":       (body.get("cpf_cnpj")     or "").strip(),
-            "avalista":       (body.get("avalista")      or "").strip(),
-            "cpf_avalista":   (body.get("cpf_avalista")  or "").strip(),
-            "inicio_divida":  body.get("inicio_divida")  or None,
-            "valor_atual":    float(body.get("valor_atual") or 0),
-            "status":         body.get("status")         or "Ajuizado",
-            "num_processo":   (body.get("num_processo")  or "").strip(),
-            "atualizado_em":  "now()",
+            "cliente":          cliente,
+            "cpf_cnpj":         (body.get("cpf_cnpj")        or "").strip(),
+            "avalista":         (body.get("avalista")         or "").strip(),
+            "cpf_avalista":     (body.get("cpf_avalista")     or "").strip(),
+            "inicio_divida":    body.get("inicio_divida")     or None,
+            "valor_atual":      float(body.get("valor_atual") or 0),
+            "status":           body.get("status")            or "Ajuizado",
+            "num_processo":     (body.get("num_processo")     or "").strip(),
+            "proximo_prazo":    body.get("proximo_prazo")     or None,
+            "descricao_prazo":  (body.get("descricao_prazo")  or "").strip(),
+            "atualizado_em":    "now()",
         }).eq("id", str(registro_id)).execute()
         return jsonify({"ok": True, "data": res.data[0] if res.data else {}})
     except Exception as e:
@@ -4371,6 +4386,26 @@ def api_checklist_salvar():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
+@app.route("/api/inad/obs", methods=["PUT"])
+def api_inad_obs_salvar():
+    data  = request.get_json(force=True)
+    chave = (data.get("chave") or "").strip()
+    texto = (data.get("texto") or "").strip()[:500]
+    if not chave:
+        return jsonify({"error": "chave obrigatória"}), 400
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase indisponível"}), 503
+    try:
+        sb.table("inad_observacoes").upsert(
+            {"chave": chave, "texto": texto, "updated_at": "now()"},
+            on_conflict="chave"
+        ).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/checklist/item/<uuid:item_id>", methods=["PUT"])
