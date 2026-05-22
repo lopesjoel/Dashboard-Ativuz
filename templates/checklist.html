@@ -530,13 +530,25 @@
   .btn-save-modal:hover    { opacity: 0.85; }
   .btn-save-modal:disabled { opacity: 0.55; cursor: default; }
 
-  .ck-save-msg {
-    font-size: 0.78rem;
-    color: #15803d;
-    display: none;
+  /* Delete button on each item */
+  .ck-item-del {
+    background: none; border: none; cursor: pointer;
+    padding: 3px 5px; border-radius: 5px;
+    color: #cbd5e1; opacity: 0; flex-shrink: 0;
+    display: flex; align-items: center;
+    transition: color .12s, opacity .12s, background .12s;
   }
+  .ck-item:hover .ck-item-del { opacity: 1; }
+  .ck-item-del:hover { color: #dc2626; background: #fee2e2; }
 
-  .ck-save-msg.err { color: #dc2626; }
+  /* Auto-save indicator */
+  .ck-autosave-msg {
+    font-size: 0.76rem; color: #15803d;
+    opacity: 0; transition: opacity .3s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ck-autosave-msg.visible { opacity: 1; }
+  .ck-autosave-msg.err { color: #dc2626; }
 
   @media (max-width: 900px)  { .ck-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 540px)  { .ck-grid { grid-template-columns: 1fr; } .ck-info-grid { grid-template-columns: 1fr; } }
@@ -574,6 +586,13 @@
     <button class="fpill" data-unit="JOÃO PAULO CONSÓRCIOS">JOÃO PAULO CONSÓRCIOS</button>
     <button class="fpill" data-unit="LUZ DIVINA LTDA">LUZ DIVINA LTDA</button>
   </div>
+  <!-- Status pills -->
+  <div class="ck-filter-row">
+    <span class="ck-filter-lbl">Status</span>
+    <button class="fpill on" data-status="all">Todos</button>
+    <button class="fpill" data-status="complete">Completos</button>
+    <button class="fpill" data-status="incomplete">Incompletos</button>
+  </div>
   <!-- Search fields -->
   <div class="ck-search-row">
     <div class="ck-search">
@@ -603,7 +622,8 @@
   <div class="ck-card"
        data-placa="{{ v.placa | lower }}"
        data-cliente="{{ v.cliente | lower }}"
-       data-unidade="{{ v.unidade }}">
+       data-unidade="{{ v.unidade }}"
+       data-contrato="{{ v.contrato or '' }}">
 
     <!-- Image -->
     <div class="ck-card-img">
@@ -750,10 +770,14 @@
 
     <!-- Footer -->
     <div class="ck-modal-footer">
-      <span class="ck-save-msg" id="ck-save-msg"></span>
-      <div style="display:flex;gap:8px;margin-left:auto;">
+      <span class="ck-autosave-msg" id="ck-save-msg">
+        <svg id="ck-save-icon" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span id="ck-save-text">Salvo</span>
+      </span>
+      <div style="margin-left:auto;">
         <button class="btn-cancel-modal" onclick="fecharModal()">Fechar</button>
-        <button class="btn-save-modal" id="btn-save" onclick="salvarChecklist()">Salvar</button>
       </div>
     </div>
 
@@ -770,36 +794,43 @@ var _badgeData = {{ badge_data | tojson }};
 (function () {
 
   /* ── State ── */
-  var activeUnit   = 'all';
-  var searchPlaca  = '';
+  var activeUnit    = 'all';
+  var activeStatus  = 'all';
+  var searchPlaca   = '';
   var searchCliente = '';
-  var allRows      = [];
-  var totalRows    = 0;
+  var allRows       = [];
 
-  var _currentVeiculo  = null;
-  var _contratoId      = null;
-  var _itens           = [];  /* [{id, nome, marcado, is_new}] */
+  var _currentVeiculo = null;
+  var _contratoId     = null;
+  var _itens          = [];  /* [{id, nome, marcado}] — all persisted */
 
   /* ── Init cards ── */
   var grid = document.getElementById('ck-grid');
   if (grid) {
-    allRows   = Array.prototype.slice.call(grid.querySelectorAll('.ck-card'));
-    totalRows = allRows.length;
+    allRows = Array.prototype.slice.call(grid.querySelectorAll('.ck-card'));
   }
 
   /* ── Filter logic ── */
   function applyFilters() {
     var count = 0;
     allRows.forEach(function (row) {
-      var unit    = row.dataset.unidade || '';
-      var placa   = row.dataset.placa   || '';
-      var cliente = row.dataset.cliente || '';
+      var unit    = row.dataset.unidade  || '';
+      var placa   = row.dataset.placa    || '';
+      var cliente = row.dataset.cliente  || '';
+      var contrato = row.dataset.contrato || '';
 
       var unitOk    = (activeUnit === 'all') || unit === activeUnit;
       var placaOk   = !searchPlaca   || placa.indexOf(searchPlaca)   !== -1;
       var clienteOk = !searchCliente || cliente.indexOf(searchCliente) !== -1;
 
-      if (unitOk && placaOk && clienteOk) {
+      var statusOk = true;
+      if (activeStatus !== 'all') {
+        var bd = _badgeData[contrato];
+        var isComplete = bd && bd.total > 0 && bd.marcados === bd.total;
+        statusOk = (activeStatus === 'complete') ? isComplete : !isComplete;
+      }
+
+      if (unitOk && placaOk && clienteOk && statusOk) {
         row.classList.remove('hidden-row');
         count++;
       } else {
@@ -820,23 +851,26 @@ var _badgeData = {{ badge_data | tojson }};
     });
   });
 
+  /* Status pills */
+  document.querySelectorAll('[data-status]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-status]').forEach(function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      activeStatus = btn.dataset.status;
+      applyFilters();
+    });
+  });
+
   /* Search inputs */
   var inPlaca   = document.getElementById('search-placa');
   var inCliente = document.getElementById('search-cliente');
+  if (inPlaca)   inPlaca.addEventListener('input',   function () { searchPlaca   = inPlaca.value.trim().toLowerCase();   applyFilters(); });
+  if (inCliente) inCliente.addEventListener('input', function () { searchCliente = inCliente.value.trim().toLowerCase(); applyFilters(); });
 
-  if (inPlaca) {
-    inPlaca.addEventListener('input', function () {
-      searchPlaca = inPlaca.value.trim().toLowerCase();
-      applyFilters();
-    });
-  }
-
-  if (inCliente) {
-    inCliente.addEventListener('input', function () {
-      searchCliente = inCliente.value.trim().toLowerCase();
-      applyFilters();
-    });
-  }
+  /* Escape closes modal */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') fecharModal();
+  });
 
   /* ── Modal ── */
   window.abrirModal = function (veiculo) {
@@ -844,29 +878,24 @@ var _badgeData = {{ badge_data | tojson }};
     _contratoId     = null;
     _itens          = [];
 
-    /* Fill info block */
-    document.getElementById('modal-title').textContent = veiculo.contrato || '—';
-    document.getElementById('modal-sub').textContent   = veiculo.placa ? 'Placa: ' + veiculo.placa : '';
-    document.getElementById('info-placa').textContent   = veiculo.placa   || '—';
-    document.getElementById('info-modelo').textContent  = veiculo.modelo  || '—';
+    document.getElementById('modal-title').textContent  = veiculo.contrato || '—';
+    document.getElementById('modal-sub').textContent    = veiculo.placa ? 'Placa: ' + veiculo.placa : '';
+    document.getElementById('info-placa').textContent   = veiculo.placa    || '—';
+    document.getElementById('info-modelo').textContent  = veiculo.modelo   || '—';
     document.getElementById('info-cliente').textContent = veiculo.cliente  || '—';
     document.getElementById('info-unidade').textContent = veiculo.unidade  || '—';
     document.getElementById('info-inicio').textContent  = veiculo.inicio   || '—';
     document.getElementById('info-termino').textContent = veiculo.termino  || '—';
 
-    /* Reset checklist area */
-    document.getElementById('modal-loading').style.display      = '';
+    document.getElementById('modal-loading').style.display       = '';
     document.getElementById('modal-checklist-wrap').style.display = 'none';
-    document.getElementById('modal-items').innerHTML            = '';
+    document.getElementById('modal-items').innerHTML              = '';
     _resetAddField();
     _setMsg('', false);
-    document.getElementById('btn-save').disabled = false;
 
-    /* Open overlay */
     document.getElementById('ck-overlay').classList.add('open');
     document.body.style.overflow = 'hidden';
 
-    /* Fetch from backend */
     var params = new URLSearchParams({
       contrato: veiculo.contrato || '',
       placa:    veiculo.placa    || '',
@@ -879,14 +908,14 @@ var _badgeData = {{ badge_data | tojson }};
       .then(function (data) {
         if (data.error) { _setMsg(data.error, true); return; }
         _contratoId = data.contrato_id;
-        _itens      = data.itens.map(function (i) {
-          return { id: i.id, nome: i.nome, marcado: i.marcado, is_new: false };
+        _itens = data.itens.map(function (i) {
+          return { id: i.id, nome: i.nome, marcado: i.marcado };
         });
         _renderItems();
         document.getElementById('modal-loading').style.display       = 'none';
         document.getElementById('modal-checklist-wrap').style.display = '';
       })
-      .catch(function (err) {
+      .catch(function () {
         document.getElementById('modal-loading').textContent = 'Erro ao carregar checklist.';
       });
   };
@@ -897,34 +926,70 @@ var _badgeData = {{ badge_data | tojson }};
   };
 
   window.fecharModalOverlay = function (e) {
-    if (e.target === document.getElementById('ck-overlay')) {
-      fecharModal();
-    }
+    if (e.target === document.getElementById('ck-overlay')) fecharModal();
   };
 
-  /* Render items list */
+  /* ── Render items ── */
   function _renderItems() {
     var ul = document.getElementById('modal-items');
     ul.innerHTML = '';
     _itens.forEach(function (item, idx) {
       var div = document.createElement('div');
       div.className = 'ck-item' + (item.marcado ? ' checked' : '');
+
       div.innerHTML =
         '<div class="ck-checkbox">' +
           '<svg width="10" height="10" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24">' +
             '<polyline points="20 6 9 17 4 12"/>' +
           '</svg>' +
         '</div>' +
-        '<span class="ck-item-name">' + _esc(item.nome) + '</span>';
-      div.addEventListener('click', function () {
+        '<span class="ck-item-name">' + _esc(item.nome) + '</span>' +
+        '<button class="ck-item-del" title="Remover item" onclick="event.stopPropagation();">' +
+          '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
+            '<polyline points="3 6 5 6 21 6"/>' +
+            '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
+            '<path d="M10 11v6"/><path d="M14 11v6"/>' +
+            '<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>' +
+          '</svg>' +
+        '</button>';
+
+      /* Toggle marcado — auto-save */
+      div.addEventListener('click', function (e) {
+        if (e.target.closest('.ck-item-del')) return;
         item.marcado = !item.marcado;
         div.classList.toggle('checked', item.marcado);
+        _autoSaveToggle(item);
       });
+
+      /* Delete button */
+      div.querySelector('.ck-item-del').addEventListener('click', function () {
+        _deletarItem(item, idx);
+      });
+
       ul.appendChild(div);
     });
   }
 
-  /* Add item */
+  /* ── Auto-save: toggle ── */
+  function _autoSaveToggle(item) {
+    fetch('/api/checklist/item/' + item.id, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ marcado: item.marcado }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          _flashSaved();
+          _atualizarBadge();
+        } else {
+          _setMsg(data.error || 'Erro ao salvar.', true);
+        }
+      })
+      .catch(function () { _setMsg('Erro de conexão.', true); });
+  }
+
+  /* ── Auto-insert: novo item ── */
   window.mostrarCampoItem = function () {
     var inp  = document.getElementById('add-item-input');
     var btn  = document.getElementById('btn-confirm-item');
@@ -936,19 +1001,40 @@ var _badgeData = {{ badge_data | tojson }};
   };
 
   window.confirmarNovoItem = function () {
+    if (!_contratoId) return;
     var inp  = document.getElementById('add-item-input');
     var nome = inp.value.trim().toUpperCase();
     if (!nome) { inp.focus(); return; }
 
-    _itens.push({ id: null, nome: nome, marcado: false, is_new: true });
-    _renderItems();
-    inp.value = '';
-    _resetAddField();
+    inp.disabled = true;
+
+    fetch('/api/checklist/item', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ contrato_id: _contratoId, nome: nome }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        inp.disabled = false;
+        if (data.ok) {
+          _itens.push({ id: data.id, nome: data.nome, marcado: data.marcado });
+          _renderItems();
+          inp.value = '';
+          _resetAddField();
+          _flashSaved();
+          _atualizarBadge();
+        } else {
+          _setMsg(data.error || 'Erro ao adicionar.', true);
+        }
+      })
+      .catch(function () {
+        inp.disabled = false;
+        _setMsg('Erro de conexão.', true);
+      });
   };
 
-  /* Allow Enter to confirm */
   document.getElementById('add-item-input').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') confirmarNovoItem();
+    if (e.key === 'Enter')  confirmarNovoItem();
     if (e.key === 'Escape') _resetAddField();
   });
 
@@ -962,55 +1048,42 @@ var _badgeData = {{ badge_data | tojson }};
     inp.value = '';
   }
 
-  /* Save */
-  window.salvarChecklist = function () {
-    if (!_contratoId) return;
-    var btnSave = document.getElementById('btn-save');
-    btnSave.disabled = true;
-    _setMsg('Salvando…', false);
-
-    fetch('/api/checklist/salvar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contrato_id: _contratoId, itens: _itens }),
-    })
+  /* ── Delete item ── */
+  function _deletarItem(item, idx) {
+    fetch('/api/checklist/item/' + item.id, { method: 'DELETE' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.ok) {
-          _setMsg('Salvo com sucesso!', false);
-          /* Update badge on the table row */
+          _itens.splice(idx, 1);
+          _renderItems();
+          _flashSaved();
           _atualizarBadge();
-          setTimeout(function () { fecharModal(); }, 800);
         } else {
-          _setMsg(data.error || 'Erro ao salvar.', true);
-          btnSave.disabled = false;
+          _setMsg(data.error || 'Erro ao remover.', true);
         }
       })
-      .catch(function () {
-        _setMsg('Erro de conexão.', true);
-        btnSave.disabled = false;
-      });
-  };
+      .catch(function () { _setMsg('Erro de conexão.', true); });
+  }
 
-  /* Update badge on the table after save */
+  /* ── Badge update ── */
   function _atualizarBadge() {
     if (!_currentVeiculo || !_currentVeiculo.contrato) return;
     var total    = _itens.length;
     var marcados = _itens.filter(function (i) { return i.marcado; }).length;
-    var key      = _currentVeiculo.contrato.replace(/\//g, '-').replace(/\s/g, '');
-    var el       = document.getElementById('badge-' + key);
+    var contrato = _currentVeiculo.contrato;
 
+    /* Update in-memory badge data for status filter */
+    _badgeData[contrato] = { total: total, marcados: marcados };
+
+    /* Update badge element on card */
+    var key = contrato.replace(/\//g, '-').replace(/\s/g, '');
+    var el  = document.getElementById('badge-' + key);
     if (!el) {
-      /* badge might be a server-rendered one — find by row */
-      var row = Array.prototype.find
-        ? allRows.find(function (r) { return r.dataset.placa === (_currentVeiculo.placa || '').toLowerCase(); })
-        : null;
-      if (row) {
-        var existingBadge = row.querySelector('.prog-badge');
-        if (existingBadge) el = existingBadge;
-      }
+      var row = allRows.find ? allRows.find(function (r) {
+        return r.dataset.placa === (_currentVeiculo.placa || '').toLowerCase();
+      }) : null;
+      if (row) { var eb = row.querySelector('.prog-badge'); if (eb) el = eb; }
     }
-
     if (el) {
       el.textContent = marcados + '/' + total;
       el.className   = 'prog-badge ' + (total === 0 ? 'prog-none' : marcados === total ? 'prog-full' : 'prog-partial');
@@ -1018,11 +1091,31 @@ var _badgeData = {{ badge_data | tojson }};
     }
   }
 
-  function _setMsg(msg, isErr) {
+  /* ── Saved flash ── */
+  var _flashTimer = null;
+  function _flashSaved() {
     var el = document.getElementById('ck-save-msg');
-    el.textContent = msg;
-    el.className   = 'ck-save-msg' + (isErr ? ' err' : '');
-    el.style.display = msg ? '' : 'none';
+    el.className = 'ck-autosave-msg visible';
+    clearTimeout(_flashTimer);
+    _flashTimer = setTimeout(function () {
+      el.className = 'ck-autosave-msg';
+    }, 1500);
+  }
+
+  function _setMsg(msg, isErr) {
+    if (!isErr || !msg) return;
+    var el   = document.getElementById('ck-save-msg');
+    var icon = document.getElementById('ck-save-icon');
+    var txt  = document.getElementById('ck-save-text');
+    if (icon) icon.style.display = 'none';
+    if (txt)  txt.textContent    = msg;
+    el.className = 'ck-autosave-msg err visible';
+    clearTimeout(_flashTimer);
+    _flashTimer = setTimeout(function () {
+      el.className = 'ck-autosave-msg';
+      if (icon) icon.style.display = '';
+      if (txt)  txt.textContent    = 'Salvo';
+    }, 3000);
   }
 
   function _esc(s) {

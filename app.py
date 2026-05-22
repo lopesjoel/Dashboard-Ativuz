@@ -4372,6 +4372,53 @@ def api_checklist_salvar():
         return jsonify({"error": str(e)}), 500
 
 
+
+@app.route("/api/checklist/item/<uuid:item_id>", methods=["PUT"])
+def api_checklist_toggle(item_id):
+    data    = request.get_json(force=True)
+    marcado = bool(data.get("marcado", False))
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase indisponível"}), 503
+    try:
+        sb.table("checklist_itens").update({"marcado": marcado}).eq("id", str(item_id)).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/checklist/item", methods=["POST"])
+def api_checklist_add_item():
+    data        = request.get_json(force=True)
+    contrato_id = data.get("contrato_id")
+    nome        = (data.get("nome") or "").strip().upper()[:80]
+    if not contrato_id or not nome:
+        return jsonify({"error": "contrato_id e nome obrigatórios"}), 400
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase indisponível"}), 503
+    try:
+        res  = sb.table("checklist_itens").insert({
+            "contrato_id": contrato_id, "nome": nome, "marcado": False
+        }).execute()
+        item = res.data[0]
+        return jsonify({"ok": True, "id": item["id"], "nome": item["nome"], "marcado": item["marcado"]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/checklist/item/<uuid:item_id>", methods=["DELETE"])
+def api_checklist_delete_item(item_id):
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase indisponível"}), 503
+    try:
+        sb.table("checklist_itens").delete().eq("id", str(item_id)).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ── Benchmarking ──────────────────────────────────────────────────────────────
 
 @app.route("/benchmarking")
