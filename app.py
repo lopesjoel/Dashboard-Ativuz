@@ -4399,10 +4399,11 @@ def api_inad_obs_salvar():
     if not sb:
         return jsonify({"error": "Supabase indisponível"}), 503
     try:
-        sb.table("inad_observacoes").upsert(
-            {"chave": chave, "texto": texto, "updated_at": "now()"},
-            on_conflict="chave"
-        ).execute()
+        existing = sb.table("inad_observacoes").select("id").eq("chave", chave).execute()
+        if existing.data:
+            sb.table("inad_observacoes").update({"texto": texto}).eq("chave", chave).execute()
+        else:
+            sb.table("inad_observacoes").insert({"chave": chave, "texto": texto}).execute()
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
