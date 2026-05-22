@@ -2532,22 +2532,21 @@ def exportar_inadimplencia():
     if ws1["B3"].value:
         ws1["B3"].value = f"ATIVUZ VEÍCULOS  —  Gerado em: {hoje_str}"
 
-    # Fórmulas dos KPIs — modelo atual (60x9)
-    # Colunas: B=Cliente C=Etapa D=Venc E=Dias F=Valor G=Juros H=Total I=Ação
+    # Colunas: B=Cliente C=Etapa D=Venc E=Dias F:G=Valor(merge) H=Juros I=Total
     # KPIs: B5=contagem  C5=valor original  E5=juros  H5=total
     D_INI = 9
     D_FIM = max(D_INI + len(registros) - 1, D_INI)
     _safe_set(ws1["B5"], value=f"=COUNTA(C{D_INI}:C{D_FIM})")
     _safe_set(ws1["C5"], value=f"=SUM(F{D_INI}:F{D_FIM})")   # valor original (col F)
-    _safe_set(ws1["E5"], value=f"=SUM(G{D_INI}:G{D_FIM})")   # juros (col G)
-    _safe_set(ws1["H5"], value=f"=SUM(H{D_INI}:H{D_FIM})")   # total atualizado (col H)
+    _safe_set(ws1["E5"], value=f"=SUM(H{D_INI}:H{D_FIM})")   # juros (col H)
+    _safe_set(ws1["H5"], value=f"=SUM(I{D_INI}:I{D_FIM})")   # total atualizado (col I)
 
     # Linha de totais (row 58)
     _safe_set(ws1["F58"], value=f"=SUM(F{D_INI}:F{D_FIM})")
-    _safe_set(ws1["G58"], value=f"=SUM(G{D_INI}:G{D_FIM})")
     _safe_set(ws1["H58"], value=f"=SUM(H{D_INI}:H{D_FIM})")
+    _safe_set(ws1["I58"], value=f"=SUM(I{D_INI}:I{D_FIM})")
 
-    # Desmescla e limpa área de dados
+    # Desmescla e limpa área de dados (colunas B-I)
     _unmerge_area(ws1, D_INI, 57, 2, 9)
     for r in range(D_INI, 58):
         for c in range(2, 10):
@@ -2574,9 +2573,14 @@ def exportar_inadimplencia():
         _w(4, rec["vencimento"],base,    F_BLACK, align=_align("center"))
         _w(5, rec["dias"],      bf,      bft,     align=_align("center"))
         _w(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
-        _w(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
-        _w(8, f"=F{r}+G{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
-        _w(9, rec["proxima"],   F_ACAO,  F_BLACK, align=_align("left", wrap=True))
+        # col 7 (G) é merge com F no modelo — deixar vazio
+        _w(8, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
+        _w(9, f"=F{r}+H{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
+        # Re-aplicar merge F:G para cada linha de dados
+        try:
+            ws1.merge_cells(start_row=r, start_column=6, end_row=r, end_column=7)
+        except Exception:
+            pass
 
     # ── Aba 2: Detalhamento por Cliente ──────────────────────────────────────
     ws2 = wb["Detalhamento por Cliente"]
@@ -2609,6 +2613,26 @@ def exportar_inadimplencia():
         _wd(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
         _wd(8, f"=F{r}+G{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
 
+    # Total Geral row for Detalhamento
+    if registros:
+        tr = 6 + len(registros)
+        try:
+            ws2.merge_cells(start_row=tr, start_column=2, end_row=tr, end_column=5)
+        except Exception:
+            pass
+        F_TOTAL_ROW = _fill("1A5276")
+        F_WHITE_BOLD = Font(color="FFFFFF", bold=True, size=10)
+        c = ws2.cell(row=tr, column=2)
+        _safe_set(c, value="TOTAL GERAL", fill=F_TOTAL_ROW, font=F_WHITE_BOLD,
+                  alignment=_align("center"))
+        for col, start_col in [(6, "F"), (7, "G"), (8, "H")]:
+            cell = ws2.cell(row=tr, column=col)
+            _safe_set(cell,
+                      value=f"=SUM({start_col}6:{start_col}{tr-1})",
+                      fill=F_TOTAL_ROW, font=F_WHITE_BOLD,
+                      number_format=FMT_BRL,
+                      alignment=_align("right"))
+
     # ── Aba 3: Análise por Etapa ──────────────────────────────────────────────
     ws3 = wb["Análise por Etapa"]
 
@@ -2631,6 +2655,24 @@ def exportar_inadimplencia():
         ws3.cell(row=row_num, column=5).value = g["juros"]
         ws3.cell(row=row_num, column=5).number_format = FMT_BRL
         ws3.cell(row=row_num, column=5).fill  = F_JUROS
+        ws3.cell(row=row_num, column=6).value = g["valor"] + g["juros"]
+        ws3.cell(row=row_num, column=6).number_format = FMT_BRL
+        ws3.cell(row=row_num, column=6).fill  = F_TOTAL
+
+    # Total row at row 16 for Análise por Etapa
+    F_TOTAL_ROW3 = _fill("1A5276")
+    F_WHITE_BOLD3 = Font(color="FFFFFF", bold=True, size=10)
+    ws3.cell(row=16, column=3).value = "=SUM(C6:C14)"
+    ws3.cell(row=16, column=3).fill = F_TOTAL_ROW3
+    ws3.cell(row=16, column=3).font = F_WHITE_BOLD3
+    ws3.cell(row=16, column=3).alignment = _align("center")
+    for col, letter in [(4, "D"), (5, "E"), (6, "F")]:
+        cell = ws3.cell(row=16, column=col)
+        cell.value = f"=SUM({letter}6:{letter}14)"
+        cell.number_format = FMT_BRL
+        cell.fill = F_TOTAL_ROW3
+        cell.font = F_WHITE_BOLD3
+        cell.alignment = _align("right")
 
     # ── Serve o arquivo ───────────────────────────────────────────────────────
     buf = BytesIO()
