@@ -1974,18 +1974,26 @@ const _fin = [
     if (!span || !_acParcelas[idx]) return;
 
     var input = document.createElement('input');
-    input.type = 'date';
-    input.value = _acParcelas[idx].data;
-    input.style.cssText = 'border:1.5px solid #1e3a5f;border-radius:5px;padding:2px 5px;' +
-                          'font-size:.82rem;font-family:inherit;color:#374151;outline:none;width:130px;';
+    input.type        = 'text';
+    input.placeholder = 'DD/MM/AAAA';
+    input.value       = _toBR(_acParcelas[idx].data);
+    input.style.cssText = 'border:1.5px solid #1e3a5f;border-radius:5px;padding:2px 7px;' +
+                          'font-size:.82rem;font-family:inherit;color:#374151;outline:none;width:110px;';
 
     function _confirmar() {
-      if (input.value) _acParcelas[idx].data = input.value;
+      var v = input.value.trim();
+      if (v) {
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+          var p = v.split('/');
+          _acParcelas[idx].data = p[2] + '-' + p[1] + '-' + p[0];
+        } else {
+          _acParcelas[idx].data = v;
+        }
+      }
       _acRenderParcelas(valorTotal || parseFloat(document.getElementById('ac-f-valor').value) || 0);
     }
 
-    input.addEventListener('change', _confirmar);
-    input.addEventListener('blur',   _confirmar);
+    input.addEventListener('blur', _confirmar);
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter')  input.blur();
       if (e.key === 'Escape') _acRenderParcelas(valorTotal || parseFloat(document.getElementById('ac-f-valor').value) || 0);
@@ -1993,6 +2001,7 @@ const _fin = [
 
     span.parentNode.replaceChild(input, span);
     input.focus();
+    input.select();
   };
 
   window.acEditarValor = function (idx, valorTotal) {
