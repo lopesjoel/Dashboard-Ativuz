@@ -535,34 +535,22 @@
 <!-- ══════════════════════════════════════════════════
      SEÇÃO 5 — CONTRATOS A VENCER
 ══════════════════════════════════════════════════ -->
-{% if contratos_vencendo %}
-{% set n_criticos = contratos_vencendo | selectattr('dias_restantes', 'le', 15) | list | length %}
+{% set contratos_7dias = contratos_vencendo | selectattr('dias_restantes', 'le', 7) | list %}
+{% if contratos_7dias %}
 <div class="dash-section">
   <span class="dash-section-label">Contratos a Vencer</span>
   <div class="dash-section-line"></div>
   <a href="{{ url_for('pagina_checklist') }}" class="btn btn-ghost btn-sm dash-section-action">Ver contratos</a>
 </div>
 
-{% if n_criticos > 0 %}
 <div class="vencer-banner critical">
   <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
     <line x1="12" y1="9" x2="12" y2="13"/>
     <line x1="12" y1="17" x2="12.01" y2="17"/>
   </svg>
-  <span><strong>Atenção:</strong> {{ n_criticos }} contrato{{ 's' if n_criticos != 1 else '' }} vence{{ 'm' if n_criticos != 1 else '' }} em até 15 dias.</span>
+  <span><strong>Atenção:</strong> {{ contratos_7dias | length }} contrato{{ 's' if contratos_7dias | length != 1 else '' }} vence{{ 'm' if contratos_7dias | length != 1 else '' }} em até 7 dias.</span>
 </div>
-{% else %}
-<div class="vencer-banner">
-  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-    <line x1="16" y1="2" x2="16" y2="6"/>
-    <line x1="8" y1="2" x2="8" y2="6"/>
-    <line x1="3" y1="10" x2="21" y2="10"/>
-  </svg>
-  <span><strong>{{ contratos_vencendo | length }} contrato{{ 's' if contratos_vencendo | length != 1 else '' }}</strong> vence{{ 'm' if contratos_vencendo | length != 1 else '' }} nos próximos 60 dias.</span>
-</div>
-{% endif %}
 
 <div class="card" style="padding:0;overflow:hidden;margin-bottom:4px;">
   <div style="overflow-x:auto;">
@@ -577,8 +565,8 @@
         </tr>
       </thead>
       <tbody>
-        {% for c in contratos_vencendo %}
-        {% set cor = 'red' if c.dias_restantes <= 15 else ('orange' if c.dias_restantes <= 30 else 'yellow') %}
+        {% for c in contratos_7dias %}
+        {% set cor = 'red' if c.dias_restantes <= 3 else ('orange' if c.dias_restantes <= 5 else 'yellow') %}
         <tr>
           <td><span class="badge-placa">{{ c.placa }}</span></td>
           <td style="font-weight:600;">{{ c.cliente }}</td>
