@@ -44,7 +44,8 @@
       "Bash(awk NR>=3600 && NR<=3615 *)",
       "Bash(awk NR>=3965 && NR<=4060 *)",
       "Bash(awk NR>=540 && NR<=580 *)",
-      "Bash(awk NR>=3600 && NR<=3625 *)"
+      "Bash(awk NR>=3600 && NR<=3625 *)",
+      "Bash(PYTHONPATH=/Users/karol/Documents/Dashboard-Ativuz/.venv/Lib/site-packages python3 *)"
     ]
   }
 }

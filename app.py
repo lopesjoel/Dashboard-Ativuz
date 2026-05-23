@@ -339,14 +339,22 @@ def get_templates():
             return result
         except Exception:
             import traceback; traceback.print_exc()
-    # fallback local
+    # fallback local — une uploads/ e docx_templates/ sem duplicatas
     result = []
-    files = sorted(
-        list(UPLOAD_FOLDER.glob("*.docx")) + list(UPLOAD_FOLDER.glob("*.xlsx")),
+    seen = set()
+    all_files = sorted(
+        list(UPLOAD_FOLDER.glob("*.docx")) + list(UPLOAD_FOLDER.glob("*.xlsx")) +
+        list(DOCX_TEMPLATES.glob("*.docx")) + list(DOCX_TEMPLATES.glob("*.xlsx")),
         key=lambda f: f.name,
     )
-    for f in files:
+    for f in all_files:
+        if f.name in seen:
+            continue
+        seen.add(f.name)
+        # Busca metadados primeiro em uploads/, depois em docx_templates/
         meta_path = UPLOAD_FOLDER / f"{f.stem}.json"
+        if not meta_path.exists():
+            meta_path = DOCX_TEMPLATES / f"{f.stem}.json"
         display_name = f.stem
         if meta_path.exists():
             display_name = json.loads(meta_path.read_text(encoding="utf-8")).get("nome", f.stem)
@@ -385,8 +393,10 @@ def _resolve_template(filename: str):
             return str(tmp), nome_display, None
         except Exception as e:
             import traceback; traceback.print_exc()
-    # fallback local
+    # fallback local — tenta uploads/ depois docx_templates/
     local = UPLOAD_FOLDER / safe
+    if not local.exists():
+        local = DOCX_TEMPLATES / safe
     if not local.exists():
         return None, filename, "Template não encontrado."
     nome_display = stem

@@ -293,49 +293,43 @@ def gerar_notificacao_avalista(
     def _ext(valor: float) -> str:
         return num2words(Decimal(str(round(valor, 2))), lang="pt_BR", to="currency")
 
-    # 6 substituições na ordem exata dos marcadores [ ] do template
-    substituicoes = [
-        # 0  avalista_nome
-        avalista_nome,
-        # 1  data_contrato  (ex: "12/04/2026")
-        data_contrato,
-        # 2  locatario_nome
-        locatario_nome,
-        # 3  valor_debito formatado  (ex: "1.500,00")
-        _fmt(valor_debito),
-        # 4  valor_extenso  (ex: "mil e quinhentos reais")
-        _ext(valor_debito),
-        # 5  data_geracao automática  (ex: "Natal, 14/04/2026")
-        datetime.now().strftime("%d/%m/%Y"),
-    ]
-
     template = Path(template_path) if template_path else Path(__file__).parent / "NOTIFICACAO_AVALISTA_TEMPLATE.docx"
     if not template.exists():
         raise FileNotFoundError(f"Template não encontrado: {template}")
 
-    padrao = re.compile(r'\[ \]')
-
-    def _substituir(xml_text: str) -> str:
-        contador = [0]
-
-        def _sub(match):
-            idx = contador[0]
-            contador[0] += 1
-            if idx < len(substituicoes):
-                return substituicoes[idx]
-            return match.group(0)
-
-        return padrao.sub(_sub, xml_text)
-
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-
         with zipfile.ZipFile(template, "r") as z:
             z.extractall(tmp)
 
         doc_xml = tmp / "word" / "document.xml"
         texto = doc_xml.read_text(encoding="utf-8")
-        doc_xml.write_text(_substituir(texto), encoding="utf-8")
+
+        if re.search(r'\[ \]', texto):
+            # Formato antigo: marcadores [ ] na ordem
+            substituicoes = [
+                avalista_nome,
+                data_contrato,
+                locatario_nome,
+                _fmt(valor_debito),
+                _ext(valor_debito),
+                datetime.now().strftime("%d/%m/%Y"),
+            ]
+            padrao = re.compile(r'\[ \]')
+            contador = [0]
+            def _sub(match):
+                idx = contador[0]; contador[0] += 1
+                return substituicoes[idx] if idx < len(substituicoes) else match.group(0)
+            texto = padrao.sub(_sub, texto)
+        else:
+            # Formato novo: padrões xxx
+            texto = re.sub(r'x{10,}', avalista_nome,   texto, count=1)
+            texto = re.sub(r'x{2}/x{2}/x{4}',          data_contrato, texto)
+            texto = re.sub(r'x{10,}', locatario_nome,  texto, count=1)
+            texto = re.sub(r'x{4,}',  _fmt(valor_debito), texto, count=1)
+            texto = texto.replace('(valor por extenso)', f'({_ext(valor_debito)})')
+
+        doc_xml.write_text(texto, encoding="utf-8")
 
         saida = Path(caminho_saida)
         saida.parent.mkdir(parents=True, exist_ok=True)
@@ -492,47 +486,41 @@ def gerar_notificacao_inadimplente(
     def _ext(valor: float) -> str:
         return num2words(Decimal(str(round(valor, 2))), lang="pt_BR", to="currency")
 
-    # 5 substituições na ordem exata dos marcadores [ ] do template
-    substituicoes = [
-        # 0  locatario_nome
-        locatario_nome,
-        # 1  data_contrato  (ex: "12/04/2026")
-        data_contrato,
-        # 2  valor_debito formatado  (ex: "1.500,00")
-        _fmt(valor_debito),
-        # 3  valor_extenso  (ex: "mil e quinhentos reais")
-        _ext(valor_debito),
-        # 4  data_geracao automática  (ex: "Natal, 14/04/2026")
-        datetime.now().strftime("%d/%m/%Y"),
-    ]
-
     template = Path(template_path) if template_path else Path(__file__).parent / "NOTIFICACAO_INADIMPLENTE_TEMPLATE.docx"
     if not template.exists():
         raise FileNotFoundError(f"Template não encontrado: {template}")
 
-    padrao = re.compile(r'\[ \]')
-
-    def _substituir(xml_text: str) -> str:
-        contador = [0]
-
-        def _sub(match):
-            idx = contador[0]
-            contador[0] += 1
-            if idx < len(substituicoes):
-                return substituicoes[idx]
-            return match.group(0)
-
-        return padrao.sub(_sub, xml_text)
-
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-
         with zipfile.ZipFile(template, "r") as z:
             z.extractall(tmp)
 
         doc_xml = tmp / "word" / "document.xml"
         texto = doc_xml.read_text(encoding="utf-8")
-        doc_xml.write_text(_substituir(texto), encoding="utf-8")
+
+        if re.search(r'\[ \]', texto):
+            # Formato antigo: marcadores [ ] na ordem
+            substituicoes = [
+                locatario_nome,
+                data_contrato,
+                _fmt(valor_debito),
+                _ext(valor_debito),
+                datetime.now().strftime("%d/%m/%Y"),
+            ]
+            padrao = re.compile(r'\[ \]')
+            contador = [0]
+            def _sub(match):
+                idx = contador[0]; contador[0] += 1
+                return substituicoes[idx] if idx < len(substituicoes) else match.group(0)
+            texto = padrao.sub(_sub, texto)
+        else:
+            # Formato novo: padrões xxx
+            texto = re.sub(r'x{10,}', locatario_nome,     texto, count=1)
+            texto = re.sub(r'x{2}/x{2}/x{4}',             data_contrato, texto)
+            texto = re.sub(r'x{4,}',  _fmt(valor_debito), texto, count=1)
+            texto = texto.replace('(valor por extenso)', f'({_ext(valor_debito)})')
+
+        doc_xml.write_text(texto, encoding="utf-8")
 
         saida = Path(caminho_saida)
         saida.parent.mkdir(parents=True, exist_ok=True)
