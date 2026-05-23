@@ -2431,8 +2431,6 @@ def exportar_inadimplencia():
             def _gv(row, idx):
                 return row[idx] if idx is not None and idx < len(row) else None
 
-            _MULTA_VALS = {600, 630, 650, 680, 700, 800, 1200}
-
             for row in data_rows:
                 nome_raw = _gv(row, i_nome)
                 if not nome_raw or not str(nome_raw).strip():
@@ -2460,9 +2458,8 @@ def exportar_inadimplencia():
                 if dias < 0:
                     continue
 
-                multa = valor * 0.05 if (dias >= 1 and int(round(valor)) in _MULTA_VALS) else 0.0
-                juros = valor * 0.005 * dias if dias >= 1 else 0.0
-                total = valor + multa + juros
+                juros = valor * 0.10 if dias >= 2 else 0.0
+                total = valor + juros
 
                 if   dias == 0:     etapa, proxima = "D+0",  "Enviar lembrete de vencimento"
                 elif dias == 1:     etapa, proxima = "D+1",  "Cobrança formal + aplicar multa e juros"
