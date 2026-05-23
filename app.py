@@ -2592,10 +2592,10 @@ def exportar_inadimplencia():
     # ── Aba 2: Detalhamento por Cliente ──────────────────────────────────────
     ws2 = wb["Detalhamento por Cliente"]
 
-    # Template: dados nas linhas 6-59, TOTAL GERAL fixo na linha 60
+    # Template: dados nas linhas 6-74, TOTAL GERAL fixo na linha 75
     D_INI2 = 6
-    D_DAT2 = 59   # última linha de dados no template
-    T_ROW2 = 60   # linha de TOTAL GERAL fixa do template
+    D_DAT2 = 74   # última linha de dados no template
+    T_ROW2 = 75   # linha de TOTAL GERAL fixa do template
 
     _unmerge_area(ws2, D_INI2, D_DAT2, 2, 8)
     for r in range(D_INI2, D_DAT2 + 1):
