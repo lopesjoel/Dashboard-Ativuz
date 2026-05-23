@@ -2284,7 +2284,7 @@ def pagina_inadimplencia():
                     "dias_label":       dias_label,
                     "reincidente":      reincidente,
                     "is_fatura":        is_fatura,
-                    "tem_multa":        tem_multa,
+                    "tem_multa":        dias >= 2,
                     "etapa":            etapa,
                     "etapa_cls":        etapa_cls,
                     "proxima_acao":     proxima,
