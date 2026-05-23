@@ -2464,14 +2464,14 @@ def exportar_inadimplencia():
                 total      = valor + juros
 
                 if   dias == 0:     etapa, proxima = "D+0",  "Enviar lembrete de vencimento"
-                elif dias == 1:     etapa, proxima = "D+1",  "Cobrança formal + aplicar multa e juros"
-                elif dias == 2:     etapa, proxima = "D+2",  "Cobrança formal + aplicar multa e juros"
-                elif dias == 3:     etapa, proxima = "D+3",  "Pressão + avisar suspensão em 48h"
-                elif dias == 4:     etapa, proxima = "D+4",  "Suspensão iminente — último aviso"
-                elif dias <= 6:     etapa, proxima = "D+5",  "Bloqueio do veículo"
-                elif dias <= 9:     etapa, proxima = "D+7",  "Notificação formal — prazo 48h para negativação"
-                elif dias <= 14:    etapa, proxima = "D+10", "Negativação + encaminhamento jurídico"
-                else:               etapa, proxima = "D+15", "Recolhimento + protesto em cartório + execução contratual"
+                elif dias == 1:     etapa, proxima = "D+1",  "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
+                elif dias == 2:     etapa, proxima = "D+2",  "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
+                elif dias == 3:     etapa, proxima = "D+3",  "Juros de mora em contagem — regularize hoje para evitar suspensão do serviço"
+                elif dias == 4:     etapa, proxima = "D+4",  "Aviso final — regularize até hoje ou o serviço será suspenso"
+                elif dias <= 6:     etapa, proxima = "D+5",  "Serviço suspenso — exigir comprovante de pagamento para reativação"
+                elif dias <= 9:     etapa, proxima = "D+7",  "Encaminhar para cobrança jurídica extrajudicial"
+                elif dias <= 14:    etapa, proxima = "D+10", "Negativação no SPC/Serasa + encaminhamento jurídico"
+                else:               etapa, proxima = "D+15", "Processo judicial iniciado — recolhimento imediato do veículo"
 
                 doc = str(_gv(row, i_doc) or "").strip() or str(_gv(row, i_unid) or "").strip()
                 registros.append({
