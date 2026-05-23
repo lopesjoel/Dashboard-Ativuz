@@ -1979,11 +1979,11 @@ def _inad_summary():
             juros = valor * 0.005 * dias if dias >= 1 else 0.0
             total = valor + multa + juros
 
-            if dias == 0:    etapa = "D+0"
-            elif dias == 1:  etapa = "D+1"
-            elif dias == 2:  etapa = "D+2"
-            elif dias == 3:  etapa = "D+3"
-            elif dias == 4:  etapa = "D+4"
+            if dias == 0:    etapa = "Hoje"
+            elif dias == 1:  etapa = "Terça-feira"
+            elif dias == 2:  etapa = "Quarta-feira"
+            elif dias == 3:  etapa = "Quinta-feira"
+            elif dias == 4:  etapa = "Sexta-feira"
             elif dias <= 6:  etapa = "D+5"
             elif dias <= 9:  etapa = "D+7"
             elif dias <= 14: etapa = "D+10"
@@ -2049,7 +2049,7 @@ def _inad_summary():
         nomes_unicos = set(r["nome"] for r in registros)
         hoje_count   = sum(1 for r in registros if r["dias"] == 0)
 
-        etapas = ["D+0","D+1","D+2","D+3","D+4","D+5","D+7","D+10","D+15"]
+        etapas = ["Hoje","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","D+5","D+7","D+10","D+15"]
         por_etapa = {e: 0 for e in etapas}
         for r in registros:
             if r["etapa"] in por_etapa:
@@ -2218,19 +2218,19 @@ def pagina_inadimplencia():
                         continue
 
                 if dias == 0:
-                    etapa, etapa_cls = "D+0",  "stage-d0"
+                    etapa, etapa_cls = "Hoje",          "stage-d0"
                     proxima = "Enviar lembrete de vencimento"
                 elif dias == 1:
-                    etapa, etapa_cls = "D+1",  "stage-d1"
+                    etapa, etapa_cls = "Terça-feira",   "stage-d1"
                     proxima = "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
                 elif dias == 2:
-                    etapa, etapa_cls = "D+2",  "stage-d2"
+                    etapa, etapa_cls = "Quarta-feira",  "stage-d2"
                     proxima = "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
                 elif dias == 3:
-                    etapa, etapa_cls = "D+3",  "stage-d3"
+                    etapa, etapa_cls = "Quinta-feira",  "stage-d3"
                     proxima = "Juros de mora em contagem — regularize hoje para evitar suspensão do serviço"
                 elif dias == 4:
-                    etapa, etapa_cls = "D+4",  "stage-d4"
+                    etapa, etapa_cls = "Sexta-feira",   "stage-d4"
                     proxima = "Aviso final — regularize até hoje ou o serviço será suspenso"
                 elif dias <= 6:
                     etapa, etapa_cls = "D+5",  "stage-d5"
@@ -2479,11 +2479,11 @@ def exportar_inadimplencia():
                 juros      = multa + juros_mora
                 total      = valor + juros
 
-                if   dias == 0:     etapa, proxima = "D+0",  "Enviar lembrete de vencimento"
-                elif dias == 1:     etapa, proxima = "D+1",  "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
-                elif dias == 2:     etapa, proxima = "D+2",  "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
-                elif dias == 3:     etapa, proxima = "D+3",  "Juros de mora em contagem — regularize hoje para evitar suspensão do serviço"
-                elif dias == 4:     etapa, proxima = "D+4",  "Aviso final — regularize até hoje ou o serviço será suspenso"
+                if   dias == 0:     etapa, proxima = "Hoje",         "Enviar lembrete de vencimento"
+                elif dias == 1:     etapa, proxima = "Terça-feira",  "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
+                elif dias == 2:     etapa, proxima = "Quarta-feira", "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
+                elif dias == 3:     etapa, proxima = "Quinta-feira", "Juros de mora em contagem — regularize hoje para evitar suspensão do serviço"
+                elif dias == 4:     etapa, proxima = "Sexta-feira",  "Aviso final — regularize até hoje ou o serviço será suspenso"
                 elif dias <= 6:     etapa, proxima = "D+5",  "Serviço suspenso — exigir comprovante de pagamento para reativação"
                 elif dias <= 9:     etapa, proxima = "D+7",  "Encaminhar para cobrança jurídica extrajudicial"
                 elif dias <= 14:    etapa, proxima = "D+10", "Negativação no SPC/Serasa + encaminhamento jurídico"
@@ -2654,7 +2654,7 @@ def exportar_inadimplencia():
     ws3 = wb["Análise por Etapa"]
 
     ETAPA_ROWS = {
-        "D+0": 6, "D+1": 7, "D+2": 8, "D+3": 9, "D+4": 10,
+        "Hoje": 6, "Terça-feira": 7, "Quarta-feira": 8, "Quinta-feira": 9, "Sexta-feira": 10,
         "D+5": 11, "D+7": 12, "D+10": 13, "D+15": 14,
     }
     from collections import defaultdict
