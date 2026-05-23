@@ -2320,6 +2320,7 @@ def pagina_inadimplencia():
                     "_multa":           multa,
                     "_juros":           juros,
                     "_total":           total,
+                    "_fone":            _fone,
                 })
 
         except Exception as e:
