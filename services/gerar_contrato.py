@@ -293,7 +293,7 @@ def gerar_notificacao_avalista(
     def _ext(valor: float) -> str:
         return num2words(Decimal(str(round(valor, 2))), lang="pt_BR", to="currency")
 
-    template = Path(template_path) if template_path else Path(__file__).parent / "NOTIFICACAO_AVALISTA_TEMPLATE.docx"
+    template = Path(template_path) if template_path else Path(__file__).parent.parent / "docx_templates" / "Notificação AVALISTA [Modelo] .docx"
     if not template.exists():
         raise FileNotFoundError(f"Template não encontrado: {template}")
 
@@ -486,7 +486,7 @@ def gerar_notificacao_inadimplente(
     def _ext(valor: float) -> str:
         return num2words(Decimal(str(round(valor, 2))), lang="pt_BR", to="currency")
 
-    template = Path(template_path) if template_path else Path(__file__).parent / "NOTIFICACAO_INADIMPLENTE_TEMPLATE.docx"
+    template = Path(template_path) if template_path else Path(__file__).parent.parent / "docx_templates" / "Notificação INADIMPLENTE [Modelo] .docx"
     if not template.exists():
         raise FileNotFoundError(f"Template não encontrado: {template}")
 
