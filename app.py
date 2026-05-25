@@ -2561,8 +2561,8 @@ def exportar_inadimplencia():
     # KPIs: B5=contagem  C5=valor original  E5=juros  H5=total
     # Template: dados nas linhas 9-78, TOTAIS fixo na linha 79
     D_INI  = 9
-    D_DATA = 78   # última linha reservada para dados no template
-    T_ROW1 = 79   # linha de TOTAIS fixa do template
+    D_DATA = 200  # última linha reservada para dados no template
+    T_ROW1 = 201  # linha de TOTAIS fixa do template
     D_FIM  = max(D_INI + len(registros) - 1, D_INI)
 
     # Desmescla e limpa apenas a área de dados (linhas 9-63, colunas B-I)
@@ -2620,8 +2620,8 @@ def exportar_inadimplencia():
 
     # Template: dados nas linhas 6-74, TOTAL GERAL fixo na linha 75
     D_INI2 = 6
-    D_DAT2 = 74   # última linha de dados no template
-    T_ROW2 = 75   # linha de TOTAL GERAL fixa do template
+    D_DAT2 = 200  # última linha de dados no template
+    T_ROW2 = 201  # linha de TOTAL GERAL fixa do template
 
     _unmerge_area(ws2, D_INI2, D_DAT2, 2, 8)
     for r in range(D_INI2, D_DAT2 + 1):
