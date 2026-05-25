@@ -282,8 +282,9 @@ def gerar_notificacao_avalista(
     valor_debito: float,
     caminho_saida: str,
     template_path: str = None,
+    avalista_cpf: str = "",
 ):
-    """Gera a Notificação ao Avalista a partir do template NOTIFICACAO_AVALISTA_TEMPLATE.docx."""
+    """Gera a Notificação ao Avalista."""
     from decimal import Decimal
     from num2words import num2words
 
@@ -293,7 +294,7 @@ def gerar_notificacao_avalista(
     def _ext(valor: float) -> str:
         return num2words(Decimal(str(round(valor, 2))), lang="pt_BR", to="currency")
 
-    template = Path(template_path) if template_path else Path(__file__).parent.parent / "docx_templates" / "Notificação AVALISTA [Modelo] .docx"
+    template = Path(template_path) if template_path else Path(__file__).parent.parent / "docx_templates" / "Notificação AVALISTA.docx"
     if not template.exists():
         raise FileNotFoundError(f"Template não encontrado: {template}")
 
@@ -306,9 +307,10 @@ def gerar_notificacao_avalista(
         texto = doc_xml.read_text(encoding="utf-8")
 
         if re.search(r'\[ \]', texto):
-            # Formato antigo: marcadores [ ] na ordem
+            # Formato [ ]: ordem fixa
             substituicoes = [
                 avalista_nome,
+                avalista_cpf,
                 data_contrato,
                 locatario_nome,
                 _fmt(valor_debito),
@@ -321,8 +323,19 @@ def gerar_notificacao_avalista(
                 idx = contador[0]; contador[0] += 1
                 return substituicoes[idx] if idx < len(substituicoes) else match.group(0)
             texto = padrao.sub(_sub, texto)
+        elif re.search(r'\*{4,}', texto):
+            # Formato ***: **/**/****  *****  ******  etc.
+            hoje = datetime.now().strftime("%d/%m/%Y")
+            texto = re.sub(r'\*{2}/\*{2}/\*{4}', hoje,                  texto, count=1)
+            texto = re.sub(r'\*{5}',               avalista_nome,        texto, count=1)
+            texto = re.sub(r'\*{5}',               avalista_cpf,         texto, count=1)
+            texto = re.sub(r'\*{2}/\*{2}/\*{4}',  data_contrato,        texto, count=1)
+            texto = re.sub(r'\*{6}',               locatario_nome,       texto, count=1)
+            texto = re.sub(r'\*{4}',               _fmt(valor_debito),   texto, count=1)
+            texto = re.sub(r'\* ',                 ' ',                  texto, count=1)
+            texto = re.sub(r'\*{2}',               _ext(valor_debito),   texto, count=1)
         else:
-            # Formato novo: padrões xxx
+            # Formato xxx
             texto = re.sub(r'x{10,}', avalista_nome,   texto, count=1)
             texto = re.sub(r'x{2}/x{2}/x{4}',          data_contrato, texto)
             texto = re.sub(r'x{10,}', locatario_nome,  texto, count=1)

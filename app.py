@@ -451,6 +451,7 @@ def _gerar_para_caminho(form, tipo, template_path_str, caminho_saida):
             valor_debito   = float(form.get("valor_debito") or 0),
             caminho_saida  = caminho_saida,
             template_path  = template_path_str,
+            avalista_cpf   = form.get("avalista_cpf_notif", ""),
         )
         return avalista_nome
 
