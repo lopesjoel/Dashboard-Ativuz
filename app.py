@@ -2414,7 +2414,7 @@ def pagina_inadimplencia():
 @app.route("/inadimplencia/exportar")
 def exportar_inadimplencia():
     import openpyxl
-    from openpyxl.styles import PatternFill, Font, Alignment
+    from openpyxl.styles import PatternFill, Font, Alignment, Border
 
     _base      = Path(__file__).parent / "planilhas"
     xlsx_path  = _base / "CONTAS-A-RECEBER.xlsx"
@@ -2551,6 +2551,14 @@ def exportar_inadimplencia():
         for attr, val in kwargs.items():
             setattr(cell, attr, val)
 
+    _no_border = Border()
+
+    def _clear_borders(ws):
+        for row in ws.iter_rows():
+            for cell in row:
+                if not isinstance(cell, MergedCell):
+                    cell.border = _no_border
+
     # ── Aba 1: Resumo Executivo ───────────────────────────────────────────────
     ws1 = wb["Resumo Executivo"]
 
@@ -2626,6 +2634,8 @@ def exportar_inadimplencia():
     _safe_set(ws1["E5"], value=f"=H{T_ROW1}")
     _safe_set(ws1["H5"], value=f"=I{T_ROW1}")
 
+    _clear_borders(ws1)
+
     # ── Aba 2: Detalhamento por Cliente ──────────────────────────────────────
     ws2 = wb["Detalhamento por Cliente"]
 
@@ -2674,6 +2684,8 @@ def exportar_inadimplencia():
                       value=f"=SUM({letter}{D_INI2}:{letter}{last_det})",
                       fill=F_TOT_ROW, font=F_TOT_FONT,
                       number_format=FMT_BRL, alignment=_align("right"))
+
+    _clear_borders(ws2)
 
     # ── Aba 3: Análise por Etapa ──────────────────────────────────────────────
     ws3 = wb["Análise por Etapa"]
