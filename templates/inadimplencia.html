@@ -717,6 +717,121 @@
     background: #fff;
   }
   .filter-val-input:focus { border-color: var(--primary); }
+
+  /* ── Search dropdown suggestions ── */
+  .search-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    z-index: 200;
+    overflow: hidden;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .search-dropdown-item {
+    padding: 9px 14px;
+    font-size: 0.84rem;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .1s;
+  }
+  .search-dropdown-item:last-child { border-bottom: none; }
+  .search-dropdown-item:hover, .search-dropdown-item.active { background: #f0f9ff; }
+  .search-dropdown-item .dd-nome { font-weight: 600; flex: 1; }
+  .search-dropdown-item .dd-qtd {
+    font-size: 0.72rem; font-weight: 600;
+    background: #e0f2fe; color: #0369a1;
+    padding: 2px 7px; border-radius: 99px; white-space: nowrap;
+  }
+
+  /* ── Debt detail panel ── */
+  .debitos-panel {
+    margin-top: 10px;
+    background: #fff;
+    border: 1.5px solid #bae6fd;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(3,105,161,.13);
+    overflow: hidden;
+  }
+  .debitos-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px 10px;
+    background: #f0f9ff;
+    border-bottom: 1px solid #bae6fd;
+  }
+  .debitos-panel-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0369a1;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .debitos-panel-close {
+    background: none; border: none; cursor: pointer;
+    color: #64748b; padding: 2px; display: flex; align-items: center;
+    transition: color .12s;
+  }
+  .debitos-panel-close:hover { color: #dc2626; }
+  .debitos-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  .debitos-table th {
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .debitos-table td {
+    padding: 9px 14px;
+    color: #374151;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  .debitos-table tbody tr:last-child td { border-bottom: none; }
+  .debitos-table tbody tr:hover { background: #f8fafc; }
+  .debitos-table .td-num { font-weight: 600; color: #0f172a; }
+  .debitos-table .td-val { font-weight: 600; color: #0f172a; white-space: nowrap; }
+  .btn-copy-fatura {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border: 1.5px solid #93c5fd;
+    background: #eff6ff; color: #1d4ed8;
+    border-radius: 6px; font-size: 0.72rem; font-weight: 600;
+    font-family: inherit; cursor: pointer; white-space: nowrap;
+    transition: background .12s, color .12s;
+  }
+  .btn-copy-fatura:hover { background: #dbeafe; }
+  .btn-copy-fatura.copied { background: #166534; color: #bbf7d0; border-color: #166534; }
+  .debitos-panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #0369a1;
+    color: #fff;
+  }
+  .debitos-panel-footer .fp-lbl {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; opacity: .85;
+  }
+  .debitos-panel-footer .fp-val {
+    font-size: 1rem; font-weight: 800;
+  }
 </style>
 {% endblock %}
 
@@ -897,8 +1012,39 @@
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input type="text" id="search-nome" placeholder="Buscar por nome do cliente…"
+               autocomplete="off"
                style="width:100%;padding:6px 10px 6px 30px;border:1.5px solid var(--border);border-radius:8px;font-size:0.83rem;font-family:inherit;color:var(--text);outline:none;transition:border-color .12s;background:#fff;box-sizing:border-box;">
+        <!-- Dropdown de sugestões -->
+        <div id="search-dropdown" class="search-dropdown" style="display:none;"></div>
       </div>
+
+      <!-- Painel de débitos do cliente selecionado -->
+      <div id="debitos-panel" class="debitos-panel" style="display:none;">
+        <div class="debitos-panel-header">
+          <span class="debitos-panel-title" id="debitos-panel-nome"></span>
+          <button class="debitos-panel-close" onclick="fecharDebitosPanel()" title="Fechar">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <table class="debitos-table">
+          <thead>
+            <tr>
+              <th>Nº Fatura</th>
+              <th>Vencimento</th>
+              <th>Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="debitos-panel-tbody"></tbody>
+        </table>
+        <div class="debitos-panel-footer">
+          <span class="fp-lbl">Total</span>
+          <span class="fp-val" id="debitos-panel-total"></span>
+        </div>
+      </div>
+
       <!-- Resumo do cliente (aparece durante a busca) -->
       <div id="search-summary" style="display:none;
            margin-top:10px; background:#f0f9ff; border:1px solid #bae6fd;
@@ -1250,6 +1396,20 @@ const _fin = [
   }{% if not loop.last %},{% endif %}
   {% endfor %}
 ];
+
+/* Per-invoice detail data for debt panel */
+const _detalhe = [
+  {% for r in registros %}
+  {
+    nome:     {{ r.nome | tojson }},
+    nomeN:    {{ r.nome | lower | tojson }},
+    num_doc:  {{ r.num_doc | tojson }},
+    venc:     {{ r.data_vencimento | tojson }},
+    valor_s:  {{ r.valor_s | tojson }},
+    valor:    {{ r._valor }}
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
 </script>
 
 <script>
@@ -1456,13 +1616,113 @@ const _fin = [
     box.style.display = '';
   }
 
-  /* Search */
-  var searchInput = document.getElementById('search-nome');
+  /* ── Search dropdown + debt panel ── */
+  var searchInput   = document.getElementById('search-nome');
+  var dropdown      = document.getElementById('search-dropdown');
+  var debitosPanel  = document.getElementById('debitos-panel');
+  var debitosTbody  = document.getElementById('debitos-panel-tbody');
+  var debitosNome   = document.getElementById('debitos-panel-nome');
+  var debitosTotal  = document.getElementById('debitos-panel-total');
+
+  function fecharDropdown() {
+    if (dropdown) dropdown.style.display = 'none';
+  }
+
+  window.fecharDebitosPanel = function () {
+    if (debitosPanel) debitosPanel.style.display = 'none';
+  };
+
+  function abrirDebitosPanel(nomeExato) {
+    if (!debitosPanel || !debitosTbody) return;
+    var itens = _detalhe.filter(function (r) { return r.nome === nomeExato; });
+    if (!itens.length) return;
+
+    if (debitosNome) debitosNome.textContent = nomeExato;
+
+    var soma = 0;
+    var rows = itens.map(function (r) {
+      soma += r.valor || 0;
+      var numDoc = r.num_doc || '—';
+      var copyData = 'Fatura: ' + numDoc + ' | Vencimento: ' + r.venc + ' | Valor: ' + r.valor_s;
+      return '<tr>' +
+        '<td class="td-num">' + numDoc + '</td>' +
+        '<td>' + r.venc + '</td>' +
+        '<td class="td-val">' + r.valor_s + '</td>' +
+        '<td><button class="btn-copy-fatura" onclick="copiarFatura(this)" data-txt="' + copyData.replace(/"/g, '&quot;') + '">' +
+          '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+          '</svg>' +
+          'Copiar' +
+        '</button></td>' +
+        '</tr>';
+    }).join('');
+
+    debitosTbody.innerHTML = rows;
+    if (debitosTotal) debitosTotal.textContent = _brlFmt(soma);
+    debitosPanel.style.display = '';
+  }
+
+  window.copiarFatura = function (btn) {
+    var txt = btn.dataset.txt;
+    if (!txt) return;
+    function fb() {
+      var orig = btn.innerHTML;
+      btn.textContent = 'Copiado!';
+      btn.classList.add('copied');
+      setTimeout(function () { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(fb).catch(function () { fallback(txt); fb(); });
+    } else { fallback(txt); fb(); }
+  };
+
+  function mostrarDropdown(txt) {
+    if (!dropdown || !txt) { fecharDropdown(); return; }
+    var vistos = {};
+    var sugestoes = [];
+    _detalhe.forEach(function (r) {
+      if (r.nomeN.indexOf(txt) !== -1 && !vistos[r.nome]) {
+        vistos[r.nome] = true;
+        var qtd = _detalhe.filter(function (x) { return x.nome === r.nome; }).length;
+        sugestoes.push({ nome: r.nome, qtd: qtd });
+      }
+    });
+    if (!sugestoes.length) { fecharDropdown(); return; }
+    dropdown.innerHTML = sugestoes.map(function (s) {
+      return '<div class="search-dropdown-item" data-nome="' + s.nome.replace(/"/g, '&quot;') + '">' +
+        '<span class="dd-nome">' + s.nome + '</span>' +
+        '<span class="dd-qtd">' + s.qtd + ' fatura' + (s.qtd !== 1 ? 's' : '') + '</span>' +
+        '</div>';
+    }).join('');
+    dropdown.querySelectorAll('.search-dropdown-item').forEach(function (item) {
+      item.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        var nome = item.dataset.nome;
+        searchInput.value = nome;
+        searchTxt = nome.toLowerCase();
+        applyAll();
+        atualizarResumo(searchTxt);
+        abrirDebitosPanel(nome);
+        fecharDropdown();
+      });
+    });
+    dropdown.style.display = '';
+  }
+
   if (searchInput) {
     searchInput.addEventListener('input', function () {
       searchTxt = searchInput.value.trim().toLowerCase();
       applyAll();
       atualizarResumo(searchTxt);
+      mostrarDropdown(searchTxt);
+      if (!searchTxt) window.fecharDebitosPanel();
+    });
+    searchInput.addEventListener('blur', function () {
+      setTimeout(fecharDropdown, 150);
+    });
+    searchInput.addEventListener('focus', function () {
+      if (searchInput.value.trim()) mostrarDropdown(searchInput.value.trim().toLowerCase());
     });
   }
 
