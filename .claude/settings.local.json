@@ -45,7 +45,11 @@
       "Bash(awk NR>=3965 && NR<=4060 *)",
       "Bash(awk NR>=540 && NR<=580 *)",
       "Bash(awk NR>=3600 && NR<=3625 *)",
-      "Bash(PYTHONPATH=/Users/karol/Documents/Dashboard-Ativuz/.venv/Lib/site-packages python3 *)"
+      "Bash(PYTHONPATH=/Users/karol/Documents/Dashboard-Ativuz/.venv/Lib/site-packages python3 *)",
+      "Bash(curl *)",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(pip3 show *)",
+      "Bash(pip3 install *)"
     ]
   }
 }
