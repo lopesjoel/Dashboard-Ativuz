@@ -272,6 +272,45 @@
 .adm-ctrl-prog { margin-bottom:14px; }
 .adm-ctrl-prog-bar { height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:4px; }
 .adm-ctrl-prog-fill { height:100%; border-radius:3px; background:#22a06b; transition:width .4s; }
+
+/* ── INVESTIDORES ── */
+.inv-section { font-size:13px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.06em; margin:28px 0 10px; border-left:3px solid #6366f1; padding-left:8px; }
+.inv-bloco { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:18px; }
+.inv-bloco-title { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:14px; }
+.inv-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .inv-cards { grid-template-columns:1fr; } }
+.inv-card { border:1px solid var(--line); border-radius:10px; padding:16px; background:var(--bg); }
+.inv-card-head { font-size:12px; font-weight:800; color:var(--ink-2); text-transform:uppercase; letter-spacing:.04em; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+.inv-card-head.byd  { color:#6366f1; }
+.inv-card-head.polo { color:#0ea5e9; }
+.inv-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+.inv-row:last-child { border-bottom:none; }
+.inv-row-lbl { color:var(--ink-3); }
+.inv-row-val { font-weight:600; color:var(--ink-1); }
+.inv-row-val.green  { color:#22a06b; }
+.inv-row-val.purple { color:#6366f1; }
+.inv-row-val.red    { color:#ef4444; }
+.inv-input-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+.inv-input-row label { color:var(--ink-3); }
+.inv-input-num { width:110px; border:1px solid var(--line); border-radius:6px; padding:4px 8px; font-size:12.5px; color:var(--ink-1); background:var(--bg); text-align:right; }
+.inv-input-num:focus { outline:none; border-color:#6366f1; }
+.inv-calc-out { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+@media(max-width:600px){ .inv-calc-out { grid-template-columns:1fr; } }
+.inv-out-card { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+.inv-out-lbl { font-size:11px; color:var(--ink-3); margin-bottom:2px; }
+.inv-out-val { font-size:15px; font-weight:700; color:var(--ink-1); }
+.inv-out-val.green  { color:#22a06b; }
+.inv-out-val.purple { color:#6366f1; }
+.inv-out-val.orange { color:#f59e0b; }
+.inv-chart-wrap { position:relative; height:260px; margin-top:8px; }
+.inv-perf-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.inv-perf-table th { padding:8px 10px; text-align:left; font-size:11px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.04em; border-bottom:2px solid var(--line); }
+.inv-perf-table td { padding:8px 10px; border-bottom:1px solid var(--line); color:var(--ink-1); }
+.inv-perf-table tr:last-child td { border-bottom:none; }
+.inv-badge { display:inline-block; padding:2px 7px; border-radius:20px; font-size:11px; font-weight:700; }
+.inv-badge.green  { background:#f0fdf4; color:#15803d; }
+.inv-badge.orange { background:#fff7ed; color:#c2410c; }
+.inv-badge.red    { background:#fff1f2; color:#be123c; }
 </style>
 {% endblock %}
 
@@ -286,6 +325,7 @@
   <div class="fr-tabs">
     <button class="fr-tab-btn active" id="tab-btn-propria" onclick="frTabSwitch('propria')">Frota Própria Ativa</button>
     <button class="fr-tab-btn" id="tab-btn-adm" onclick="frTabSwitch('adm')">Sob Administração</button>
+    <button class="fr-tab-btn" id="tab-btn-inv" onclick="frTabSwitch('investidores')">Investidores</button>
   </div>
 
   <!-- ══ ABA: FROTA PRÓPRIA ATIVA ══ -->
@@ -458,6 +498,61 @@
 
   </div>{# /tab-adm #}
 
+  <!-- ══ ABA: INVESTIDORES ══ -->
+  <div id="tab-investidores" style="display:none">
+    <p style="font-size:12.5px;color:var(--ink-3);margin:-8px 0 20px;">Análise de rentabilidade · Frota Sob Administração (BYD) · 85% do aluguel semanal ao investidor</p>
+
+    <p class="inv-section">Comparação de Modelos</p>
+    <div class="inv-bloco">
+      <div class="inv-bloco-title">Rentabilidade Estimada — aluguel semanal contratado · 85% ao investidor · manutenção descontada</div>
+      <div class="inv-cards" id="inv-compare-cards">
+        <div style="color:var(--ink-3);font-size:13px;padding:10px 0">Carregando dados...</div>
+      </div>
+    </div>
+
+    <p class="inv-section">Calculadora de Retorno (BYD)</p>
+    <div class="inv-bloco">
+      <div class="inv-bloco-title">Simulador de ROI · Parâmetros Editáveis</div>
+      <div class="inv-input-row">
+        <label for="inv-aquisicao">Preço de Aquisição</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--ink-3)">R$</span>
+          <input type="number" class="inv-input-num" id="inv-aquisicao" value="102000" min="1" step="1000" oninput="invCalcUpdate()">
+        </div>
+      </div>
+      <div class="inv-input-row" style="border-bottom:none">
+        <label for="inv-manutencao">Manutenção Mensal (por veículo)</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--ink-3)">R$</span>
+          <input type="number" class="inv-input-num" id="inv-manutencao" value="1700" min="0" step="100" oninput="invCalcUpdate()">
+          <span style="font-size:11px;color:var(--ink-3)" id="inv-manut-nota">× 3 BYDs = R$ 5.100</span>
+        </div>
+      </div>
+      <div class="inv-calc-out" id="inv-calc-out"></div>
+    </div>
+
+    <p class="inv-section">Recuperação do Investimento</p>
+    <div class="inv-bloco">
+      <div class="inv-bloco-title">Projeção acumulada — renda líquida mensal vs valor de aquisição (BYD)</div>
+      <div class="inv-chart-wrap">
+        <canvas id="inv-chart-payback"></canvas>
+      </div>
+    </div>
+
+    <p class="inv-section">Desempenho Real por Veículo</p>
+    <div class="inv-bloco" id="inv-perf-bloco">
+      <div style="color:var(--ink-3);font-size:13px;padding:8px 0">Carregando...</div>
+    </div>
+
+    <p class="inv-section">Projeção Mensal de Recebimentos</p>
+    <div class="inv-bloco">
+      <div class="inv-bloco-title">Distribuição mensal · Recebido · Pendente · Futuro (perspectiva do investidor · 85%)</div>
+      <div class="inv-chart-wrap">
+        <canvas id="inv-chart-proj"></canvas>
+      </div>
+    </div>
+  </div>{# /tab-investidores #}
+
 </div>{# /fr-wrap #}
 
 <!-- Modal de edição por código FIPE -->
@@ -506,11 +601,14 @@
 <script>
 /* ── Troca de sub-abas ── */
 function frTabSwitch(tab) {
-  document.getElementById('tab-propria').style.display = tab === 'propria' ? '' : 'none';
-  document.getElementById('tab-adm').style.display     = tab === 'adm'     ? '' : 'none';
+  document.getElementById('tab-propria').style.display      = tab === 'propria'      ? '' : 'none';
+  document.getElementById('tab-adm').style.display          = tab === 'adm'          ? '' : 'none';
+  document.getElementById('tab-investidores').style.display = tab === 'investidores' ? '' : 'none';
   document.getElementById('tab-btn-propria').classList.toggle('active', tab === 'propria');
   document.getElementById('tab-btn-adm').classList.toggle('active', tab === 'adm');
-  if (tab === 'adm') admCarregar();
+  document.getElementById('tab-btn-inv').classList.toggle('active', tab === 'investidores');
+  if (tab === 'adm' || tab === 'investidores') admCarregar();
+  if (tab === 'investidores') { setTimeout(function(){ if (window.invRenderAll) invRenderAll(); }, 0); }
 }
 </script>
 <script>
@@ -558,6 +656,7 @@ window.admCarregar = function admCarregar() {
       _admLoaded = true;
       renderAll();
       document.getElementById('adm-content').style.display = '';
+      if (window.invRenderAll) invRenderAll();
     })
     .catch(function (e) {
       document.getElementById('adm-loading').style.display = 'none';
@@ -957,6 +1056,8 @@ function renderTabela() {
       '</tr>';
   }).join('');
 }
+
+window._getAdmData = function() { return _admData; };
 
 })();
 </script>
@@ -1546,6 +1647,234 @@ renderComp();
 sortAndRender();
 renderLineChart();
 renderDoughnutChart();
+
+})();
+</script>
+<script>
+/* ══ INVESTIDORES ══ */
+(function () {
+'use strict';
+
+var _invChartPayback = null;
+var _invChartProj    = null;
+var _invRendered     = false;
+
+var CDI_AA   = 12.0;   /* % */
+var POUP_AA  = 6.17;   /* % */
+var SEMANAS_ANO = 52;
+
+function brl(v) {
+  if (v == null || isNaN(v)) return '—';
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getParams() {
+  var aq = parseFloat(document.getElementById('inv-aquisicao').value)   || 102000;
+  var ma = parseFloat(document.getElementById('inv-manutencao').value)  || 1700;
+  return { aquisicao: aq, manutencao: ma };
+}
+
+function calcMetrics(valor_semanal, params) {
+  var inv_sem  = valor_semanal * 0.85;
+  var inv_mes  = inv_sem * (SEMANAS_ANO / 12);
+  var liq_mes  = inv_mes - params.manutencao;
+  var yield_aa = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
+  var payback  = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
+  return { inv_sem: inv_sem, inv_mes: inv_mes, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback };
+}
+
+/* ── Bloco 1: Comparação de Modelos ── */
+function renderComparacao(data) {
+  var params = getParams();
+  var modelos = [
+    { label: 'BYD (Elétrico)', cls: 'byd', valor_semanal: 1200, aquisicao: params.aquisicao },
+    { label: 'Polo (Combustão)', cls: 'polo', valor_semanal: 800,  aquisicao: 80000 }
+  ];
+  var html = modelos.map(function(m) {
+    var p = { aquisicao: m.aquisicao, manutencao: params.manutencao };
+    var c = calcMetrics(m.valor_semanal, p);
+    var diffCDI   = (c.yield_aa - CDI_AA).toFixed(1);
+    var diffPoup  = (c.yield_aa - POUP_AA).toFixed(1);
+    var cdiCls    = diffCDI >= 0 ? 'green' : 'red';
+    var poupCls   = diffPoup >= 0 ? 'green' : 'red';
+    return '<div class="inv-card">' +
+      '<div class="inv-card-head ' + m.cls + '">' + m.label + '</div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Aluguel semanal</span><span class="inv-row-val">R$ ' + brl(m.valor_semanal) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Renda bruta semanal (85%)</span><span class="inv-row-val">R$ ' + brl(c.inv_sem) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Renda bruta mensal</span><span class="inv-row-val">R$ ' + brl(c.inv_mes) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Manutenção mensal</span><span class="inv-row-val red">− R$ ' + brl(params.manutencao) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Renda líquida mensal</span><span class="inv-row-val green">R$ ' + brl(c.liq_mes) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Aquisição estimada</span><span class="inv-row-val">R$ ' + brl(m.aquisicao) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Yield a.a.</span><span class="inv-row-val purple">' + c.yield_aa.toFixed(1) + '%</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Payback</span><span class="inv-row-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">vs CDI (' + CDI_AA + '% a.a.)</span><span class="inv-row-val ' + cdiCls + '">' + (diffCDI >= 0 ? '+' : '') + diffCDI + ' p.p.</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">vs Poupança (' + POUP_AA + '% a.a.)</span><span class="inv-row-val ' + poupCls + '">' + (diffPoup >= 0 ? '+' : '') + diffPoup + ' p.p.</span></div>' +
+      '</div>';
+  }).join('');
+  document.getElementById('inv-compare-cards').innerHTML = html;
+}
+
+/* ── Bloco 2: Calculadora ── */
+function renderCalc() {
+  var params = getParams();
+  var c = calcMetrics(1200, params);
+  var nota = document.getElementById('inv-manut-nota');
+  if (nota) nota.textContent = '× 3 BYDs = R$ ' + brl(params.manutencao * 3);
+
+  var diffCDI  = (c.yield_aa - CDI_AA).toFixed(1);
+  var diffPoup = (c.yield_aa - POUP_AA).toFixed(1);
+  var html =
+    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Semanal (85%)</div><div class="inv-out-val">R$ ' + brl(c.inv_sem) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Mensal</div><div class="inv-out-val">R$ ' + brl(c.inv_mes) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Manutenção Mensal (cobrada do investidor)</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Líquida Mensal</div><div class="inv-out-val green">R$ ' + brl(c.liq_mes) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Yield Anual (a.a.)</div><div class="inv-out-val purple">' + c.yield_aa.toFixed(1) + '%</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Payback Estimado</div><div class="inv-out-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-out-val ' + (diffCDI >= 0 ? 'green' : 'red') + '">' + (diffCDI >= 0 ? '+' : '') + diffCDI + ' p.p.</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">vs Poupança (' + POUP_AA + '% a.a.)</div><div class="inv-out-val ' + (diffPoup >= 0 ? 'green' : 'red') + '">' + (diffPoup >= 0 ? '+' : '') + diffPoup + ' p.p.</div></div>';
+  document.getElementById('inv-calc-out').innerHTML = html;
+}
+
+/* ── Bloco 3: Gráfico Payback ── */
+function renderPaybackChart() {
+  var params = getParams();
+  var c = calcMetrics(1200, params);
+  var meses = [];
+  var acum  = [];
+  var teto  = [];
+  var paybackMes = isFinite(c.payback) ? Math.ceil(c.payback) : 60;
+  var maxMes = Math.max(paybackMes + 6, 48);
+  for (var i = 0; i <= maxMes; i++) {
+    meses.push('M' + i);
+    acum.push(parseFloat((i * c.liq_mes).toFixed(2)));
+    teto.push(params.aquisicao);
+  }
+  var ctx = document.getElementById('inv-chart-payback');
+  if (!ctx) return;
+  if (_invChartPayback) { _invChartPayback.destroy(); _invChartPayback = null; }
+  _invChartPayback = new Chart(ctx.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: meses,
+      datasets: [
+        { label: 'Renda Acumulada (líq.)', data: acum, borderColor: '#22a06b', backgroundColor: 'rgba(34,160,107,.12)', fill: true, tension: .3, pointRadius: 2 },
+        { label: 'Aquisição (R$ ' + brl(params.aquisicao) + ')', data: teto, borderColor: '#ef4444', borderDash: [6,3], pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 11 } } }, tooltip: { callbacks: { label: function(c) { return c.dataset.label + ': R$ ' + brl(c.parsed.y); } } } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+        y: { ticks: { callback: function(v) { return 'R$' + (v/1000).toFixed(0) + 'k'; }, font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+/* ── Bloco 4: Desempenho Real ── */
+function renderDesempenho(data) {
+  if (!data || !data.length) {
+    document.getElementById('inv-perf-bloco').innerHTML = '<p style="color:var(--ink-3);font-size:13px">Sem dados disponíveis.</p>';
+    return;
+  }
+  var rows = data.map(function(v) {
+    var semanas = v.semanas || [];
+    var passadas = semanas.filter(function(s){ return s.passada; });
+    var recebidas = passadas.filter(function(s){ return s.recebido; });
+    var efic = passadas.length > 0 ? (recebidas.length / passadas.length * 100) : 0;
+    var inv_rec  = v.recebido_total  * (85 / 15);
+    var inv_pend = v.pendente_total  * (85 / 15);
+    var badgeCls = efic >= 80 ? 'green' : efic >= 50 ? 'orange' : 'red';
+    return '<tr>' +
+      '<td><strong>' + v.placa + '</strong></td>' +
+      '<td>' + (v.modelo || '—') + '</td>' +
+      '<td>' + (v.proprietario || '—') + '</td>' +
+      '<td>' + passadas.length + '</td>' +
+      '<td>' + recebidas.length + '</td>' +
+      '<td><span class="inv-badge ' + badgeCls + '">' + efic.toFixed(0) + '%</span></td>' +
+      '<td style="color:#22a06b;font-weight:600">R$ ' + brl(inv_rec) + '</td>' +
+      '<td style="color:#f59e0b;font-weight:600">R$ ' + brl(inv_pend) + '</td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('inv-perf-bloco').innerHTML =
+    '<div class="inv-bloco-title">Semanas ativas · eficiência de recebimento · rendimento real</div>' +
+    '<div style="overflow-x:auto"><table class="inv-perf-table">' +
+    '<thead><tr><th>Placa</th><th>Modelo</th><th>Proprietário</th><th>Sem. Ativas</th><th>Recebidas</th><th>Eficiência</th><th>Rec. Investidor</th><th>Pendente Inv.</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody>' +
+    '</table></div>';
+}
+
+/* ── Bloco 5: Projeção Mensal ── */
+function renderProjecao(data) {
+  if (!data || !data.length) return;
+  var meses = {};
+  data.forEach(function(v) {
+    (v.semanas || []).forEach(function(s) {
+      var mes = s.data.substring(0, 7);
+      if (!meses[mes]) meses[mes] = { rec: 0, pend: 0, fut: 0 };
+      var inv_taxa = v.taxa_semanal * (85 / 15);
+      if (!s.passada) {
+        meses[mes].fut += inv_taxa;
+      } else if (s.recebido) {
+        meses[mes].rec += inv_taxa;
+      } else {
+        meses[mes].pend += inv_taxa;
+      }
+    });
+  });
+  var labels = Object.keys(meses).sort();
+  var rec   = labels.map(function(m){ return parseFloat(meses[m].rec.toFixed(2)); });
+  var pend  = labels.map(function(m){ return parseFloat(meses[m].pend.toFixed(2)); });
+  var fut   = labels.map(function(m){ return parseFloat(meses[m].fut.toFixed(2)); });
+  var ctx = document.getElementById('inv-chart-proj');
+  if (!ctx) return;
+  if (_invChartProj) { _invChartProj.destroy(); _invChartProj = null; }
+  _invChartProj = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Recebido', data: rec,  backgroundColor: 'rgba(34,160,107,.75)',  borderRadius: 3 },
+        { label: 'Pendente', data: pend, backgroundColor: 'rgba(245,158,11,.75)', borderRadius: 3 },
+        { label: 'Futuro',   data: fut,  backgroundColor: 'rgba(99,102,241,.55)', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 11 } } }, tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': R$ ' + brl(c.parsed.y); } } } },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 } } },
+        y: { stacked: true, ticks: { callback: function(v){ return 'R$' + (v/1000).toFixed(1) + 'k'; }, font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+/* ── Entry point ── */
+window.invCalcUpdate = function() {
+  var params = getParams();
+  localStorage.setItem('inv_aquisicao',  params.aquisicao);
+  localStorage.setItem('inv_manutencao', params.manutencao);
+  var data = window._getAdmData ? window._getAdmData() : null;
+  renderComparacao(data);
+  renderCalc();
+  renderPaybackChart();
+};
+
+window.invRenderAll = function() {
+  var data = window._getAdmData ? window._getAdmData() : null;
+  /* restore saved params */
+  var aqSaved = localStorage.getItem('inv_aquisicao');
+  var maSaved = localStorage.getItem('inv_manutencao');
+  if (aqSaved) document.getElementById('inv-aquisicao').value  = aqSaved;
+  if (maSaved) document.getElementById('inv-manutencao').value = maSaved;
+  renderComparacao(data);
+  renderCalc();
+  renderPaybackChart();
+  renderDesempenho(data);
+  renderProjecao(data);
+};
 
 })();
 </script>

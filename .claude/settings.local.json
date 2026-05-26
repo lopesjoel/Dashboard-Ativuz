@@ -49,7 +49,10 @@
       "Bash(curl *)",
       "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
       "Bash(pip3 show *)",
-      "Bash(pip3 install *)"
+      "Bash(pip3 install *)",
+      "Bash(venv/bin/pip install *)",
+      "Bash(PORT=5555 venv/bin/python app.py)",
+      "Bash(echo \"Status: $?\")"
     ]
   }
 }
