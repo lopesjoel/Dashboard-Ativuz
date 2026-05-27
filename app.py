@@ -2420,12 +2420,15 @@ def pagina_inadimplencia():
 def exportar_inadimplencia():
     import openpyxl
     from openpyxl.styles import PatternFill, Font, Alignment, Border
+    from openpyxl.cell.cell import MergedCell
+    from collections import defaultdict
 
     _base      = Path(__file__).parent / "planilhas"
     xlsx_path  = _base / "CONTAS-A-RECEBER.xlsx"
-    modelo     = _base / "relatorio_inadimplencia_modelo.xlsx"
+    modelo     = _base / "Template_Inadimplencia.xlsx"
     hoje       = date.today()
     hoje_str   = hoje.strftime("%d/%m/%Y")
+    hoje_fname = hoje.strftime("%d.%m.%y")
 
     # ── Re-lê e calcula registros (mesma lógica de pagina_inadimplencia) ──────
     registros = []
@@ -2497,6 +2500,11 @@ def exportar_inadimplencia():
                 juros      = multa + juros_mora
                 total      = valor + juros
 
+                _ETAPA_SHORT = {
+                    "Hoje": "Hoje", "Terça-feira": "Terça", "Quarta-feira": "Quarta",
+                    "Quinta-feira": "Quinta", "Sexta-feira": "Sexta",
+                    "D+5": "D+5", "D+7": "D+7", "D+10": "D+10", "D+15": "D+15",
+                }
                 if   dias == 0:     etapa, proxima = "Hoje",         "Enviar lembrete de vencimento"
                 elif dias == 1:     etapa, proxima = "Terça-feira",  "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
                 elif dias == 2:     etapa, proxima = "Quarta-feira", "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
@@ -2507,10 +2515,9 @@ def exportar_inadimplencia():
                 elif dias <= 14:    etapa, proxima = "D+10", "Negativação no SPC/Serasa + encaminhamento jurídico"
                 else:               etapa, proxima = "D+15", "Processo judicial iniciado — recolhimento imediato do veículo"
 
-                doc = str(_gv(row, i_doc) or "").strip() or str(_gv(row, i_unid) or "").strip()
                 registros.append({
-                    "nome": nome, "etapa": etapa, "proxima": proxima,
-                    "vencimento": venc_date.strftime("%d/%m/%Y"), "dias": dias,
+                    "nome": nome, "etapa": etapa, "etapa_short": _ETAPA_SHORT.get(etapa, etapa),
+                    "proxima": proxima, "vencimento": venc_date.strftime("%d/%m/%Y"), "dias": dias,
                     "valor": valor, "juros": juros + multa, "total": total,
                 })
         except Exception:
@@ -2518,31 +2525,34 @@ def exportar_inadimplencia():
 
     # ── Gera Excel ────────────────────────────────────────────────────────────
     def _fill(hex6): return PatternFill("solid", fgColor=hex6)
-    def _font(bold=False, color="000000", size=10):
-        return Font(bold=bold, color=color, size=size)
     def _align(h="center", v="center", wrap=False):
         return Alignment(horizontal=h, vertical=v, wrap_text=wrap)
 
-    F_HEADER  = _fill("1A3A5C"); F_SUBHDR  = _fill("1A5276")
-    F_ROW_ODD = _fill("F2F3F4"); F_ROW_EVN = _fill("FFFFFF")
-    F_ETAPA   = _fill("C0392B"); F_VALOR   = _fill("D6EAF8")
-    F_JUROS   = _fill("FADBD8"); F_TOTAL   = _fill("D5F5E3")
-    F_ACAO    = _fill("FEF9E7"); F_DET_ODD = _fill("D6EAF8")
-    F_WHITE   = Font(color="FFFFFF", bold=True, size=9)
-    F_BLACK   = Font(color="000000", size=10)
-    F_BOLD    = Font(color="000000", bold=True, size=10)
+    F_ROW_ODD = _fill("F0F4FA")
+    F_ROW_EVN = _fill("FFFFFF")
+    F_VALOR   = _fill("EFF6FF")
+    F_JUROS   = _fill("FFF7ED")
+    F_TOTAL_C = _fill("1E3A5F")
     FMT_BRL   = '#,##0.00'
 
-    def badge_dias(dias):
-        if dias >= 180: return _fill("C0392B"), Font(color="FFFFFF", bold=True, size=9)
-        if dias >= 60:  return _fill("E67E22"), Font(color="FFFFFF", bold=True, size=9)
-        return _fill("FEF9E7"), Font(color="7D6608", size=10)
+    # Cor de fundo por etapa (coluna Etapa)
+    _ETAPA_BG = {
+        "Hoje": "2563EB", "Terça": "1D4ED8", "Quarta": "1E40AF",
+        "Quinta": "D97706", "Sexta": "B45309",
+        "D+5": "DC2626", "D+7": "B91C1C", "D+10": "991B1B", "D+15": "7F1D1D",
+    }
+    _ETAPA_PRIO = {
+        "Hoje": 1, "Terça": 2, "Quarta": 3, "Quinta": 4, "Sexta": 5,
+        "D+5": 6, "D+7": 7, "D+10": 8, "D+15": 9,
+    }
 
-    wb = openpyxl.load_workbook(str(modelo))
-    from openpyxl.cell.cell import MergedCell
+    def _safe_set(cell, **kwargs):
+        if isinstance(cell, MergedCell):
+            return
+        for attr, val in kwargs.items():
+            setattr(cell, attr, val)
 
     def _unmerge_area(ws, min_row, max_row, min_col, max_col):
-        """Remove merges que intersectam com a área de dados."""
         to_remove = [
             m for m in list(ws.merged_cells.ranges)
             if m.min_row <= max_row and m.max_row >= min_row
@@ -2551,189 +2561,164 @@ def exportar_inadimplencia():
         for m in to_remove:
             ws.unmerge_cells(str(m))
 
-    def _safe_set(cell, **kwargs):
-        """Escreve em célula ignorando MergedCell (não-master)."""
-        if isinstance(cell, MergedCell):
-            return
-        for attr, val in kwargs.items():
-            setattr(cell, attr, val)
+    wb = openpyxl.load_workbook(str(modelo))
 
-    _no_border = Border()
+    total_valor = sum(r["valor"] for r in registros)
+    total_juros = sum(r["juros"] for r in registros)
+    total_total = sum(r["total"] for r in registros)
+    n = len(registros)
 
-    def _clear_borders(ws):
-        for row in ws.iter_rows():
-            for cell in row:
-                if not isinstance(cell, MergedCell):
-                    cell.border = _no_border
+    F_TOT_FONT = Font(color="FFFFFF", bold=True, size=10)
 
     # ── Aba 1: Resumo Executivo ───────────────────────────────────────────────
     ws1 = wb["Resumo Executivo"]
 
-    # Atualiza data de geração
-    _safe_set(ws1["B3"], value=f"ATIVUZ VEÍCULOS  —  Gerado em: {hoje_str}")
+    _safe_set(ws1["B3"],
+              value=f"ATIVUZ VEÍCULOS  ·  Gerado em: {hoje_str}  ·  Todos os títulos — ordem por maior valor")
 
-    # Colunas: B=Cliente C=Etapa D=Venc E=Dias F:G=Valor(merge) H=Juros I=Total
-    # KPIs: B5=contagem  C5=valor original  E5=juros  H5=total
-    D_INI  = 9
-    D_DATA = 300  # limite de limpeza (garante apagar exports anteriores maiores)
-    D_FIM  = max(D_INI + len(registros) - 1, D_INI)
-    T_ROW1 = D_FIM + 1  # totais sempre logo após o último registro
+    D_INI = 10
+    D_LIM = 300
+    registros_val = sorted(registros, key=lambda x: x["valor"], reverse=True)
+    D_FIM = D_INI + n - 1 if n > 0 else D_INI
 
-    F_TOT_ROW = _fill("1A3A5C")  # fundo escuro igual ao cabeçalho
+    _unmerge_area(ws1, D_INI, D_LIM, 2, 9)
+    for r in range(D_INI, D_LIM + 1):
+        for c in range(2, 9):
+            cell = ws1.cell(row=r, column=c)
+            if not isinstance(cell, MergedCell):
+                cell.value = None
 
-    # Limpa área de dados + totais antiga
-    _unmerge_area(ws1, D_INI, D_DATA, 2, 9)
-    for r in range(D_INI, D_DATA + 1):
-        for c in range(2, 10):
-            _safe_set(ws1.cell(row=r, column=c), value=None)
-
-    # Escreve dados
-    for i, rec in enumerate(registros):
+    for i, rec in enumerate(registros_val):
         r    = D_INI + i
         base = F_ROW_ODD if i % 2 == 0 else F_ROW_EVN
-        bf, bft = badge_dias(rec["dias"])
+        es   = rec["etapa_short"]
+        F_ET = _fill(_ETAPA_BG.get(es, "374151"))
+        F_EF = Font(color="FFFFFF", bold=True, size=9)
 
-        def _w(col, val, fill=None, font=None, fmt=None, align=None):
-            cell = ws1.cell(row=r, column=col)
-            _safe_set(cell,
-                value=val,
-                **({} if fill  is None else {"fill": fill}),
-                **({} if font  is None else {"font": font}),
-                **({} if fmt   is None else {"number_format": fmt}),
-                **({} if align is None else {"alignment": align}),
-            )
+        _safe_set(ws1.cell(r, 2), value=rec["nome"],       fill=base,    font=Font(size=10),              alignment=_align("left"))
+        _safe_set(ws1.cell(r, 3), value=es,                fill=F_ET,    font=F_EF,                       alignment=_align("center"))
+        _safe_set(ws1.cell(r, 4), value=rec["vencimento"], fill=base,    font=Font(size=10),              alignment=_align("center"))
+        _safe_set(ws1.cell(r, 5), value=rec["dias"],       fill=base,    font=Font(size=10),              alignment=_align("center"))
+        _safe_set(ws1.cell(r, 6), value=rec["valor"],      fill=F_VALOR, font=Font(size=10), number_format=FMT_BRL, alignment=_align("right"))
+        _safe_set(ws1.cell(r, 7), value=rec["juros"],      fill=F_JUROS, font=Font(size=10), number_format=FMT_BRL, alignment=_align("right"))
+        _safe_set(ws1.cell(r, 8), value=rec["total"],      fill=F_ROW_EVN, font=Font(bold=True, size=10), number_format=FMT_BRL, alignment=_align("right"))
 
-        _w(2, rec["nome"],      base,    F_BLACK, align=_align("left"))
-        _w(3, rec["etapa"],     F_ETAPA, F_WHITE, align=_align("center"))
-        _w(4, rec["vencimento"],base,    F_BLACK, align=_align("center"))
-        _w(5, rec["dias"],      bf,      bft,     align=_align("center"))
-        _w(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
-        _w(8, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
-        _w(9, f"=F{r}+H{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
-        try:
-            ws1.merge_cells(start_row=r, start_column=6, end_row=r, end_column=7)
-        except Exception:
-            pass
-
-    # Linha de totais dinâmica (logo após último registro)
-    F_TOT_FONT = Font(color="FFFFFF", bold=True, size=10)
-    _safe_set(ws1.cell(row=T_ROW1, column=2),
-              value="TOTAL", fill=F_TOT_ROW, font=F_TOT_FONT, alignment=_align("center"))
+    T_ROW1 = D_FIM + 1
+    _safe_set(ws1.cell(T_ROW1, 2), value="TOTAL", fill=F_TOTAL_C, font=F_TOT_FONT, alignment=_align("center"))
     for col in [3, 4, 5]:
-        _safe_set(ws1.cell(row=T_ROW1, column=col), fill=F_TOT_ROW)
-    _safe_set(ws1.cell(row=T_ROW1, column=6),
-              value=f"=SUM(F{D_INI}:F{D_FIM})", fill=F_TOT_ROW, font=F_TOT_FONT,
-              number_format=FMT_BRL, alignment=_align("right"))
-    _safe_set(ws1.cell(row=T_ROW1, column=8),
-              value=f"=SUM(H{D_INI}:H{D_FIM})", fill=F_TOT_ROW, font=F_TOT_FONT,
-              number_format=FMT_BRL, alignment=_align("right"))
-    _safe_set(ws1.cell(row=T_ROW1, column=9),
-              value=f"=SUM(I{D_INI}:I{D_FIM})", fill=F_TOT_ROW, font=F_TOT_FONT,
-              number_format=FMT_BRL, alignment=_align("right"))
-    try:
-        ws1.merge_cells(start_row=T_ROW1, start_column=6, end_row=T_ROW1, end_column=7)
-    except Exception:
-        pass
+        _safe_set(ws1.cell(T_ROW1, col), fill=F_TOTAL_C)
+    _safe_set(ws1.cell(T_ROW1, 6), value=f"=SUM(F{D_INI}:F{D_FIM})" if n else 0,
+              fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+    _safe_set(ws1.cell(T_ROW1, 7), value=f"=SUM(G{D_INI}:G{D_FIM})" if n else 0,
+              fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+    _safe_set(ws1.cell(T_ROW1, 8), value=f"=SUM(H{D_INI}:H{D_FIM})" if n else 0,
+              fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
 
-    # KPIs no topo referenciam a linha de totais dinâmica
-    _safe_set(ws1["B5"], value=f"=COUNTA(C{D_INI}:C{D_FIM})")
-    _safe_set(ws1["C5"], value=f"=F{T_ROW1}")
-    _safe_set(ws1["E5"], value=f"=H{T_ROW1}")
-    _safe_set(ws1["H5"], value=f"=I{T_ROW1}")
-
-    _clear_borders(ws1)
+    _safe_set(ws1["B7"], value=n)
+    _safe_set(ws1["C7"], value=total_valor, number_format=FMT_BRL)
+    _safe_set(ws1["F7"], value=total_juros, number_format=FMT_BRL)
+    _safe_set(ws1["H7"], value=total_total, number_format=FMT_BRL)
 
     # ── Aba 2: Detalhamento por Cliente ──────────────────────────────────────
     ws2 = wb["Detalhamento por Cliente"]
 
-    D_INI2 = 6
-    D_DAT2 = 300  # limite de limpeza
-    registros_det = sorted(registros, key=lambda x: x["dias"], reverse=True)
-    last_det = D_INI2 + max(len(registros_det) - 1, 0)
-    T_ROW2   = last_det + 1  # totais logo após último registro
+    _safe_set(ws2["B3"],
+              value=f"Valores consolidados por cliente — ordem alfabética  ·  {hoje_str}")
 
-    _unmerge_area(ws2, D_INI2, D_DAT2, 2, 8)
-    for r in range(D_INI2, D_DAT2 + 1):
-        for c in range(2, 9):
-            _safe_set(ws2.cell(row=r, column=c), value=None)
+    clientes_map = defaultdict(lambda: {"etapa_pior": "", "prio": 0, "titulos": 0, "valor": 0.0, "juros": 0.0})
+    for rec in registros:
+        c = clientes_map[rec["nome"]]
+        c["titulos"] += 1
+        c["valor"]   += rec["valor"]
+        c["juros"]   += rec["juros"]
+        p = _ETAPA_PRIO.get(rec["etapa_short"], 0)
+        if p > c["prio"]:
+            c["prio"] = p
+            c["etapa_pior"] = rec["etapa_short"]
 
-    for i, rec in enumerate(registros_det):
+    clientes_sorted = sorted(clientes_map.items(), key=lambda x: x[0])
+    nc = len(clientes_sorted)
+
+    D_INI2 = 10
+    D_FIM2 = D_INI2 + nc - 1 if nc > 0 else D_INI2
+
+    _unmerge_area(ws2, D_INI2, D_LIM, 2, 8)
+    for r in range(D_INI2, D_LIM + 1):
+        for c in range(2, 8):
+            cell = ws2.cell(row=r, column=c)
+            if not isinstance(cell, MergedCell):
+                cell.value = None
+
+    for i, (nome, g) in enumerate(clientes_sorted):
         r    = D_INI2 + i
-        base = F_DET_ODD if i % 2 == 0 else F_ROW_EVN
-        bf, bft = badge_dias(rec["dias"])
+        base = F_ROW_ODD if i % 2 == 0 else F_ROW_EVN
+        F_ET = _fill(_ETAPA_BG.get(g["etapa_pior"], "374151"))
+        F_EF = Font(color="FFFFFF", bold=True, size=9)
+        total_cli = g["valor"] + g["juros"]
 
-        def _wd(col, val, fill=None, font=None, fmt=None, align=None):
-            cell = ws2.cell(row=r, column=col)
-            _safe_set(cell,
-                value=val,
-                **({} if fill  is None else {"fill": fill}),
-                **({} if font  is None else {"font": font}),
-                **({} if fmt   is None else {"number_format": fmt}),
-                **({} if align is None else {"alignment": align}),
-            )
+        _safe_set(ws2.cell(r, 2), value=nome,            fill=base,    font=Font(size=10),              alignment=_align("left"))
+        _safe_set(ws2.cell(r, 3), value=g["etapa_pior"], fill=F_ET,    font=F_EF,                       alignment=_align("center"))
+        _safe_set(ws2.cell(r, 4), value=g["titulos"],    fill=base,    font=Font(size=10),              alignment=_align("center"))
+        _safe_set(ws2.cell(r, 5), value=g["valor"],      fill=F_VALOR, font=Font(size=10), number_format=FMT_BRL, alignment=_align("right"))
+        _safe_set(ws2.cell(r, 6), value=g["juros"],      fill=F_JUROS, font=Font(size=10), number_format=FMT_BRL, alignment=_align("right"))
+        _safe_set(ws2.cell(r, 7), value=total_cli,       fill=F_ROW_EVN, font=Font(bold=True, size=10), number_format=FMT_BRL, alignment=_align("right"))
 
-        _wd(2, rec["nome"],      base,    F_BLACK, align=_align("left"))
-        _wd(3, rec["etapa"],     F_ETAPA, F_WHITE, align=_align("center"))
-        _wd(4, rec["dias"],      bf,      bft,     align=_align("center"))
-        _wd(5, rec["vencimento"],base,    F_BLACK, align=_align("center"))
-        _wd(6, rec["valor"],     F_VALOR, F_BLACK, FMT_BRL, _align("right"))
-        _wd(7, rec["juros"],     F_JUROS, F_BLACK, FMT_BRL, _align("right"))
-        _wd(8, f"=F{r}+G{r}",   F_TOTAL, F_BOLD,  FMT_BRL, _align("right"))
+    T_ROW2 = D_FIM2 + 1
+    _safe_set(ws2.cell(T_ROW2, 2), value="TOTAL GERAL", fill=F_TOTAL_C, font=F_TOT_FONT, alignment=_align("center"))
+    for col in [3, 4]:
+        _safe_set(ws2.cell(T_ROW2, col), fill=F_TOTAL_C)
+    _safe_set(ws2.cell(T_ROW2, 5), value=f"=SUM(E{D_INI2}:E{D_FIM2})" if nc else 0,
+              fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+    _safe_set(ws2.cell(T_ROW2, 6), value=f"=SUM(F{D_INI2}:F{D_FIM2})" if nc else 0,
+              fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+    _safe_set(ws2.cell(T_ROW2, 7), value=f"=SUM(G{D_INI2}:G{D_FIM2})" if nc else 0,
+              fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
 
-    # Linha de totais dinâmica
-    if registros_det:
-        _safe_set(ws2.cell(row=T_ROW2, column=2),
-                  value="TOTAL GERAL", fill=F_TOT_ROW, font=F_TOT_FONT, alignment=_align("center"))
-        for col in [3, 4, 5]:
-            _safe_set(ws2.cell(row=T_ROW2, column=col), fill=F_TOT_ROW)
-        for col, letter in [(6, "F"), (7, "G"), (8, "H")]:
-            _safe_set(ws2.cell(row=T_ROW2, column=col),
-                      value=f"=SUM({letter}{D_INI2}:{letter}{last_det})",
-                      fill=F_TOT_ROW, font=F_TOT_FONT,
-                      number_format=FMT_BRL, alignment=_align("right"))
-
-    _clear_borders(ws2)
+    _safe_set(ws2["B7"], value=nc)
+    _safe_set(ws2["D7"], value=total_valor, number_format=FMT_BRL)
+    _safe_set(ws2["F7"], value=total_total, number_format=FMT_BRL)
 
     # ── Aba 3: Análise por Etapa ──────────────────────────────────────────────
     ws3 = wb["Análise por Etapa"]
 
-    ETAPA_ROWS = {
-        "Hoje": 6, "Terça-feira": 7, "Quarta-feira": 8, "Quinta-feira": 9, "Sexta-feira": 10,
-        "D+5": 11, "D+7": 12, "D+10": 13, "D+15": 14,
+    _safe_set(ws3["B3"],
+              value=f"Resumo consolidado por etapa de cobrança  ·  {hoje_str}")
+
+    ETAPA_ROWS3 = {
+        "Hoje": 10, "Terça": 11, "Quarta": 12, "Quinta": 13, "Sexta": 14,
+        "D+5": 15, "D+7": 16, "D+10": 17, "D+15": 18,
     }
-    from collections import defaultdict
     agrup = defaultdict(lambda: {"n": 0, "valor": 0.0, "juros": 0.0})
     for rec in registros:
-        g = agrup[rec["etapa"]]
+        g = agrup[rec["etapa_short"]]
         g["n"] += 1; g["valor"] += rec["valor"]; g["juros"] += rec["juros"]
 
-    for etapa, row_num in ETAPA_ROWS.items():
-        g = agrup[etapa]
-        _safe_set(ws3.cell(row=row_num, column=3), value=g["n"])
-        _safe_set(ws3.cell(row=row_num, column=4), value=g["valor"],
-                  number_format=FMT_BRL, fill=F_VALOR)
-        _safe_set(ws3.cell(row=row_num, column=5), value=g["juros"],
-                  number_format=FMT_BRL, fill=F_JUROS)
-        _safe_set(ws3.cell(row=row_num, column=6), value=g["valor"] + g["juros"],
-                  number_format=FMT_BRL, fill=F_TOTAL)
+    for etapa_s, row_num in ETAPA_ROWS3.items():
+        g = agrup[etapa_s]
+        total_e = g["valor"] + g["juros"]
+        _safe_set(ws3.cell(row_num, 3), value=g["n"],      alignment=_align("center"))
+        _safe_set(ws3.cell(row_num, 4), value=g["valor"],  number_format=FMT_BRL, fill=F_VALOR)
+        _safe_set(ws3.cell(row_num, 5), value=g["juros"],  number_format=FMT_BRL, fill=F_JUROS)
+        _safe_set(ws3.cell(row_num, 6), value=total_e,     number_format=FMT_BRL)
+        _safe_set(ws3.cell(row_num, 9), value=total_e,     number_format=FMT_BRL)
 
-    # Total row at row 16 for Análise por Etapa
-    F_TOTAL_ROW3 = _fill("1A5276")
-    F_WHITE_BOLD3 = Font(color="FFFFFF", bold=True, size=10)
-    _safe_set(ws3.cell(row=16, column=3), value="=SUM(C6:C14)",
-              fill=F_TOTAL_ROW3, font=F_WHITE_BOLD3, alignment=_align("center"))
-    for col, letter in [(4, "D"), (5, "E"), (6, "F")]:
-        _safe_set(ws3.cell(row=16, column=col),
-                  value=f"=SUM({letter}6:{letter}14)",
-                  number_format=FMT_BRL, fill=F_TOTAL_ROW3,
-                  font=F_WHITE_BOLD3, alignment=_align("right"))
+    # Total row (row 19 já tem label "TOTAL" no template)
+    _safe_set(ws3.cell(19, 3), value="=SUM(C10:C18)", fill=F_TOTAL_C, font=F_TOT_FONT, alignment=_align("center"))
+    _safe_set(ws3.cell(19, 4), value="=SUM(D10:D18)", fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+    _safe_set(ws3.cell(19, 5), value="=SUM(E10:E18)", fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+    _safe_set(ws3.cell(19, 6), value="=SUM(F10:F18)", fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+
+    etapas_ativas = sum(1 for g in agrup.values() if g["n"] > 0)
+    _safe_set(ws3["B7"], value=etapas_ativas)
+    _safe_set(ws3["C7"], value=n)
+    _safe_set(ws3["E7"], value=total_total, number_format=FMT_BRL)
 
     # ── Serve o arquivo ───────────────────────────────────────────────────────
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
 
-    nome_arquivo = f"relatorio_inadimplencia_{hoje.strftime('%d%m%Y')}.xlsx"
+    nome_arquivo = f"Relatório_Inadimplência_{hoje_fname}.xlsx"
     return send_file(
         buf,
         as_attachment=True,
