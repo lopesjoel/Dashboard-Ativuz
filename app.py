@@ -2621,8 +2621,9 @@ def exportar_inadimplencia():
     _safe_set(ws1.cell(T_ROW1, 8), value=f"=SUM(H{D_INI}:H{D_FIM})" if n else 0,
               fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
 
-    # Apaga linhas abaixo do TOTAL (fills do template)
-    _clear_rows(ws1, T_ROW1 + 1, D_LIM, 2, 8)
+    # Exclui linhas abaixo do TOTAL
+    if T_ROW1 + 1 <= D_LIM:
+        ws1.delete_rows(T_ROW1 + 1, D_LIM - T_ROW1)
 
     _safe_set(ws1["B7"], value=n)
     _safe_set(ws1["C7"], value=total_valor, number_format=FMT_BRL)
@@ -2679,8 +2680,9 @@ def exportar_inadimplencia():
     _safe_set(ws2.cell(T_ROW2, 7), value=f"=SUM(G{D_INI2}:G{D_FIM2})" if nc else 0,
               fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
 
-    # Apaga linhas abaixo do TOTAL (fills do template)
-    _clear_rows(ws2, T_ROW2 + 1, D_LIM, 2, 7)
+    # Exclui linhas abaixo do TOTAL
+    if T_ROW2 + 1 <= D_LIM:
+        ws2.delete_rows(T_ROW2 + 1, D_LIM - T_ROW2)
 
     _safe_set(ws2["B7"], value=nc)
     _safe_set(ws2["D7"], value=total_valor, number_format=FMT_BRL)
