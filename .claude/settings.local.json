@@ -75,7 +75,9 @@
       "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz log --oneline -5)",
       "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz status)",
       "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz ls-files planilhas/)",
-      "Bash(railway link *)"
+      "Bash(railway link *)",
+      "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz add railway.toml)",
+      "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz push)"
     ]
   }
 }
