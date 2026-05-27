@@ -909,6 +909,17 @@
 /* ── Inadimplência totals bar ── */
 [data-theme="dark"] .sort-meta-totals strong { color: var(--ink) !important; }
 
+/* ── Inadimplência search input + dropdown ── */
+[data-theme="dark"] .filter-search input      { background: var(--surface-2) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+[data-theme="dark"] .filter-search input::placeholder { color: var(--ink-4) !important; }
+[data-theme="dark"] .filter-val-input         { background: var(--surface-2) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+[data-theme="dark"] .search-dropdown          { background: var(--surface) !important; border-color: var(--line) !important; }
+[data-theme="dark"] .search-dropdown-item     { color: var(--ink-2) !important; border-color: var(--line) !important; }
+[data-theme="dark"] .search-dropdown-item:hover,
+[data-theme="dark"] .search-dropdown-item.active { background: var(--surface-2) !important; }
+[data-theme="dark"] .search-dropdown-item .dd-nome { color: var(--ink) !important; }
+[data-theme="dark"] .search-dropdown-item .dd-qtd  { background: rgba(3,105,161,.25) !important; color: #7dd3fc !important; }
+
 /* ── Shared surfaces ── */
 [data-theme="dark"] .filter-bar,
 [data-theme="dark"] .inad-item,
