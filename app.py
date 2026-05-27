@@ -2361,7 +2361,7 @@ def pagina_inadimplencia():
                                 if r["dias_atraso"] >= 7 and r["reincidente"])
 
     # Clientes críticos
-    _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s"}
+    _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
     _nome_cnt   = Counter(
         r["nome"] for r in registros_vencidos
         if _nh(r["nome"]) not in _EXCLUIR_OCORR
