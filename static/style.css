@@ -952,6 +952,8 @@
 /* ── Judicializado table ── */
 [data-theme="dark"] .jud-th { background: var(--surface-2); color: var(--ink-2); border-color: var(--line); }
 [data-theme="dark"] .jud-td { color: var(--ink-2); border-color: var(--line); }
+[data-theme="dark"] .jud-nome-btn { color: #93c5fd !important; }
+[data-theme="dark"] .jud-nome-btn:hover { text-decoration-color: #93c5fd !important; }
 [data-theme="dark"] #jud-tbody tr:hover,
 [data-theme="dark"] #jud-tbody-perdidos tr:hover { background: var(--surface-2); }
 
