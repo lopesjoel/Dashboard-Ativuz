@@ -521,10 +521,10 @@
         </div>
       </div>
       <div class="inv-input-row" style="border-bottom:none">
-        <label for="inv-manutencao">Revisão Programada (por veículo)</label>
+        <label for="inv-manutencao">Revisão Programada (por veículo / ano)</label>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:12px;color:var(--ink-3)">R$</span>
-          <input type="number" class="inv-input-num" id="inv-manutencao" value="257" min="0" step="1" oninput="invCalcUpdate()">
+          <input type="number" class="inv-input-num" id="inv-manutencao" value="3087" min="0" step="1" oninput="invCalcUpdate()">
           <span style="font-size:11px;color:var(--ink-3)" id="inv-manut-nota">× 3 BYDs = R$ 5.100</span>
         </div>
       </div>
@@ -1670,7 +1670,7 @@ function brl(v) {
 
 function getParams() {
   var aq = parseFloat(document.getElementById('inv-aquisicao').value)   || 102000;
-  var ma = parseFloat(document.getElementById('inv-manutencao').value)  || 257;
+  var ma = (parseFloat(document.getElementById('inv-manutencao').value) || 3087) / 12;
   return { aquisicao: aq, manutencao: ma };
 }
 
