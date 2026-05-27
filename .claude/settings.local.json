@@ -60,7 +60,8 @@
       "Bash(launchctl load *)",
       "Bash(chmod +x *)",
       "Bash(launchctl unload *)",
-      "Bash(brew --version)"
+      "Bash(brew --version)",
+      "Bash(gcloud version *)"
     ]
   }
 }
