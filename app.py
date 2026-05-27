@@ -2546,6 +2546,8 @@ def exportar_inadimplencia():
         "D+5": 6, "D+7": 7, "D+10": 8, "D+15": 9,
     }
 
+    F_NONE = PatternFill(fill_type=None)  # sem preenchimento (limpa fill)
+
     def _safe_set(cell, **kwargs):
         if isinstance(cell, MergedCell):
             return
@@ -2560,6 +2562,16 @@ def exportar_inadimplencia():
         ]
         for m in to_remove:
             ws.unmerge_cells(str(m))
+
+    def _clear_rows(ws, from_row, to_row, min_col, max_col):
+        """Limpa valor e fill de células numa faixa de linhas."""
+        _unmerge_area(ws, from_row, to_row, min_col, max_col)
+        for r in range(from_row, to_row + 1):
+            for c in range(min_col, max_col + 1):
+                cell = ws.cell(row=r, column=c)
+                if not isinstance(cell, MergedCell):
+                    cell.value = None
+                    cell.fill  = F_NONE
 
     wb = openpyxl.load_workbook(str(modelo))
 
@@ -2581,12 +2593,7 @@ def exportar_inadimplencia():
     registros_val = sorted(registros, key=lambda x: x["valor"], reverse=True)
     D_FIM = D_INI + n - 1 if n > 0 else D_INI
 
-    _unmerge_area(ws1, D_INI, D_LIM, 2, 9)
-    for r in range(D_INI, D_LIM + 1):
-        for c in range(2, 9):
-            cell = ws1.cell(row=r, column=c)
-            if not isinstance(cell, MergedCell):
-                cell.value = None
+    _clear_rows(ws1, D_INI, D_LIM, 2, 8)
 
     for i, rec in enumerate(registros_val):
         r    = D_INI + i
@@ -2613,6 +2620,9 @@ def exportar_inadimplencia():
               fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
     _safe_set(ws1.cell(T_ROW1, 8), value=f"=SUM(H{D_INI}:H{D_FIM})" if n else 0,
               fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+
+    # Apaga linhas abaixo do TOTAL (fills do template)
+    _clear_rows(ws1, T_ROW1 + 1, D_LIM, 2, 8)
 
     _safe_set(ws1["B7"], value=n)
     _safe_set(ws1["C7"], value=total_valor, number_format=FMT_BRL)
@@ -2642,12 +2652,7 @@ def exportar_inadimplencia():
     D_INI2 = 10
     D_FIM2 = D_INI2 + nc - 1 if nc > 0 else D_INI2
 
-    _unmerge_area(ws2, D_INI2, D_LIM, 2, 8)
-    for r in range(D_INI2, D_LIM + 1):
-        for c in range(2, 8):
-            cell = ws2.cell(row=r, column=c)
-            if not isinstance(cell, MergedCell):
-                cell.value = None
+    _clear_rows(ws2, D_INI2, D_LIM, 2, 7)
 
     for i, (nome, g) in enumerate(clientes_sorted):
         r    = D_INI2 + i
@@ -2673,6 +2678,9 @@ def exportar_inadimplencia():
               fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
     _safe_set(ws2.cell(T_ROW2, 7), value=f"=SUM(G{D_INI2}:G{D_FIM2})" if nc else 0,
               fill=F_TOTAL_C, font=F_TOT_FONT, number_format=FMT_BRL, alignment=_align("right"))
+
+    # Apaga linhas abaixo do TOTAL (fills do template)
+    _clear_rows(ws2, T_ROW2 + 1, D_LIM, 2, 7)
 
     _safe_set(ws2["B7"], value=nc)
     _safe_set(ws2["D7"], value=total_valor, number_format=FMT_BRL)
