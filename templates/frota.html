@@ -1708,7 +1708,8 @@ function calcMetrics(valor_semanal, params) {
   var liq_mes    = inv_mes - descontos;
   var yield_aa   = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
   var payback    = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
-  return { inv_sem: inv_sem, inv_mes: inv_mes, ipva_mes: ipva_mes, descontos: descontos, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback };
+  var margem_liq = inv_mes > 0 ? (liq_mes / inv_mes * 100) : 0;
+  return { inv_sem: inv_sem, inv_mes: inv_mes, ipva_mes: ipva_mes, descontos: descontos, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback, margem_liq: margem_liq };
 }
 
 /* ── Resumo Executivo ── */
@@ -1765,7 +1766,8 @@ function renderExecSummary() {
     '<div class="inv-exec-desc">' + desc + '</div>' +
     '<div class="inv-exec-metrics">' +
       '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_aa.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Renda líquida mensal</div><div class="inv-exec-metric-val">R$ ' + brl(c.liq_mes) + '</div><div class="inv-exec-metric-sub">após IPVA e manutenção</div></div>' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Margem Líquida</div><div class="inv-exec-metric-val">' + c.margem_liq.toFixed(1) + '%</div><div class="inv-exec-metric-sub">da renda bruta mensal</div></div>' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Renda líquida mensal</div><div class="inv-exec-metric-val">R$ ' + brl(c.liq_mes) + '</div><div class="inv-exec-metric-sub">após IPVA e revisão</div></div>' +
       '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Payback estimado</div><div class="inv-exec-metric-val">' + paybackStr + '</div><div class="inv-exec-metric-sub">recuperação total</div></div>' +
       '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-exec-metric-val">' + cdiStr + '</div><div class="inv-exec-metric-sub">vs Poupança: ' + poupStr + '</div></div>' +
     '</div>';
@@ -1792,6 +1794,7 @@ function renderComparacao(data) {
       '<div class="inv-row"><span class="inv-row-lbl">IPVA mensal (R$ ' + brl(params.ipva_total) + '/ano ÷ 12)</span><span class="inv-row-val red">− R$ ' + brl(c.ipva_mes) + '</span></div>' +
       (params.manutencao > 0 ? '<div class="inv-row"><span class="inv-row-lbl">Manutenção mensal</span><span class="inv-row-val red">− R$ ' + brl(params.manutencao) + '</span></div>' : '') +
       '<div class="inv-row"><span class="inv-row-lbl">Renda líquida mensal</span><span class="inv-row-val green">R$ ' + brl(c.liq_mes) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Margem líquida</span><span class="inv-row-val purple">' + c.margem_liq.toFixed(1) + '%</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Aquisição estimada</span><span class="inv-row-val">R$ ' + brl(m.aquisicao) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Yield a.a.</span><span class="inv-row-val purple">' + c.yield_aa.toFixed(1) + '%</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Payback</span><span class="inv-row-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</span></div>' +

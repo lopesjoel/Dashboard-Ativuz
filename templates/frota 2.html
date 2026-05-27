@@ -1678,9 +1678,10 @@ function calcMetrics(valor_semanal, params) {
   var inv_sem  = valor_semanal * 0.85;
   var inv_mes  = inv_sem * (SEMANAS_ANO / 12);
   var liq_mes  = inv_mes - params.manutencao;
-  var yield_aa = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
-  var payback  = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
-  return { inv_sem: inv_sem, inv_mes: inv_mes, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback };
+  var yield_aa  = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
+  var payback   = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
+  var margem_liq = inv_mes > 0 ? (liq_mes / inv_mes * 100) : 0;
+  return { inv_sem: inv_sem, inv_mes: inv_mes, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback, margem_liq: margem_liq };
 }
 
 /* ── Bloco 1: Comparação de Modelos ── */
@@ -1704,6 +1705,7 @@ function renderComparacao(data) {
       '<div class="inv-row"><span class="inv-row-lbl">Renda bruta mensal</span><span class="inv-row-val">R$ ' + brl(c.inv_mes) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Manutenção mensal</span><span class="inv-row-val red">− R$ ' + brl(params.manutencao) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Renda líquida mensal</span><span class="inv-row-val green">R$ ' + brl(c.liq_mes) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">Margem líquida</span><span class="inv-row-val purple">' + c.margem_liq.toFixed(1) + '%</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Aquisição estimada</span><span class="inv-row-val">R$ ' + brl(m.aquisicao) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Yield a.a.</span><span class="inv-row-val purple">' + c.yield_aa.toFixed(1) + '%</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Payback</span><span class="inv-row-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</span></div>' +
