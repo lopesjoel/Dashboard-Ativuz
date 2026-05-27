@@ -1771,7 +1771,13 @@ const _detalhe = [
       mostrarDropdown(searchTxt);
     });
     searchInput.addEventListener('blur', function () {
-      setTimeout(fecharDropdown, 150);
+      setTimeout(function () {
+        fecharDropdown();
+        searchInput.value = '';
+        searchTxt = '';
+        applyAll();
+        atualizarResumo('');
+      }, 150);
     });
     searchInput.addEventListener('focus', function () {
       if (searchInput.value.trim()) mostrarDropdown(searchInput.value.trim().toLowerCase());
