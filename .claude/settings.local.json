@@ -90,7 +90,28 @@
       "Bash(git commit *)",
       "Bash(git rm *)",
       "Bash(grep -n 'nth-child\\(even\\)\\\\|#f9f9fb\\\\|#f8fafc\\\\|background:#fff\\\\b\\\\|background: #fff\\\\b\\\\|background:#f0f0f5\\\\|background:#eff4ff\\\\|background: #f8fafc' /Users/karol/Documents/Dashboard-Ativuz/templates/__TRACKED_VAR__.html)",
-      "Bash(grep -n 'color: #[0-9a-f]\\\\{3,6\\\\}' /Users/karol/Documents/Dashboard-Ativuz/templates/financiamentos.html)"
+      "Bash(grep -n 'color: #[0-9a-f]\\\\{3,6\\\\}' /Users/karol/Documents/Dashboard-Ativuz/templates/financiamentos.html)",
+      "Bash(node -e ' *)",
+      "Bash(awk NR>=7 && NR<=15 *)",
+      "Bash(awk NR>=76 && NR<=84 *)",
+      "Bash(awk 'NR>=40 && NR<=50' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk 'NR>=104 && NR<=114' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk 'NR>=125 && NR<=135' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk NR>=309 && NR<=340 *)",
+      "Bash(awk NR>=195 && NR<=205 *)",
+      "Bash(awk NR>=770 && NR<=777 *)",
+      "Bash(awk 'NR>=265 && NR<=275' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk 'NR>=390 && NR<=400' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk 'NR>=466 && NR<=476' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk 'NR>=502 && NR<=512' /Users/karol/Documents/Dashboard-Ativuz/templates/checklist.html)",
+      "Bash(awk 'NR>=44 && NR<=52' /Users/karol/Documents/Dashboard-Ativuz/templates/inadimplencia.html)",
+      "Bash(awk 'NR>=87 && NR<=95' /Users/karol/Documents/Dashboard-Ativuz/templates/inadimplencia.html)",
+      "Bash(awk 'NR>=127 && NR<=135' /Users/karol/Documents/Dashboard-Ativuz/templates/inadimplencia.html)",
+      "Bash(awk 'NR>=153 && NR<=160' /Users/karol/Documents/Dashboard-Ativuz/templates/inadimplencia.html)",
+      "Bash(awk 'NR>=459 && NR<=466' /Users/karol/Documents/Dashboard-Ativuz/templates/inadimplencia.html)",
+      "Bash(awk NR>=148 && NR<=165 *)",
+      "Bash(awk NR>=190 && NR<=200 *)",
+      "Bash(awk NR>=135 && NR<=145 *)"
     ]
   }
 }
