@@ -955,3 +955,17 @@
 [data-theme="dark"] .jud-acordo   { background: rgba(6,95,70,.2);    color: #34d399; }
 [data-theme="dark"] .jud-analise  { background: rgba(71,85,105,.2);  color: #94a3b8; }
 [data-theme="dark"] .jud-perdido  { background: rgba(153,27,27,.2);  color: #f87171; }
+
+/* ── Frota table ── */
+[data-theme="dark"] .fr-table tbody tr:nth-child(even) td { background: transparent; }
+[data-theme="dark"] .fr-table tbody tr:hover td           { background: var(--line) !important; }
+[data-theme="dark"] .fr-table th.fipe-edit-hd:hover       { background: var(--line); }
+[data-theme="dark"] .fr-sort-btn.active                   { background: rgba(46,107,230,.18); border-color: #2E6BE6; color: #60a5fa; }
+[data-theme="dark"] .fr-fipe-badge.planilha               { background: var(--line); color: var(--ink-3); }
+[data-theme="dark"] .fr-modal-close:hover,
+[data-theme="dark"] .fr-tip-close-btn:hover               { background: var(--line); }
+[data-theme="dark"] .fr-hist-table tbody tr:nth-child(even) td            { background: transparent; }
+[data-theme="dark"] .fr-hist-table tbody tr:nth-child(even) td.sticky-col { background: var(--surface); }
+[data-theme="dark"] .fr-hist-table tbody tr:hover td                       { background: var(--line) !important; }
+[data-theme="dark"] .adm-table tbody tr:hover td                           { background: var(--line); }
+[data-theme="dark"] .adm-ctrl-hd.open                                      { background: var(--surface-2); border-color: var(--line); }
