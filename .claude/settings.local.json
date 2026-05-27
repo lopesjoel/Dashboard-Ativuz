@@ -52,7 +52,8 @@
       "Bash(pip3 install *)",
       "Bash(venv/bin/pip install *)",
       "Bash(PORT=5555 venv/bin/python app.py)",
-      "Bash(echo \"Status: $?\")"
+      "Bash(echo \"Status: $?\")",
+      "Bash(node --check /tmp/inv_check.js)"
     ]
   }
 }
