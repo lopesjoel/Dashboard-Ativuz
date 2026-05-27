@@ -504,7 +504,7 @@
 
     <p class="inv-section">Comparação de Modelos</p>
     <div class="inv-bloco">
-      <div class="inv-bloco-title">Rentabilidade Estimada — aluguel semanal contratado · 85% ao investidor · manutenção descontada</div>
+      <div class="inv-bloco-title">Rentabilidade Estimada — BYD (elétrico) · aluguel semanal R$1.200 · 85% ao investidor · IPVA e manutenção descontados</div>
       <div class="inv-cards" id="inv-compare-cards">
         <div style="color:var(--ink-3);font-size:13px;padding:10px 0">Carregando dados...</div>
       </div>
@@ -1697,8 +1697,7 @@ function calcMetrics(valor_semanal, params) {
 function renderComparacao(data) {
   var params = getParams();
   var modelos = [
-    { label: 'BYD (Elétrico)',   cls: 'byd',  valor_semanal: 1200, aquisicao: params.aquisicao },
-    { label: 'Polo (Combustão)', cls: 'polo', valor_semanal: 800,  aquisicao: 80000 }
+    { label: 'BYD (Elétrico)', cls: 'byd', valor_semanal: 1200, aquisicao: params.aquisicao }
   ];
   var html = modelos.map(function(m) {
     var p = { aquisicao: m.aquisicao, manutencao: params.manutencao, ipva_anual: params.ipva_anual };
