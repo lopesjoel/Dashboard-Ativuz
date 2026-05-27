@@ -62,7 +62,8 @@
       "Bash(launchctl unload *)",
       "Bash(brew --version)",
       "Bash(gcloud version *)",
-      "Bash(venv/bin/python *)"
+      "Bash(venv/bin/python *)",
+      "Bash(flyctl version *)"
     ]
   }
 }
