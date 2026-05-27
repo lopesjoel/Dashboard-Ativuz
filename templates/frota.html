@@ -1806,7 +1806,7 @@ function renderComparacao(data) {
     { label: 'BYD (Elétrico)', cls: 'byd', valor_semanal: 1200, aquisicao: params.aquisicao }
   ];
   var html = modelos.map(function(m) {
-    var p = { aquisicao: m.aquisicao, manutencao: params.manutencao, ipva_total: params.ipva_total };
+    var p = { aquisicao: m.aquisicao, manutencao: params.manutencao, ipva_total: params.ipva_total, depreciacao_pct: params.depreciacao_pct };
     var c = calcMetrics(m.valor_semanal, p);
     var diffCDI  = (c.yield_aa - CDI_AA).toFixed(1);
     var diffPoup = (c.yield_aa - POUP_AA).toFixed(1);
