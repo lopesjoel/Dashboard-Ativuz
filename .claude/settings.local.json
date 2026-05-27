@@ -63,7 +63,10 @@
       "Bash(brew --version)",
       "Bash(gcloud version *)",
       "Bash(venv/bin/python *)",
-      "Bash(flyctl version *)"
+      "Bash(flyctl version *)",
+      "Bash(flyctl auth *)",
+      "Bash(flyctl launch *)",
+      "Bash(flyctl apps *)"
     ]
   }
 }
