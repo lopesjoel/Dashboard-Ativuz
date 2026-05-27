@@ -53,7 +53,9 @@
       "Bash(venv/bin/pip install *)",
       "Bash(PORT=5555 venv/bin/python app.py)",
       "Bash(echo \"Status: $?\")",
-      "Bash(node --check /tmp/inv_check.js)"
+      "Bash(node --check /tmp/inv_check.js)",
+      "Bash(pkill -f \"app.py\")",
+      "Bash(venv/bin/python app.py)"
     ]
   }
 }
