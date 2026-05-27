@@ -1952,6 +1952,9 @@ def _inad_summary():
             if not nome:
                 continue
 
+            if "marcelo bento" in _nh(nome):
+                continue
+
             valor = _parse_valor_excel(_get(row, i_valor))
             if valor <= 0:
                 continue
