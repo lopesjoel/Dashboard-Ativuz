@@ -547,7 +547,7 @@
         </div>
       </div>
       <div class="inv-input-row" style="border-bottom:none">
-        <label for="inv-manutencao">Manutenção Mensal (por veículo)</label>
+        <label for="inv-manutencao">Revisão Programada (por veículo)</label>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:12px;color:var(--ink-3)">R$</span>
           <input type="number" class="inv-input-num" id="inv-manutencao" value="0" min="0" step="100" oninput="invCalcUpdate()">
@@ -1814,7 +1814,7 @@ function renderCalc() {
     '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Semanal (85%)</div><div class="inv-out-val">R$ ' + brl(c.inv_sem) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Mensal</div><div class="inv-out-val">R$ ' + brl(c.inv_mes) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">IPVA mensal (R$ ' + brl(params.ipva_total) + '/ano ÷ 12)</div><div class="inv-out-val orange">− R$ ' + brl(c.ipva_mes) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Manutenção Mensal</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Revisão Programada</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Renda Líquida Mensal</div><div class="inv-out-val green">R$ ' + brl(c.liq_mes) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Yield Anual (a.a.)</div><div class="inv-out-val purple">' + c.yield_aa.toFixed(1) + '%</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Payback Estimado</div><div class="inv-out-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</div></div>' +
