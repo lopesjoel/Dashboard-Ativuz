@@ -2723,6 +2723,30 @@ def exportar_inadimplencia():
     _safe_set(ws3["C7"], value=n)
     _safe_set(ws3["E7"], value=total_total, number_format=FMT_BRL)
 
+    # ── Salva snapshot JSON para histórico de comparação ─────────────────────
+    import json as _json
+    historico_dir = _base / "historico_inadimplencia"
+    historico_dir.mkdir(exist_ok=True)
+    snapshot = {
+        "data":            hoje.isoformat(),
+        "total_titulos":   n,
+        "clientes_unicos": nc,
+        "valor_original":  round(total_valor, 2),
+        "juros":           round(total_juros, 2),
+        "total_atualizado":round(total_total, 2),
+        "por_etapa": {
+            etapa: {
+                "titulos": agrup[etapa]["n"],
+                "valor":   round(agrup[etapa]["valor"], 2),
+                "juros":   round(agrup[etapa]["juros"], 2),
+                "total":   round(agrup[etapa]["valor"] + agrup[etapa]["juros"], 2),
+            }
+            for etapa in ["Hoje","Terça","Quarta","Quinta","Sexta","D+5","D+7","D+10","D+15"]
+        },
+    }
+    snap_path = historico_dir / f"{hoje.isoformat()}.json"
+    snap_path.write_text(_json.dumps(snapshot, ensure_ascii=False, indent=2))
+
     # ── Serve o arquivo ───────────────────────────────────────────────────────
     buf = BytesIO()
     wb.save(buf)
