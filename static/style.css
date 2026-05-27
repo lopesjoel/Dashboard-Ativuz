@@ -945,6 +945,10 @@
 /* ── Pausar card (blue gradient) ── */
 [data-theme="dark"] .fin-pausar-card { background: rgba(219,234,254,.05); border-color: rgba(147,197,253,.18); }
 
+/* ── Dashboard — vencer banner ── */
+[data-theme="dark"] .vencer-banner          { background: rgba(253,230,138,.07); border-color: rgba(253,230,138,.18); color: #fbbf24; }
+[data-theme="dark"] .vencer-banner.critical { background: rgba(127,29,29,.2);    border-color: rgba(252,165,165,.2);  color: #f87171; }
+
 /* ── Judicializado table ── */
 [data-theme="dark"] .jud-th { background: var(--surface-2); color: var(--ink-2); border-color: var(--line); }
 [data-theme="dark"] .jud-td { color: var(--ink-2); border-color: var(--line); }
@@ -1014,3 +1018,24 @@
 [data-theme="dark"] .ck-modal-close:hover  { background: var(--line); }
 [data-theme="dark"] .btn-add-item:hover    { background: rgba(255,71,19,.08); }
 [data-theme="dark"] .ck-item-del:hover     { color: #f87171; background: rgba(220,38,38,.15); }
+
+/* ── Frota — investment cards & week cells ── */
+[data-theme="dark"] .inv-exec.verde   { background: rgba(20,83,45,.25)  !important; border-color: #166534; }
+[data-theme="dark"] .inv-exec.laranja { background: rgba(124,45,18,.25) !important; border-color: #9a3412; }
+[data-theme="dark"] .inv-exec.vermelho{ background: rgba(127,29,29,.25) !important; border-color: #991b1b; }
+[data-theme="dark"] .inv-exec-metric  { background: rgba(255,255,255,.05) !important; border-color: var(--line); }
+[data-theme="dark"] .inv-badge.orange { background: rgba(194,65,12,.2)  !important; color: #fb923c; }
+[data-theme="dark"] .inv-badge.red    { background: rgba(190,18,60,.2)  !important; color: #f87171; }
+[data-theme="dark"] .inv-badge.green  { background: rgba(20,83,45,.25)  !important; color: #4ade80; }
+[data-theme="dark"] .adm-week-cell.ok   { background: rgba(20,83,45,.25)  !important; border-color: #166534; }
+[data-theme="dark"] .adm-week-cell.pend { background: rgba(127,29,29,.25) !important; border-color: #991b1b; }
+[data-theme="dark"] .adm-week-cell.fut  { background: var(--surface-2) !important; border-color: var(--line); }
+[data-theme="dark"] .fr-error          { background: rgba(127,29,29,.2) !important; border-color: #991b1b !important; }
+
+/* ── Form inputs (contrato_locacao, gerar, templates, checklist) ── */
+[data-theme="dark"] .form-input           { background: var(--surface-2) !important; color: var(--ink) !important; border-color: var(--line); }
+[data-theme="dark"] .form-input::placeholder { color: var(--ink-4); }
+[data-theme="dark"] .form-input:focus     { border-color: var(--brand-orange); }
+[data-theme="dark"] .form-select          { background-color: var(--surface-2) !important; color: var(--ink) !important; }
+[data-theme="dark"] .ck-search input      { background: var(--surface-2) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+[data-theme="dark"] .ck-search input::placeholder { color: var(--ink-4) !important; }
