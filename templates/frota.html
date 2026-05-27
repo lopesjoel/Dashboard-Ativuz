@@ -1819,9 +1819,9 @@ function renderComparacao(data) {
       '<div class="inv-row"><span class="inv-row-lbl">Renda bruta mensal</span><span class="inv-row-val">R$ ' + brl(c.inv_mes) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">IPVA mensal (R$ ' + brl(params.ipva_total) + '/ano ÷ 12)</span><span class="inv-row-val red">− R$ ' + brl(c.ipva_mes) + '</span></div>' +
       (params.manutencao > 0 ? '<div class="inv-row"><span class="inv-row-lbl">Manutenção mensal</span><span class="inv-row-val red">− R$ ' + brl(params.manutencao) + '</span></div>' : '') +
+      '<div class="inv-row"><span class="inv-row-lbl">Depreciação mensal (' + params.depreciacao_pct + '% a.a.)</span><span class="inv-row-val red">− R$ ' + brl(c.depreciacao_mes) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Renda líquida mensal</span><span class="inv-row-val green">R$ ' + brl(c.liq_mes) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Margem líquida</span><span class="inv-row-val purple">' + c.margem_liq.toFixed(1) + '%</span></div>' +
-      '<div class="inv-row"><span class="inv-row-lbl">Depreciação mensal (' + params.depreciacao_pct + '% a.a.)</span><span class="inv-row-val red">− R$ ' + brl(c.depreciacao_mes) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Retorno real a.a.</span><span class="inv-row-val ' + (c.retorno_real_aa >= 0 ? 'green' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Ocupação de equilíbrio</span><span class="inv-row-val">' + c.pct_ocupacao.toFixed(1) + '% (' + c.sem_equilibrio.toFixed(1) + ' sem.)</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Renda acumulada 1 ano</span><span class="inv-row-val">R$ ' + brl(c.acum_ano1) + '</span></div>' +
