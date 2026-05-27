@@ -111,7 +111,8 @@
       "Bash(awk 'NR>=459 && NR<=466' /Users/karol/Documents/Dashboard-Ativuz/templates/inadimplencia.html)",
       "Bash(awk NR>=148 && NR<=165 *)",
       "Bash(awk NR>=190 && NR<=200 *)",
-      "Bash(awk NR>=135 && NR<=145 *)"
+      "Bash(awk NR>=135 && NR<=145 *)",
+      "Bash(awk NR>=2183 && NR<=2195 *)"
     ]
   }
 }
