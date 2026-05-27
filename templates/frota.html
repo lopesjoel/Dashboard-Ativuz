@@ -274,6 +274,23 @@
 .adm-ctrl-prog-fill { height:100%; border-radius:3px; background:#22a06b; transition:width .4s; }
 
 /* ── INVESTIDORES ── */
+.inv-exec { border-radius:14px; padding:22px 24px; margin-bottom:22px; border:1px solid var(--line); }
+.inv-exec.verde   { background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%); border-color:#86efac; }
+.inv-exec.laranja { background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%); border-color:#fdba74; }
+.inv-exec.vermelho{ background:linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%); border-color:#fca5a5; }
+.inv-exec-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.inv-exec-icon { font-size:28px; line-height:1; }
+.inv-exec-titulo { font-size:20px; font-weight:800; }
+.inv-exec.verde   .inv-exec-titulo { color:#15803d; }
+.inv-exec.laranja .inv-exec-titulo { color:#c2410c; }
+.inv-exec.vermelho .inv-exec-titulo { color:#be123c; }
+.inv-exec-desc { font-size:13px; color:var(--ink-2); line-height:1.55; margin-bottom:18px; }
+.inv-exec-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+@media(max-width:640px){ .inv-exec-metrics { grid-template-columns:repeat(2,1fr); } }
+.inv-exec-metric { background:rgba(255,255,255,.7); border-radius:10px; padding:12px 14px; border:1px solid rgba(0,0,0,.06); }
+.inv-exec-metric-lbl { font-size:10.5px; color:var(--ink-3); font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.inv-exec-metric-val { font-size:18px; font-weight:800; color:var(--ink-1); }
+.inv-exec-metric-sub { font-size:10.5px; color:var(--ink-3); margin-top:2px; }
 .inv-section { font-size:13px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.06em; margin:28px 0 10px; border-left:3px solid #6366f1; padding-left:8px; }
 .inv-bloco { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:18px; }
 .inv-bloco-title { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:14px; }
@@ -500,7 +517,9 @@
 
   <!-- ══ ABA: INVESTIDORES ══ -->
   <div id="tab-investidores" style="display:none">
-    <p style="font-size:12.5px;color:var(--ink-3);margin:-8px 0 20px;">Análise de rentabilidade · Frota Sob Administração (BYD) · 85% do aluguel semanal ao investidor</p>
+
+    <!-- Resumo Executivo -->
+    <div id="inv-exec"></div>
 
     <p class="inv-section">Comparação de Modelos</p>
     <div class="inv-bloco">
@@ -1692,6 +1711,66 @@ function calcMetrics(valor_semanal, params) {
   return { inv_sem: inv_sem, inv_mes: inv_mes, ipva_mes: ipva_mes, descontos: descontos, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback };
 }
 
+/* ── Resumo Executivo ── */
+function renderExecSummary() {
+  var params = getParams();
+  var c = calcMetrics(1200, params);
+  var el = document.getElementById('inv-exec');
+  if (!el) return;
+
+  var diffCDI  = c.yield_aa - CDI_AA;
+  var diffPoup = c.yield_aa - POUP_AA;
+
+  var cls, icon, titulo, desc;
+  if (c.yield_aa >= CDI_AA * 1.5) {
+    cls    = 'verde';
+    icon   = '✅';
+    titulo = 'Vale muito a pena investir';
+    desc   = 'O retorno líquido de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong> é ' +
+             (c.yield_aa / CDI_AA).toFixed(1) + '× o CDI e ' +
+             (c.yield_aa / POUP_AA).toFixed(1) + '× a poupança. ' +
+             'O investimento se paga em <strong>' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</strong> ' +
+             'e a partir daí é lucro puro — sem precisar vender o veículo.';
+  } else if (c.yield_aa >= CDI_AA) {
+    cls    = 'verde';
+    icon   = '✅';
+    titulo = 'Vale a pena investir';
+    desc   = 'O retorno líquido de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong> supera o CDI em ' +
+             diffCDI.toFixed(1) + ' p.p. O investimento se paga em <strong>' +
+             (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</strong>.';
+  } else if (c.yield_aa >= POUP_AA) {
+    cls    = 'laranja';
+    icon   = '⚠️';
+    titulo = 'Retorno moderado — avalie com cuidado';
+    desc   = 'O retorno de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong> supera a poupança mas fica abaixo do CDI (' +
+             CDI_AA + '% a.a.). Verifique os custos e a ocupação real.';
+  } else {
+    cls    = 'vermelho';
+    icon   = '❌';
+    titulo = 'Não recomendado nos parâmetros atuais';
+    desc   = 'Com retorno de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong>, o investimento perde até para a poupança. ' +
+             'Revise os custos ou o aluguel semanal.';
+  }
+
+  var paybackStr = isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—';
+  var cdiStr     = (diffCDI  >= 0 ? '+' : '') + diffCDI.toFixed(1)  + ' p.p.';
+  var poupStr    = (diffPoup >= 0 ? '+' : '') + diffPoup.toFixed(1) + ' p.p.';
+
+  el.className = 'inv-exec ' + cls;
+  el.innerHTML =
+    '<div class="inv-exec-top">' +
+      '<span class="inv-exec-icon">' + icon + '</span>' +
+      '<span class="inv-exec-titulo">' + titulo + '</span>' +
+    '</div>' +
+    '<div class="inv-exec-desc">' + desc + '</div>' +
+    '<div class="inv-exec-metrics">' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_aa.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Renda líquida mensal</div><div class="inv-exec-metric-val">R$ ' + brl(c.liq_mes) + '</div><div class="inv-exec-metric-sub">após IPVA e manutenção</div></div>' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Payback estimado</div><div class="inv-exec-metric-val">' + paybackStr + '</div><div class="inv-exec-metric-sub">recuperação total</div></div>' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-exec-metric-val">' + cdiStr + '</div><div class="inv-exec-metric-sub">vs Poupança: ' + poupStr + '</div></div>' +
+    '</div>';
+}
+
 /* ── Bloco 1: Comparação de Modelos ── */
 function renderComparacao(data) {
   var params = getParams();
@@ -1867,6 +1946,7 @@ window.invCalcUpdate = function() {
   localStorage.setItem('inv_manutencao', params.manutencao);
   localStorage.setItem('inv_ipva',       params.ipva_total);
   var data = window._getAdmData ? window._getAdmData() : null;
+  renderExecSummary();
   renderComparacao(data);
   renderCalc();
   renderPaybackChart();
@@ -1881,6 +1961,7 @@ window.invRenderAll = function() {
   if (aqSaved)   document.getElementById('inv-aquisicao').value  = aqSaved;
   if (maSaved)   document.getElementById('inv-manutencao').value = maSaved;
   if (ipvaSaved) document.getElementById('inv-ipva').value       = ipvaSaved;
+  renderExecSummary();
   renderComparacao(data);
   renderCalc();
   renderPaybackChart();
