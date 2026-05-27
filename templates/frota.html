@@ -520,12 +520,19 @@
           <input type="number" class="inv-input-num" id="inv-aquisicao" value="102000" min="1" step="1000" oninput="invCalcUpdate()">
         </div>
       </div>
+      <div class="inv-input-row">
+        <label for="inv-ipva">IPVA Anual (por veículo)</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--ink-3)">R$</span>
+          <input type="number" class="inv-input-num" id="inv-ipva" value="1700" min="0" step="100" oninput="invCalcUpdate()">
+          <span style="font-size:11px;color:var(--ink-3)" id="inv-ipva-nota">× 3 = R$ 5.100/ano → R$ 425/mês</span>
+        </div>
+      </div>
       <div class="inv-input-row" style="border-bottom:none">
         <label for="inv-manutencao">Manutenção Mensal (por veículo)</label>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:12px;color:var(--ink-3)">R$</span>
-          <input type="number" class="inv-input-num" id="inv-manutencao" value="1700" min="0" step="100" oninput="invCalcUpdate()">
-          <span style="font-size:11px;color:var(--ink-3)" id="inv-manut-nota">× 3 BYDs = R$ 5.100</span>
+          <input type="number" class="inv-input-num" id="inv-manutencao" value="0" min="0" step="100" oninput="invCalcUpdate()">
         </div>
       </div>
       <div class="inv-calc-out" id="inv-calc-out"></div>
@@ -1670,39 +1677,43 @@ function brl(v) {
 
 function getParams() {
   var aq = parseFloat(document.getElementById('inv-aquisicao').value)   || 102000;
-  var ma = parseFloat(document.getElementById('inv-manutencao').value)  || 1700;
-  return { aquisicao: aq, manutencao: ma };
+  var ma   = parseFloat(document.getElementById('inv-manutencao').value) || 0;
+  var ipva = parseFloat(document.getElementById('inv-ipva').value)       || 0;
+  return { aquisicao: aq, manutencao: ma, ipva_anual: ipva };
 }
 
 function calcMetrics(valor_semanal, params) {
-  var inv_sem  = valor_semanal * 0.85;
-  var inv_mes  = inv_sem * (SEMANAS_ANO / 12);
-  var liq_mes  = inv_mes - params.manutencao;
-  var yield_aa = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
-  var payback  = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
-  return { inv_sem: inv_sem, inv_mes: inv_mes, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback };
+  var inv_sem    = valor_semanal * 0.85;
+  var inv_mes    = inv_sem * (SEMANAS_ANO / 12);
+  var ipva_mes   = params.ipva_anual / 12;
+  var descontos  = params.manutencao + ipva_mes;
+  var liq_mes    = inv_mes - descontos;
+  var yield_aa   = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
+  var payback    = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
+  return { inv_sem: inv_sem, inv_mes: inv_mes, ipva_mes: ipva_mes, descontos: descontos, liq_mes: liq_mes, yield_aa: yield_aa, payback: payback };
 }
 
 /* ── Bloco 1: Comparação de Modelos ── */
 function renderComparacao(data) {
   var params = getParams();
   var modelos = [
-    { label: 'BYD (Elétrico)', cls: 'byd', valor_semanal: 1200, aquisicao: params.aquisicao },
+    { label: 'BYD (Elétrico)',   cls: 'byd',  valor_semanal: 1200, aquisicao: params.aquisicao },
     { label: 'Polo (Combustão)', cls: 'polo', valor_semanal: 800,  aquisicao: 80000 }
   ];
   var html = modelos.map(function(m) {
-    var p = { aquisicao: m.aquisicao, manutencao: params.manutencao };
+    var p = { aquisicao: m.aquisicao, manutencao: params.manutencao, ipva_anual: params.ipva_anual };
     var c = calcMetrics(m.valor_semanal, p);
-    var diffCDI   = (c.yield_aa - CDI_AA).toFixed(1);
-    var diffPoup  = (c.yield_aa - POUP_AA).toFixed(1);
-    var cdiCls    = diffCDI >= 0 ? 'green' : 'red';
-    var poupCls   = diffPoup >= 0 ? 'green' : 'red';
+    var diffCDI  = (c.yield_aa - CDI_AA).toFixed(1);
+    var diffPoup = (c.yield_aa - POUP_AA).toFixed(1);
+    var cdiCls   = diffCDI  >= 0 ? 'green' : 'red';
+    var poupCls  = diffPoup >= 0 ? 'green' : 'red';
     return '<div class="inv-card">' +
       '<div class="inv-card-head ' + m.cls + '">' + m.label + '</div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Aluguel semanal</span><span class="inv-row-val">R$ ' + brl(m.valor_semanal) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Renda bruta semanal (85%)</span><span class="inv-row-val">R$ ' + brl(c.inv_sem) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Renda bruta mensal</span><span class="inv-row-val">R$ ' + brl(c.inv_mes) + '</span></div>' +
-      '<div class="inv-row"><span class="inv-row-lbl">Manutenção mensal</span><span class="inv-row-val red">− R$ ' + brl(params.manutencao) + '</span></div>' +
+      '<div class="inv-row"><span class="inv-row-lbl">IPVA mensal (÷ 12)</span><span class="inv-row-val red">− R$ ' + brl(c.ipva_mes) + '</span></div>' +
+      (params.manutencao > 0 ? '<div class="inv-row"><span class="inv-row-lbl">Manutenção mensal</span><span class="inv-row-val red">− R$ ' + brl(params.manutencao) + '</span></div>' : '') +
       '<div class="inv-row"><span class="inv-row-lbl">Renda líquida mensal</span><span class="inv-row-val green">R$ ' + brl(c.liq_mes) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Aquisição estimada</span><span class="inv-row-val">R$ ' + brl(m.aquisicao) + '</span></div>' +
       '<div class="inv-row"><span class="inv-row-lbl">Yield a.a.</span><span class="inv-row-val purple">' + c.yield_aa.toFixed(1) + '%</span></div>' +
@@ -1718,15 +1729,21 @@ function renderComparacao(data) {
 function renderCalc() {
   var params = getParams();
   var c = calcMetrics(1200, params);
-  var nota = document.getElementById('inv-manut-nota');
-  if (nota) nota.textContent = '× 3 BYDs = R$ ' + brl(params.manutencao * 3);
+
+  /* atualiza nota IPVA */
+  var notaIpva = document.getElementById('inv-ipva-nota');
+  if (notaIpva) {
+    var total_anual = params.ipva_anual * 3;
+    notaIpva.textContent = '× 3 veículos = R$ ' + brl(total_anual) + '/ano → R$ ' + brl(total_anual / 12) + '/mês';
+  }
 
   var diffCDI  = (c.yield_aa - CDI_AA).toFixed(1);
   var diffPoup = (c.yield_aa - POUP_AA).toFixed(1);
   var html =
     '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Semanal (85%)</div><div class="inv-out-val">R$ ' + brl(c.inv_sem) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Mensal</div><div class="inv-out-val">R$ ' + brl(c.inv_mes) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Manutenção Mensal (cobrada do investidor)</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">IPVA mensal (R$ ' + brl(params.ipva_anual) + '/ano ÷ 12)</div><div class="inv-out-val orange">− R$ ' + brl(c.ipva_mes) + '</div></div>' +
+    '<div class="inv-out-card"><div class="inv-out-lbl">Manutenção Mensal</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Renda Líquida Mensal</div><div class="inv-out-val green">R$ ' + brl(c.liq_mes) + '</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Yield Anual (a.a.)</div><div class="inv-out-val purple">' + c.yield_aa.toFixed(1) + '%</div></div>' +
     '<div class="inv-out-card"><div class="inv-out-lbl">Payback Estimado</div><div class="inv-out-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</div></div>' +
@@ -1856,6 +1873,7 @@ window.invCalcUpdate = function() {
   var params = getParams();
   localStorage.setItem('inv_aquisicao',  params.aquisicao);
   localStorage.setItem('inv_manutencao', params.manutencao);
+  localStorage.setItem('inv_ipva',       params.ipva_anual);
   var data = window._getAdmData ? window._getAdmData() : null;
   renderComparacao(data);
   renderCalc();
@@ -1865,10 +1883,12 @@ window.invCalcUpdate = function() {
 window.invRenderAll = function() {
   var data = window._getAdmData ? window._getAdmData() : null;
   /* restore saved params */
-  var aqSaved = localStorage.getItem('inv_aquisicao');
-  var maSaved = localStorage.getItem('inv_manutencao');
-  if (aqSaved) document.getElementById('inv-aquisicao').value  = aqSaved;
-  if (maSaved) document.getElementById('inv-manutencao').value = maSaved;
+  var aqSaved   = localStorage.getItem('inv_aquisicao');
+  var maSaved   = localStorage.getItem('inv_manutencao');
+  var ipvaSaved = localStorage.getItem('inv_ipva');
+  if (aqSaved)   document.getElementById('inv-aquisicao').value  = aqSaved;
+  if (maSaved)   document.getElementById('inv-manutencao').value = maSaved;
+  if (ipvaSaved) document.getElementById('inv-ipva').value       = ipvaSaved;
   renderComparacao(data);
   renderCalc();
   renderPaybackChart();
