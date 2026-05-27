@@ -61,7 +61,8 @@
       "Bash(chmod +x *)",
       "Bash(launchctl unload *)",
       "Bash(brew --version)",
-      "Bash(gcloud version *)"
+      "Bash(gcloud version *)",
+      "Bash(venv/bin/python *)"
     ]
   }
 }
