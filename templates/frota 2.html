@@ -1906,7 +1906,10 @@ window.invRenderAll = function() {
   var maSaved  = localStorage.getItem('inv_manutencao');
   var depSaved = localStorage.getItem('inv_deprec');
   if (aqSaved)  document.getElementById('inv-aquisicao').value  = aqSaved;
-  if (maSaved)  document.getElementById('inv-manutencao').value = maSaved;
+  if (maSaved) {
+    var maVal = parseFloat(maSaved);
+    document.getElementById('inv-manutencao').value = (maVal < 500) ? 3096 : Math.round(maVal);
+  }
   if (depSaved) document.getElementById('inv-deprec').value     = depSaved;
   renderComparacao(data);
   renderCalc();

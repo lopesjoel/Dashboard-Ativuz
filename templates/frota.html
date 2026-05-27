@@ -2003,7 +2003,11 @@ window.invRenderAll = function() {
   var ipvaSaved = localStorage.getItem('inv_ipva');
   var depSaved  = localStorage.getItem('inv_deprec');
   if (aqSaved)   document.getElementById('inv-aquisicao').value  = aqSaved;
-  if (maSaved)   document.getElementById('inv-manutencao').value = maSaved;
+  if (maSaved) {
+    var maVal = parseFloat(maSaved);
+    /* old saves stored the monthly value (~254); detect and reset to annual default */
+    document.getElementById('inv-manutencao').value = (maVal < 500) ? 3096 : Math.round(maVal);
+  }
   if (ipvaSaved) document.getElementById('inv-ipva').value       = ipvaSaved;
   if (depSaved)  document.getElementById('inv-deprec').value     = depSaved;
   renderExecSummary();
