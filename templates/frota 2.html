@@ -1710,8 +1710,7 @@ function calcMetrics(valor_semanal, params) {
 function renderComparacao(data) {
   var params = getParams();
   var modelos = [
-    { label: 'BYD (Elétrico)', cls: 'byd', valor_semanal: 1200, aquisicao: params.aquisicao },
-    { label: 'Polo (Combustão)', cls: 'polo', valor_semanal: 800,  aquisicao: 80000 }
+    { label: 'BYD (Elétrico)', cls: 'byd', valor_semanal: 1200, aquisicao: params.aquisicao }
   ];
   var html = modelos.map(function(m) {
     var p = { aquisicao: m.aquisicao, manutencao: params.manutencao };
