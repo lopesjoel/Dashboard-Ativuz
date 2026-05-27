@@ -4589,5 +4589,10 @@ def atualizar_benchmarking():
     return jsonify({"ok": True, "atualizado_em": benchmarking_scraper.cache_info()})
 
 
+@app.route("/configuracoes")
+def pagina_configuracoes():
+    return render_template("configuracoes.html", active="configuracoes")
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+  (function(){var t=localStorage.getItem('ativuz-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}ATIVUZ — Gestão de Contratos{% endblock %}</title>
@@ -303,6 +306,20 @@
 
     </nav>
 
+    <!-- Settings link -->
+    <a href="{{ url_for('pagina_configuracoes') }}" class="sb-item"
+       data-active="{{ 'true' if active == 'configuracoes' else 'false' }}"
+       style="margin: 0 10px 4px; flex-shrink:0;"
+       aria-current="{{ 'page' if active == 'configuracoes' else 'false' }}">
+      <span class="sb-item-icon" aria-hidden="true">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </span>
+      <span class="sb-item-label">Configurações</span>
+    </a>
+
     <!-- User chip -->
     <div class="sb-user">
       <div class="avatar" aria-hidden="true">
@@ -349,6 +366,7 @@
           {% elif active == 'capital_investido' %}Capital Investido
           {% elif active == 'frota' %}Frota
           {% elif active == 'contratos' %}Contratos
+          {% elif active == 'configuracoes' %}Configurações
           {% else %}ATIVUZ
           {% endif %}
         </span>

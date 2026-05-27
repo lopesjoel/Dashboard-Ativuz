@@ -62,6 +62,23 @@
   --d-gutter: 36px; --d-card-pad: 30px; --d-row-h: 52px; --d-gap: 22px;
 }
 
+/* ── Dark mode ── */
+[data-theme="dark"] {
+  --bg:        #0F1117;
+  --surface:   #161A27;
+  --surface-2: #1B1F2F;
+  --line:      #252A3E;
+  --line-2:    #1E2235;
+  --ink:       #E8EAF2;
+  --ink-2:     #B0B7CF;
+  --ink-3:     #7880A0;
+  --ink-4:     #4E5570;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.25), 0 1px 1px rgba(0,0,0,.15);
+  --shadow-md: 0 4px 14px -4px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.2);
+  --shadow-lg: 0 18px 40px -12px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.25);
+}
+
 /* ── Base reset ── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
