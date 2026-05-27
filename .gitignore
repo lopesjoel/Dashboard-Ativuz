@@ -1,6 +1,9 @@
 .env
 .env.local
 
+# Dados operacionais — histórico de inadimplência
+planilhas/historico_inadimplencia/
+
 # Python virtual environments
 venv/
 .venv/
