@@ -1719,6 +1719,7 @@ function calcMetrics(valor_semanal, params) {
   var descontos         = params.manutencao + ipva_mes + depreciacao_mes;
   var liq_mes           = inv_mes - descontos;
   var yield_aa          = liq_mes > 0 ? (liq_mes * 12 / params.aquisicao * 100) : 0;
+  var yield_sem_deprec  = (liq_mes + depreciacao_mes) * 12 / params.aquisicao * 100;
   var retorno_real_aa   = yield_aa;
   var payback           = liq_mes > 0 ? (params.aquisicao / liq_mes) : Infinity;
   var margem_liq        = inv_mes > 0 ? (liq_mes / inv_mes * 100) : 0;
@@ -1729,7 +1730,7 @@ function calcMetrics(valor_semanal, params) {
   var acum_ano2         = liq_mes * 24;
   var acum_ano3         = liq_mes * 36;
   return { inv_sem: inv_sem, inv_mes: inv_mes, ipva_mes: ipva_mes, descontos: descontos, liq_mes: liq_mes,
-           yield_aa: yield_aa, payback: payback, margem_liq: margem_liq,
+           yield_aa: yield_aa, yield_sem_deprec: yield_sem_deprec, payback: payback, margem_liq: margem_liq,
            depreciacao_anual: depreciacao_anual, depreciacao_mes: depreciacao_mes, retorno_real_aa: retorno_real_aa,
            sem_equilibrio: sem_equilibrio, pct_ocupacao: pct_ocupacao,
            acum_ano1: acum_ano1, acum_ano2: acum_ano2, acum_ano3: acum_ano3 };
@@ -1788,7 +1789,7 @@ function renderExecSummary() {
     '</div>' +
     '<div class="inv-exec-desc">' + desc + '</div>' +
     '<div class="inv-exec-metrics">' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_aa.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
+      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_sem_deprec.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
       '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Retorno real a.a.</div><div class="inv-exec-metric-val ' + (c.retorno_real_aa >= 0 ? '' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</div><div class="inv-exec-metric-sub">após depreciação de ' + params.depreciacao_pct + '% a.a.</div></div>' +
       '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Margem Líquida</div><div class="inv-exec-metric-val">' + c.margem_liq.toFixed(1) + '%</div><div class="inv-exec-metric-sub">da renda bruta mensal</div></div>' +
       '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Renda líquida mensal</div><div class="inv-exec-metric-val">R$ ' + brl(c.liq_mes) + '</div><div class="inv-exec-metric-sub">após IPVA, revisão e depreciação</div></div>' +
