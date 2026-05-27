@@ -917,7 +917,7 @@
   <button id="tab-btn-controle"
           onclick="inadSwitch('controle')"
           style="padding:8px 20px; font-size:0.875rem; font-weight:600; border:none; background:none;
-                 cursor:pointer; border-bottom:3px solid #1e3a5f; color:#1e3a5f; margin-bottom:-2px;">
+                 cursor:pointer; border-bottom:3px solid #FF4713; color:#FF4713; margin-bottom:-2px;">
     Controle Diário
   </button>
   <button id="tab-btn-judicializada"
@@ -2848,8 +2848,8 @@ function inadSwitch(aba) {
     document.getElementById('inad-tab-' + a).style.display = (a === aba ? '' : 'none');
     var btn = document.getElementById('tab-btn-' + a);
     if (a === aba) {
-      btn.style.borderBottomColor = '#1e3a5f';
-      btn.style.color = '#1e3a5f';
+      btn.style.borderBottomColor = '#FF4713';
+      btn.style.color = '#FF4713';
     } else {
       btn.style.borderBottomColor = 'transparent';
       btn.style.color = '#6b7280';
