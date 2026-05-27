@@ -83,7 +83,12 @@
       "WebFetch(domain:www.uol.com.br)",
       "WebFetch(domain:autoesporte.globo.com)",
       "Bash(railway logs *)",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(git ls-tree *)",
+      "Bash(git reset *)",
+      "Bash(git restore *)",
+      "Bash(git commit *)",
+      "Bash(git rm *)"
     ]
   }
 }

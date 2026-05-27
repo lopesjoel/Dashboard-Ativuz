@@ -1,6 +1,12 @@
 .env
 .env.local
 
+# Python virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
 # Logs
 logs
 *.log
