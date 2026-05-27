@@ -2533,7 +2533,7 @@ def exportar_inadimplencia():
     F_VALOR   = _fill("EFF6FF")
     F_JUROS   = _fill("FFF7ED")
     F_TOTAL_C = _fill("1E3A5F")
-    FMT_BRL   = '#,##0.00'
+    FMT_BRL   = '"R$"\\ #,##0.00'
 
     # Cor de fundo por etapa (coluna Etapa)
     _ETAPA_BG = {
