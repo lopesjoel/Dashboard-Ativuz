@@ -64,11 +64,11 @@
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
-  --bg:        #0F1117;
-  --surface:   #161A27;
-  --surface-2: #1B1F2F;
-  --line:      #252A3E;
-  --line-2:    #1E2235;
+  --bg:        #1A1D2E;
+  --surface:   #1F2335;
+  --surface-2: #242840;
+  --line:      #2E3352;
+  --line-2:    #272C46;
   --ink:       #E8EAF2;
   --ink-2:     #B0B7CF;
   --ink-3:     #7880A0;
