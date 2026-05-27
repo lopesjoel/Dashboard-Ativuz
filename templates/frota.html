@@ -313,7 +313,9 @@
 .inv-input-num:focus { outline:none; border-color:#6366f1; }
 .inv-calc-out { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
 @media(max-width:600px){ .inv-calc-out { grid-template-columns:1fr; } }
-.inv-out-card { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+.inv-out-card { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; position:relative; cursor:default; transition:box-shadow .15s, border-color .15s; }
+.inv-out-card:hover { box-shadow:0 4px 18px rgba(0,0,0,.12); border-color:var(--accent,#6366f1); }
+.inv-out-card[data-tip]:hover::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(18,18,30,.96); color:#e8e8f2; padding:9px 13px; border-radius:9px; font-size:12px; line-height:1.55; max-width:230px; width:max-content; z-index:300; box-shadow:0 6px 20px rgba(0,0,0,.35); pointer-events:none; white-space:normal; font-weight:400; }
 .inv-out-lbl { font-size:11px; color:var(--ink-3); margin-bottom:2px; }
 .inv-out-val { font-size:15px; font-weight:700; color:var(--ink-1); }
 .inv-out-val.green  { color:#22a06b; }
@@ -1844,22 +1846,22 @@ function renderCalc() {
   var diffCDI  = (c.yield_aa - CDI_AA).toFixed(1);
   var diffPoup = (c.yield_aa - POUP_AA).toFixed(1);
   var html =
-    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Semanal (85%)</div><div class="inv-out-val">R$ ' + brl(c.inv_sem) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Bruta Mensal</div><div class="inv-out-val">R$ ' + brl(c.inv_mes) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">IPVA mensal (R$ ' + brl(params.ipva_total) + '/ano ÷ 12)</div><div class="inv-out-val orange">− R$ ' + brl(c.ipva_mes) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Revisão Programada</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Líquida Mensal</div><div class="inv-out-val green">R$ ' + brl(c.liq_mes) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Margem Líquida</div><div class="inv-out-val purple">' + c.margem_liq.toFixed(1) + '%</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Yield Anual (a.a.)</div><div class="inv-out-val purple">' + c.yield_aa.toFixed(1) + '%</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Depreciação Anual (' + params.depreciacao_pct + '%)</div><div class="inv-out-val red">− R$ ' + brl(c.depreciacao_anual) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Retorno Real a.a.</div><div class="inv-out-val ' + (c.retorno_real_aa >= 0 ? 'green' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Ocupação de Equilíbrio</div><div class="inv-out-val">' + c.pct_ocupacao.toFixed(1) + '% · ' + c.sem_equilibrio.toFixed(1) + ' sem./ano</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Acumulada 1 Ano</div><div class="inv-out-val">R$ ' + brl(c.acum_ano1) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Acumulada 2 Anos</div><div class="inv-out-val">R$ ' + brl(c.acum_ano2) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Renda Acumulada 3 Anos</div><div class="inv-out-val">R$ ' + brl(c.acum_ano3) + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">Payback Estimado</div><div class="inv-out-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-out-val ' + (diffCDI >= 0 ? 'green' : 'red') + '">' + (diffCDI >= 0 ? '+' : '') + diffCDI + ' p.p.</div></div>' +
-    '<div class="inv-out-card"><div class="inv-out-lbl">vs Poupança (' + POUP_AA + '% a.a.)</div><div class="inv-out-val ' + (diffPoup >= 0 ? 'green' : 'red') + '">' + (diffPoup >= 0 ? '+' : '') + diffPoup + ' p.p.</div></div>';
+    '<div class="inv-out-card" data-tip="O investidor recebe 85% do aluguel semanal. Os 15% restantes são a taxa de administração da Ativuz."><div class="inv-out-lbl">Renda Bruta Semanal (85%)</div><div class="inv-out-val">R$ ' + brl(c.inv_sem) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="Total que o veículo gera por mês, antes de descontar qualquer custo. É a base de cálculo da margem."><div class="inv-out-lbl">Renda Bruta Mensal</div><div class="inv-out-val">R$ ' + brl(c.inv_mes) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="O IPVA é pago uma vez por ano. Aqui ele é dividido em 12 para mostrar o impacto mensal real no retorno."><div class="inv-out-lbl">IPVA mensal (R$ ' + brl(params.ipva_total) + '/ano ÷ 12)</div><div class="inv-out-val orange">− R$ ' + brl(c.ipva_mes) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="Média mensal das 10 revisões obrigatórias do BYD Dolphin Mini, calculada a 6.000 km/mês. Valor real baseado na tabela BYD."><div class="inv-out-lbl">Revisão Programada</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="O que efetivamente entra no bolso todo mês, depois de pagar IPVA e revisão. É o lucro operacional do investimento."><div class="inv-out-lbl">Renda Líquida Mensal</div><div class="inv-out-val green">R$ ' + brl(c.liq_mes) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="De cada R$100 gerado bruto, quanto sobra após os custos. Quanto maior, mais eficiente é o investimento."><div class="inv-out-lbl">Margem Líquida</div><div class="inv-out-val purple">' + c.margem_liq.toFixed(1) + '%</div></div>' +
+    '<div class="inv-out-card" data-tip="Rentabilidade anual sobre o valor pago no veículo. Não considera a desvalorização — veja o Retorno Real para o número mais honesto."><div class="inv-out-lbl">Yield Anual (a.a.)</div><div class="inv-out-val purple">' + c.yield_aa.toFixed(1) + '%</div></div>' +
+    '<div class="inv-out-card" data-tip="Quanto o carro perde de valor por ano no mercado. Dado real da Mobiauto (2024–2025). Você pode ajustar esse % acima."><div class="inv-out-lbl">Depreciação Anual (' + params.depreciacao_pct + '%)</div><div class="inv-out-val red">− R$ ' + brl(c.depreciacao_anual) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="O retorno verdadeiro: yield menos a perda de valor do veículo. É o número que importa na hora de comparar com outros investimentos."><div class="inv-out-lbl">Retorno Real a.a.</div><div class="inv-out-val ' + (c.retorno_real_aa >= 0 ? 'green' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</div></div>' +
+    '<div class="inv-out-card" data-tip="Mínimo de semanas alugadas no ano para que a renda cubra IPVA e revisão. Abaixo disso, o investimento começa a dar prejuízo operacional."><div class="inv-out-lbl">Ocupação de Equilíbrio</div><div class="inv-out-val">' + c.pct_ocupacao.toFixed(1) + '% · ' + c.sem_equilibrio.toFixed(1) + ' sem./ano</div></div>' +
+    '<div class="inv-out-card" data-tip="Total líquido acumulado em 12 meses mantendo esses parâmetros. Não considera valorização ou desvalorização do veículo."><div class="inv-out-lbl">Renda Acumulada 1 Ano</div><div class="inv-out-val">R$ ' + brl(c.acum_ano1) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="Total líquido em 24 meses. A partir daqui o retorno já representa uma parcela relevante do valor investido."><div class="inv-out-lbl">Renda Acumulada 2 Anos</div><div class="inv-out-val">R$ ' + brl(c.acum_ano2) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="Total líquido em 36 meses. Compare com o preço de aquisição para ter uma visão clara do retorno no médio prazo."><div class="inv-out-lbl">Renda Acumulada 3 Anos</div><div class="inv-out-val">R$ ' + brl(c.acum_ano3) + '</div></div>' +
+    '<div class="inv-out-card" data-tip="Em quantos meses a renda acumulada paga o valor total do veículo. Depois disso, tudo que entrar é lucro puro."><div class="inv-out-lbl">Payback Estimado</div><div class="inv-out-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</div></div>' +
+    '<div class="inv-out-card" data-tip="Diferença entre o yield do veículo e o CDI atual. Positivo significa que o carro rende mais do que deixar o dinheiro no banco."><div class="inv-out-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-out-val ' + (diffCDI >= 0 ? 'green' : 'red') + '">' + (diffCDI >= 0 ? '+' : '') + diffCDI + ' p.p.</div></div>' +
+    '<div class="inv-out-card" data-tip="Comparação com a poupança. Se for positivo, o investimento no veículo rende mais do que a alternativa mais conservadora do mercado."><div class="inv-out-lbl">vs Poupança (' + POUP_AA + '% a.a.)</div><div class="inv-out-val ' + (diffPoup >= 0 ? 'green' : 'red') + '">' + (diffPoup >= 0 ? '+' : '') + diffPoup + ' p.p.</div></div>';
   document.getElementById('inv-calc-out').innerHTML = html;
 }
 
