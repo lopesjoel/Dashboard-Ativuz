@@ -287,10 +287,19 @@
 .inv-exec-desc { font-size:13px; color:var(--ink-2); line-height:1.55; margin-bottom:18px; }
 .inv-exec-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
 @media(max-width:640px){ .inv-exec-metrics { grid-template-columns:repeat(2,1fr); } }
-.inv-exec-metric { background:rgba(255,255,255,.7); border-radius:10px; padding:12px 14px; border:1px solid rgba(0,0,0,.06); }
+.inv-exec-metric { background:rgba(255,255,255,.7); border-radius:10px; padding:12px 14px; border:1px solid rgba(0,0,0,.06); position:relative; cursor:default; }
 .inv-exec-metric-lbl { font-size:10.5px; color:var(--ink-3); font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
 .inv-exec-metric-val { font-size:18px; font-weight:800; color:var(--ink-1); }
 .inv-exec-metric-sub { font-size:10.5px; color:var(--ink-3); margin-top:2px; }
+.inv-exec-metric[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+  background:#15192A; color:#E8EAF2; font-size:11.5px; font-weight:400; line-height:1.5;
+  padding:9px 13px; border-radius:8px; width:220px; white-space:normal; text-align:left;
+  box-shadow:0 6px 20px rgba(0,0,0,.25); pointer-events:none;
+  opacity:0; transition:opacity .15s ease; z-index:99; text-transform:none; letter-spacing:0;
+}
+.inv-exec-metric[data-tooltip]:hover::after { opacity:1; }
 .inv-section { font-size:13px; font-weight:700; color:var(--ink-2); text-transform:uppercase; letter-spacing:.06em; margin:28px 0 10px; border-left:3px solid #6366f1; padding-left:8px; }
 .inv-bloco { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:18px; overflow:visible; }
 .inv-bloco-title { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:14px; }
@@ -1789,14 +1798,14 @@ function renderExecSummary() {
     '</div>' +
     '<div class="inv-exec-desc">' + desc + '</div>' +
     '<div class="inv-exec-metrics">' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_sem_deprec.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Retorno real a.a.</div><div class="inv-exec-metric-val ' + (c.retorno_real_aa >= 0 ? '' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</div><div class="inv-exec-metric-sub">após depreciação de ' + params.depreciacao_pct + '% a.a.</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Margem Líquida</div><div class="inv-exec-metric-val">' + c.margem_liq.toFixed(1) + '%</div><div class="inv-exec-metric-sub">da renda bruta mensal</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Renda líquida mensal</div><div class="inv-exec-metric-val">R$ ' + brl(c.liq_mes) + '</div><div class="inv-exec-metric-sub">após IPVA, revisão e depreciação</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Ocupação de equilíbrio</div><div class="inv-exec-metric-val">' + c.pct_ocupacao.toFixed(1) + '%</div><div class="inv-exec-metric-sub">' + c.sem_equilibrio.toFixed(1) + ' semanas/ano para cobrir custos</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Renda acumulada</div><div class="inv-exec-metric-val">R$ ' + brl(c.acum_ano1) + '</div><div class="inv-exec-metric-sub">1 ano · 2 anos: R$ ' + brl(c.acum_ano2) + ' · 3 anos: R$ ' + brl(c.acum_ano3) + '</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">Payback estimado</div><div class="inv-exec-metric-val">' + paybackStr + '</div><div class="inv-exec-metric-sub">recuperação total</div></div>' +
-      '<div class="inv-exec-metric"><div class="inv-exec-metric-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-exec-metric-val">' + cdiStr + '</div><div class="inv-exec-metric-sub">vs Poupança: ' + poupStr + '</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Retorno percentual anual sobre o valor investido, sem descontar a depreciação. Indica quanto o veículo rende em renda pura por ano."><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_sem_deprec.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Rendimento anual real após descontar a perda de valor do veículo (depreciação). Representa o ganho efetivo do investimento."><div class="inv-exec-metric-lbl">Retorno real a.a.</div><div class="inv-exec-metric-val ' + (c.retorno_real_aa >= 0 ? '' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</div><div class="inv-exec-metric-sub">após depreciação de ' + params.depreciacao_pct + '% a.a.</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Percentual da receita bruta mensal que se converte em renda líquida, após pagar todos os custos operacionais."><div class="inv-exec-metric-lbl">Margem Líquida</div><div class="inv-exec-metric-val">' + c.margem_liq.toFixed(1) + '%</div><div class="inv-exec-metric-sub">da renda bruta mensal</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Valor em reais que sobra por mês após deduzir IPVA, revisão programada e depreciação mensal do veículo."><div class="inv-exec-metric-lbl">Renda líquida mensal</div><div class="inv-exec-metric-val">R$ ' + brl(c.liq_mes) + '</div><div class="inv-exec-metric-sub">após IPVA, revisão e depreciação</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Taxa mínima de ocupação para cobrir todos os custos. Abaixo desse percentual o veículo opera no prejuízo."><div class="inv-exec-metric-lbl">Ocupação de equilíbrio</div><div class="inv-exec-metric-val">' + c.pct_ocupacao.toFixed(1) + '%</div><div class="inv-exec-metric-sub">' + c.sem_equilibrio.toFixed(1) + ' semanas/ano para cobrir custos</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Projeção da renda líquida total acumulada ao longo do tempo, somando os rendimentos mensais."><div class="inv-exec-metric-lbl">Renda acumulada</div><div class="inv-exec-metric-val">R$ ' + brl(c.acum_ano1) + '</div><div class="inv-exec-metric-sub">1 ano · 2 anos: R$ ' + brl(c.acum_ano2) + ' · 3 anos: R$ ' + brl(c.acum_ano3) + '</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Tempo estimado para a renda acumulada pagar de volta o valor total investido. Após esse prazo, tudo é lucro."><div class="inv-exec-metric-lbl">Payback estimado</div><div class="inv-exec-metric-val">' + paybackStr + '</div><div class="inv-exec-metric-sub">recuperação total</div></div>' +
+      '<div class="inv-exec-metric" data-tooltip="Diferença em pontos percentuais entre o retorno real do veículo e o CDI. Positivo significa que o investimento supera a renda fixa."><div class="inv-exec-metric-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-exec-metric-val">' + cdiStr + '</div><div class="inv-exec-metric-sub">vs Poupança: ' + poupStr + '</div></div>' +
     '</div>';
 }
 
