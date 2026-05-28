@@ -115,7 +115,11 @@
       "Bash(awk NR>=2183 && NR<=2195 *)",
       "Bash(awk 'NR>=1 && /1880|1890|2000|2010|2020|2030|2040|2050|2060|2070|2080/')",
       "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz add templates/frota.html templates/inadimplencia.html app.py .gitignore)",
-      "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz diff --staged --stat)"
+      "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz diff --staged --stat)",
+      "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz remote get-url origin)",
+      "Bash(launchctl list *)",
+      "Bash(/Users/karol/Documents/Dashboard-Ativuz/.claude/hooks/autopush-contas.sh)",
+      "Bash(echo \"exit=$?\")"
     ]
   }
 }
