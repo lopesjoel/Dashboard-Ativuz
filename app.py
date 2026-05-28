@@ -2189,12 +2189,16 @@ def pagina_inadimplencia():
                     elif isinstance(venc_raw, date):
                         venc_date = venc_raw
                     else:
-                        for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
-                            try:
-                                venc_date = datetime.strptime(str(venc_raw).strip(), fmt).date()
-                                break
-                            except (ValueError, TypeError):
-                                pass
+                        venc_str = str(venc_raw).strip().upper()
+                        if venc_str == "HOJE":
+                            venc_date = hoje
+                        else:
+                            for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
+                                try:
+                                    venc_date = datetime.strptime(venc_str, fmt).date()
+                                    break
+                                except (ValueError, TypeError):
+                                    pass
                 if venc_date is None:
                     continue
 
