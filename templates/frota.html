@@ -2091,8 +2091,6 @@ window.invRenderAll = function() {
   renderProjecao(data);
 };
 
-})();
-
 /* ── Modal: Rentabilidade Líquida Real ── */
 window.abrirModalRentReal = function() {
   var params  = getParams();
@@ -2154,6 +2152,8 @@ document.addEventListener('click', function(e) {
   var modal = document.getElementById('modal-rent-real');
   if (modal && e.target === modal) modal.classList.remove('open');
 });
+
+})();
 </script>
 
 <!-- Modal: Rentabilidade Líquida Real -->
