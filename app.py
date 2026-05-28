@@ -4400,14 +4400,14 @@ def _ler_veiculos():
                 return v.strftime("%d/%m/%Y")
             return str(v).strip()
 
-        veiculos = []
+        seen_placas = {}
         for row in rows[1:]:
             placa = _v(row, i_placa)
             if not placa:
                 continue
             modelo = _v(row, i_modelo)
             img    = _imagem_veiculo(modelo)
-            veiculos.append({
+            seen_placas[placa] = {
                 "placa":    placa,
                 "modelo":   modelo,
                 "cliente":  _v(row, i_cliente),
@@ -4417,8 +4417,8 @@ def _ler_veiculos():
                 "termino":  _v(row, i_termino),
                 "imagem":   img,
                 "blend":    img in _BLEND_MULTIPLY if img else False,
-            })
-        veiculos.sort(key=lambda v: v["cliente"].lower())
+            }
+        veiculos = sorted(seen_placas.values(), key=lambda v: v["cliente"].lower())
         return veiculos, None
 
     except Exception as e:
