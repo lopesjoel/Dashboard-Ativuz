@@ -4024,33 +4024,33 @@ def _ler_contratos():
 
         rows = []
         for row in ws.iter_rows(min_row=6, max_row=ws.max_row, values_only=True):
-            if not row[0]:
+            if not row[9]:  # Contrato Comercial
                 continue
-            termino_raw = row[19]
+            termino_raw = row[52]  # Término Previsto
             dias_vencer = None
             if isinstance(termino_raw, datetime):
                 dias_vencer = (termino_raw.date() - today).days
             rows.append({
-                'contrato_comercial': str(row[0]  or ''),
-                'contrato_locacao':   str(row[3]  or ''),
-                'periodo':            str(row[2]  or ''),
-                'cliente':            str(row[5]  or ''),
-                'unidade_fat':        str(row[7]  or ''),
-                'valor_locacao':      float(row[8]  or 0),
-                'tipo_pessoa':        str(row[9]  or ''),
-                'gasto_total':        float(row[14] or 0),
-                'gasto_sinistros':    float(row[15] or 0),
-                'gasto_manutencao':   float(row[16] or 0),
-                'inicio':             _fmt(row[17]),
-                'termino_previsto':   _fmt(row[19]),
-                'situacao':           str(row[23] or ''),
-                'placa':              str(row[27] or ''),
-                'modelo':             str(row[31] or ''),
-                'km':                 int(row[32]  or 0),
-                'grupo':              str(row[37] or ''),
-                'tipo_contrato':      str(row[44] or ''),
-                'sit_faturamento':    str(row[46] or ''),
-                'valor_inicial':      float(row[53] or 0),
+                'contrato_comercial': str(row[9]  or ''),   # Contrato Comercial
+                'contrato_locacao':   str(row[12] or ''),   # Contrato de Locação
+                'periodo':            str(row[41] or ''),   # Período (meses)
+                'cliente':            str(row[6]  or ''),   # Cliente
+                'unidade_fat':        str(row[54] or ''),   # Unidade de faturamento
+                'valor_locacao':      float(row[57] or 0),  # Valor de locação vigente
+                'tipo_pessoa':        str(row[51] or ''),   # Tipo de cliente
+                'gasto_total':        float(row[27] or 0),  # Gasto Total
+                'gasto_sinistros':    float(row[26] or 0),  # Gasto Sinistros
+                'gasto_manutencao':   float(row[25] or 0),  # Gasto Manutenção
+                'inicio':             _fmt(row[30]),         # Início de Contrato
+                'termino_previsto':   _fmt(row[52]),         # Término Previsto
+                'situacao':           str(row[46] or ''),   # Situação
+                'placa':              str(row[59] or ''),   # Veículo Atual
+                'modelo':             str(row[36] or ''),   # Modelo
+                'km':                 int(row[31]  or 0),   # Km confirmado
+                'grupo':              str(row[28] or ''),   # Grupo
+                'tipo_contrato':      str(row[50] or ''),   # Tipo de Contrato
+                'sit_faturamento':    str(row[47] or ''),   # Situação de Faturamento
+                'valor_inicial':      float(row[58] or 0),  # Valor inicial de locação
                 'dias_vencer':        dias_vencer,
             })
         wb.close()
