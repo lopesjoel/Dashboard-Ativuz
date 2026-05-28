@@ -2553,7 +2553,7 @@ def exportar_inadimplencia():
                 registros.append({
                     "nome": nome, "etapa": etapa, "etapa_short": _ETAPA_SHORT.get(etapa, etapa),
                     "proxima": proxima, "vencimento": venc_date.strftime("%d/%m/%Y"), "dias": dias,
-                    "valor": valor, "juros": juros + multa, "total": total,
+                    "valor": valor, "juros": juros, "total": total,
                 })
         except Exception:
             import traceback; traceback.print_exc()
