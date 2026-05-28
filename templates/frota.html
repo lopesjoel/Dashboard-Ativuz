@@ -1918,7 +1918,10 @@ function renderDesempenho(data) {
     document.getElementById('inv-perf-bloco').innerHTML = '<p style="color:var(--ink-3);font-size:13px">Sem dados disponíveis.</p>';
     return;
   }
-  var rows = data.map(function(v) {
+  var rows = data.filter(function(v) {
+    var m = (v.modelo || '').toUpperCase();
+    return m.indexOf('POLO') === -1;
+  }).map(function(v) {
     var semanas = v.semanas || [];
     var passadas = semanas.filter(function(s){ return s.passada; });
     var recebidas = passadas.filter(function(s){ return s.recebido; });
