@@ -224,6 +224,7 @@
   .dias-badge.red    { background: #fee2e2; color: #991b1b; }
   .dias-badge.orange { background: #ffedd5; color: #9a3412; }
   .dias-badge.yellow { background: #fef9c3; color: #713f12; }
+  .dias-badge.vencido { background: #1f2937; color: #f9fafb; }
 
 </style>
 {% endblock %}
@@ -574,14 +575,54 @@
 <!-- ══════════════════════════════════════════════════
      SEÇÃO 5 — CONTRATOS A VENCER
 ══════════════════════════════════════════════════ -->
-{% set contratos_7dias = contratos_vencendo | selectattr('dias_restantes', 'le', 7) | list %}
-{% if contratos_7dias %}
+{% set contratos_vencidos = contratos_vencendo | selectattr('vencido') | list %}
+{% set contratos_7dias = contratos_vencendo | rejectattr('vencido') | selectattr('dias_restantes', 'le', 7) | list %}
+{% if contratos_vencidos or contratos_7dias %}
 <div class="dash-section">
   <span class="dash-section-label">Contratos a Vencer</span>
   <div class="dash-section-line"></div>
   <a href="{{ url_for('pagina_checklist') }}" class="btn btn-ghost btn-sm dash-section-action">Ver contratos</a>
 </div>
 
+{% if contratos_vencidos %}
+<div class="vencer-banner critical" style="border-color:#6b7280;background:#1f2937;color:#f9fafb;">
+  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <span><strong>Vencidos:</strong> {{ contratos_vencidos | length }} contrato{{ 's' if contratos_vencidos | length != 1 else '' }} já venceu{{ 'ram' if contratos_vencidos | length != 1 else '' }} e precisa{{ 'm' if contratos_vencidos | length != 1 else '' }} ser atualizado{{ 's' if contratos_vencidos | length != 1 else '' }} no sistema.</span>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px;">
+  <div style="overflow-x:auto;">
+    <table class="vencer-table">
+      <thead>
+        <tr>
+          <th>Placa</th>
+          <th>Cliente</th>
+          <th>Modelo</th>
+          <th>Término</th>
+          <th>Dias em Atraso</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contratos_vencidos | sort(attribute='dias_restantes') %}
+        <tr>
+          <td><span class="badge-placa">{{ c.placa }}</span></td>
+          <td style="font-weight:600;">{{ c.cliente }}</td>
+          <td style="color:var(--ink-2);">{{ c.modelo }}</td>
+          <td style="font-variant-numeric:tabular-nums;">{{ c.termino }}</td>
+          <td><span class="dias-badge vencido">{{ (c.dias_restantes * -1) }}d atraso</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if contratos_7dias %}
 <div class="vencer-banner critical">
   <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -618,6 +659,8 @@
     </table>
   </div>
 </div>
+{% endif %}
+
 {% endif %}
 
 <!-- ══════════════════════════════════════════════════

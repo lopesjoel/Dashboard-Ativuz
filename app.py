@@ -1873,7 +1873,7 @@ def _parse_valor_excel(raw):
 
 
 def _contratos_vencendo(dias_limite: int = 60):
-    """Return EM ANDAMENTO contracts expiring within `dias_limite` days, sorted asc."""
+    """Return EM ANDAMENTO contracts expiring within `dias_limite` days or already expired, sorted asc."""
     try:
         contratos, _ = _ler_contratos()
     except Exception:
@@ -1883,7 +1883,7 @@ def _contratos_vencendo(dias_limite: int = 60):
         if c.get("situacao") != "EM ANDAMENTO":
             continue
         dias_rest = c.get("dias_vencer")
-        if dias_rest is None or dias_rest < 0 or dias_rest > dias_limite:
+        if dias_rest is None or dias_rest > dias_limite:
             continue
         resultado.append({
             "placa":          c["placa"],
@@ -1891,6 +1891,7 @@ def _contratos_vencendo(dias_limite: int = 60):
             "modelo":         c["modelo"],
             "termino":        c["termino_previsto"],
             "dias_restantes": dias_rest,
+            "vencido":        dias_rest < 0,
         })
     resultado.sort(key=lambda x: x["dias_restantes"])
     return resultado
