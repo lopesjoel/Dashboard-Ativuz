@@ -268,6 +268,14 @@ def api_asaas_parse():
         desc_n = _norm(desc)
         abs_v  = abs(valor)
 
+        # Nomes normalizados dos clientes conhecidos (motoristas)
+        _CLIENTES_N = [
+            "jackson cassiano verissimo",
+            "adriano teotonio da silva",
+            "tanielle glauciana souza da silva",
+            "marciano ezequiel valdevino da silva",
+        ]
+
         # Classificação
         if estorn:
             categoria = "estorno"
@@ -286,6 +294,8 @@ def api_asaas_parse():
             categoria = "seguro"
         elif "taxa" in desc_n or "notificacao" in desc_n or "notificação" in desc_n:
             categoria = "taxa_asaas"
+        elif valor < 0 and any(c in desc_n for c in _CLIENTES_N):
+            categoria = "reembolso_manutencao"
         else:
             categoria = "outro"
 
@@ -338,14 +348,15 @@ def api_asaas_parse():
         return sum(t["valor"] for t in transacoes if t["categoria"] == cat and t["relevante"])
 
     totais = {
-        "aluguel":            _soma("aluguel"),
-        "adesao":             _soma("adesao"),
-        "repasse_investidor": _soma("repasse_investidor"),
-        "taxa_ativuz":        _soma("taxa_ativuz"),
-        "ipva":               _soma("ipva"),
-        "seguro":             _soma("seguro"),
-        "taxa_asaas":         _soma("taxa_asaas"),
-        "estorno":            _soma("estorno"),
+        "aluguel":              _soma("aluguel"),
+        "adesao":               _soma("adesao"),
+        "repasse_investidor":   _soma("repasse_investidor"),
+        "taxa_ativuz":          _soma("taxa_ativuz"),
+        "reembolso_manutencao": _soma("reembolso_manutencao"),
+        "ipva":                 _soma("ipva"),
+        "seguro":               _soma("seguro"),
+        "taxa_asaas":           _soma("taxa_asaas"),
+        "estorno":              _soma("estorno"),
     }
 
     return jsonify({
