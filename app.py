@@ -239,13 +239,12 @@ def api_asaas_parse():
                 periodo = s
                 break
 
-    # Saldo inicial e final
-    saldo_inicial = saldo_final = None
+    # Saldo inicial fixo em zero; saldo final extraído do arquivo
+    saldo_inicial = 0
+    saldo_final   = None
     for r in rows:
         desc = str(r[4] or "").strip()
         val  = r[6]
-        if desc == "Saldo Inicial" and val is not None:
-            saldo_inicial = float(val)
         if desc == "Saldo Final" and val is not None:
             saldo_final = float(val)
 
