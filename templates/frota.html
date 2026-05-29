@@ -2477,6 +2477,7 @@ document.addEventListener('click', function(e) {
     }).sort(function(a, b) {
       return _parseDataBR(a.data) - _parseDataBR(b.data);
     });
+    var totalSemana = txSemana.reduce(function(s, t) { return s + t.valor; }, 0);
     var rowsSemana = txSemana.length
       ? txSemana.map(function(t) {
           var pos = t.valor > 0;
@@ -2486,7 +2487,12 @@ document.addEventListener('click', function(e) {
             '<td style="text-align:right;font-weight:700;color:' + (pos?'#15803d':'#dc2626') + '">' +
               (pos ? '+' : '−') + ' R$ ' + Math.abs(t.valor).toLocaleString('pt-BR',{minimumFractionDigits:2}) +
             '</td></tr>';
-        }).join('')
+        }).join('') +
+        '<tr style="background:#f1f5f9;border-top:2px solid #cbd5e1;">' +
+          '<td colspan="2" style="font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Total da semana</td>' +
+          '<td style="text-align:right;font-weight:800;font-size:13px;color:' + (totalSemana>=0?'#15803d':'#dc2626') + '">' +
+            (totalSemana>=0?'+':'−') + ' R$ ' + Math.abs(totalSemana).toLocaleString('pt-BR',{minimumFractionDigits:2}) +
+          '</td></tr>'
       : '<tr><td colspan="3" style="color:#94a3b8;text-align:center;padding:12px">Nenhuma movimentação nesta semana</td></tr>';
 
     var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
