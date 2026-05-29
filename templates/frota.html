@@ -2266,25 +2266,41 @@ document.addEventListener('click', function(e) {
     return '<span class="asaas-cat-badge ' + info[0] + '">' + info[1] + '</span>';
   }
 
-  /* ── Combina todos os extratos salvos em um único objeto ── */
+  /* ── Combina extratos, deduplica por tx_id ── */
   function _combinar(lista) {
     if (!lista.length) return null;
-    var totais = {};
+    var vistas = {};
     var transacoes = [];
     var periodos = [];
     lista.forEach(function(e) {
       periodos.push(e.periodo || '');
-      Object.keys(e.totais || {}).forEach(function(k) {
-        totais[k] = (totais[k] || 0) + (e.totais[k] || 0);
+      (e.transacoes || []).forEach(function(t) {
+        var chave = t.tx_id || (t.data + '|' + t.descricao + '|' + t.valor);
+        if (vistas[chave]) return;
+        vistas[chave] = true;
+        transacoes.push(t);
       });
-      (e.transacoes || []).forEach(function(t) { transacoes.push(t); });
+    });
+    /* Recalcula totais das transações já deduplicadas */
+    var SEMANA = 1200;
+    var totais = {};
+    transacoes.forEach(function(t) {
+      if (!t.relevante) return;
+      if (t.categoria === 'adesao') {
+        totais['caucao']         = (totais['caucao']         || 0) + Math.max(t.valor - SEMANA, 0);
+        totais['total_recebido'] = (totais['total_recebido'] || 0) + SEMANA;
+      } else if (t.categoria === 'aluguel') {
+        totais['total_recebido'] = (totais['total_recebido'] || 0) + t.valor;
+      } else {
+        totais[t.categoria] = (totais[t.categoria] || 0) + t.valor;
+      }
     });
     return {
-      periodo:    periodos.filter(Boolean).join(' + '),
+      periodo:       periodos.filter(Boolean).join(' + '),
       saldo_inicial: lista[0].saldo_inicial,
       saldo_final:   lista[lista.length - 1].saldo_final,
-      totais:     totais,
-      transacoes: transacoes,
+      totais:        totais,
+      transacoes:    transacoes,
     };
   }
 

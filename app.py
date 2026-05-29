@@ -251,12 +251,13 @@ def api_asaas_parse():
 
     transacoes = []
     for r in rows[header_row + 1:]:
-        data   = str(r[0] or "").strip()
-        tipo   = str(r[2] or "").strip()
-        estorn = str(r[3] or "").strip()
-        desc   = str(r[4] or "").strip()
+        data      = str(r[0] or "").strip()
+        tx_id     = str(r[1] or "").strip()   # ID único da transação ASAAS
+        tipo      = str(r[2] or "").strip()
+        estorn    = str(r[3] or "").strip()
+        desc      = str(r[4] or "").strip()
         valor_raw = r[5]
-        lancam = str(r[11] or "").strip()
+        lancam    = str(r[11] or "").strip()
 
         if not data or not desc or valor_raw is None:
             continue
@@ -331,6 +332,7 @@ def api_asaas_parse():
         transacoes.append({
             "data":          data,
             "tipo":          tipo,
+            "tx_id":         tx_id,
             "descricao":     desc,
             "valor":         valor,
             "lancamento":    lancam,
