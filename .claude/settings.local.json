@@ -123,7 +123,8 @@
       "Bash(awk -F: '$2 >= 2124 && $2 <= 2400')",
       "Bash(.venv/bin/python *)",
       "Bash(pip show *)",
-      "Bash(pip3 list *)"
+      "Bash(pip3 list *)",
+      "Bash(open *)"
     ]
   }
 }
