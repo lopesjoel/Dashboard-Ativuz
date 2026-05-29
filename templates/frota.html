@@ -375,6 +375,57 @@
 .inv-badge.green  { background:#f0fdf4; color:#15803d; }
 .inv-badge.orange { background:#fff7ed; color:#c2410c; }
 .inv-badge.red    { background:#fff1f2; color:#be123c; }
+
+/* ── Conciliação ASAAS ── */
+.asaas-upload-area {
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.asaas-upload-area:hover, .asaas-upload-area.drag { border-color: #6366f1; background: #f5f3ff; }
+.asaas-upload-area svg { margin-bottom: 8px; opacity: .5; }
+.asaas-upload-lbl { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+.asaas-upload-sub { font-size: 11.5px; color: var(--ink-3); }
+.asaas-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+@media(max-width:640px){ .asaas-cards { grid-template-columns: repeat(2,1fr); } }
+.asaas-card {
+  border-radius: 10px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.asaas-card.entrada { border-left: 3px solid #22c55e; }
+.asaas-card.saida   { border-left: 3px solid #f97316; }
+.asaas-card.neutro  { border-left: 3px solid #94a3b8; }
+.asaas-card-lbl { font-size: 10.5px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+.asaas-card-val { font-size: 18px; font-weight: 800; color: var(--ink-1); }
+.asaas-card-val.pos { color: #15803d; }
+.asaas-card-val.neg { color: #dc2626; }
+.asaas-card-sub { font-size: 10.5px; color: var(--ink-3); margin-top: 2px; }
+.asaas-periodo { font-size: 11.5px; color: var(--ink-3); margin-bottom: 14px; }
+.asaas-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.asaas-table th { padding: 7px 10px; text-align: left; font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; border-bottom: 2px solid var(--line); white-space: nowrap; }
+.asaas-table td { padding: 7px 10px; border-bottom: 1px solid var(--line); color: var(--ink-1); }
+.asaas-table tr:last-child td { border-bottom: none; }
+.asaas-table td.pos { color: #15803d; font-weight: 600; }
+.asaas-table td.neg { color: #dc2626; font-weight: 600; }
+.asaas-cat-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 700;
+}
+.asaas-cat-badge.aluguel   { background:#f0fdf4; color:#15803d; }
+.asaas-cat-badge.adesao    { background:#eff6ff; color:#1d4ed8; }
+.asaas-cat-badge.repasse   { background:#fdf4ff; color:#7e22ce; }
+.asaas-cat-badge.ativuz    { background:#fff7ed; color:#c2410c; }
+.asaas-cat-badge.seguro    { background:#f0f9ff; color:#0369a1; }
+.asaas-cat-badge.taxa      { background:#f8fafc; color:#64748b; }
+.asaas-cat-badge.estorno   { background:#fefce8; color:#92400e; }
+.asaas-cat-badge.outro     { background:#f8fafc; color:#64748b; }
+.asaas-toggle-det { font-size:11.5px; color:#6366f1; cursor:pointer; text-decoration:underline; background:none; border:none; font-family:inherit; padding:0; margin-top:10px; }
+.asaas-saldo-row { display:flex; align-items:center; gap:16px; padding:10px 0; border-top:2px solid var(--line); margin-top:8px; font-size:13px; font-weight:700; }
+.asaas-saldo-row span { color:var(--ink-2); font-weight:400; font-size:12px; }
 </style>
 {% endblock %}
 
@@ -628,6 +679,49 @@
       <div class="inv-bloco-title">Distribuição mensal · Recebido · Pendente · Futuro (perspectiva do investidor · 85%)</div>
       <div class="inv-chart-wrap">
         <canvas id="inv-chart-proj"></canvas>
+      </div>
+    </div>
+
+    <p class="inv-section">Conciliação ASAAS</p>
+    <div class="inv-bloco">
+      <div class="inv-bloco-title">Extrato bancário · Entradas e saídas · Prestação de contas ao investidor</div>
+
+      <!-- Upload -->
+      <div id="asaas-upload-wrap">
+        <label for="asaas-file-input" class="asaas-upload-area" id="asaas-drop-area">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <div class="asaas-upload-lbl">Clique ou arraste o extrato do ASAAS aqui</div>
+          <div class="asaas-upload-sub">Arquivo .xlsx exportado pelo ASAAS</div>
+        </label>
+        <input type="file" id="asaas-file-input" accept=".xlsx" style="display:none">
+      </div>
+
+      <!-- Resultado -->
+      <div id="asaas-resultado" style="display:none">
+        <div id="asaas-periodo-lbl" class="asaas-periodo"></div>
+        <div class="asaas-cards" id="asaas-cards"></div>
+        <div class="asaas-saldo-row" id="asaas-saldo-row"></div>
+        <div style="margin-top:18px;">
+          <div style="font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Entradas por motorista</div>
+          <div style="overflow-x:auto">
+            <table class="asaas-table" id="asaas-table-motoristas"></table>
+          </div>
+        </div>
+        <div style="margin-top:18px;">
+          <div style="font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Saídas detalhadas</div>
+          <div style="overflow-x:auto">
+            <table class="asaas-table" id="asaas-table-saidas"></table>
+          </div>
+        </div>
+        <button class="asaas-toggle-det" id="asaas-btn-det" onclick="asaasToggleDet()">Ver todas as transações</button>
+        <div id="asaas-det-wrap" style="display:none;margin-top:12px;overflow-x:auto">
+          <table class="asaas-table" id="asaas-table-det"></table>
+        </div>
+        <button class="asaas-toggle-det" onclick="asaasReset()" style="margin-left:16px;">Carregar outro extrato</button>
       </div>
     </div>
   </div>{# /tab-investidores #}
@@ -2130,6 +2224,182 @@ document.addEventListener('click', function(e) {
   if (modal && e.target === modal) modal.classList.remove('open');
 });
 
+})();
+</script>
+
+<script>
+/* ══ CONCILIAÇÃO ASAAS ══ */
+(function () {
+  var _det = false;
+
+  function _brl(v) {
+    return 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function _catBadge(cat) {
+    var map = {
+      aluguel:            ['aluguel',  'Aluguel'],
+      adesao:             ['adesao',   'Adesão'],
+      repasse_investidor: ['repasse',  'Repasse investidor'],
+      taxa_ativuz:        ['ativuz',   'Taxa Ativuz'],
+      seguro:             ['seguro',   'Seguro'],
+      taxa_asaas:         ['taxa',     'Taxa ASAAS'],
+      estorno:            ['estorno',  'Estorno'],
+      outro:              ['outro',    'Outro'],
+    };
+    var info = map[cat] || ['outro', cat];
+    return '<span class="asaas-cat-badge ' + info[0] + '">' + info[1] + '</span>';
+  }
+
+  function _renderCards(d) {
+    var totalEntradas = (d.totais.aluguel || 0) + (d.totais.adesao || 0);
+    var totalSaidas   = (d.totais.repasse_investidor || 0) + (d.totais.taxa_ativuz || 0) +
+                        (d.totais.seguro || 0) + (d.totais.taxa_asaas || 0);
+
+    var cards = [
+      { lbl: 'Total recebido',          val: totalEntradas,                      cls: 'entrada', sinal: 'pos', sub: 'Aluguéis + adesões' },
+      { lbl: 'Repasse ao investidor',   val: d.totais.repasse_investidor || 0,   cls: 'saida',   sinal: 'neg', sub: 'PIX Luz Divina' },
+      { lbl: 'Taxas Ativuz',            val: d.totais.taxa_ativuz || 0,          cls: 'saida',   sinal: 'neg', sub: 'Gestão e administração' },
+      { lbl: 'Seguros',                 val: d.totais.seguro || 0,               cls: 'saida',   sinal: 'neg', sub: 'Parcelas por veículo' },
+      { lbl: 'Taxas ASAAS',             val: d.totais.taxa_asaas || 0,           cls: 'saida',   sinal: 'neg', sub: 'Pix, WhatsApp, boleto' },
+      { lbl: 'Taxa de adesão',          val: d.totais.adesao || 0,               cls: 'entrada', sinal: 'pos', sub: 'Caução + 1ª semana' },
+      { lbl: 'Só aluguéis semanais',    val: d.totais.aluguel || 0,              cls: 'entrada', sinal: 'pos', sub: 'Recorrência semanal' },
+      { lbl: 'Estornos',                val: d.totais.estorno || 0,              cls: 'neutro',  sinal: '',    sub: '' },
+    ];
+
+    document.getElementById('asaas-cards').innerHTML = cards.map(function(c) {
+      return '<div class="asaas-card ' + c.cls + '">' +
+        '<div class="asaas-card-lbl">' + c.lbl + '</div>' +
+        '<div class="asaas-card-val ' + c.sinal + '">' + _brl(c.val) + '</div>' +
+        (c.sub ? '<div class="asaas-card-sub">' + c.sub + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderSaldo(d) {
+    var html = '<span>Saldo inicial</span> <strong>' + _brl(d.saldo_inicial) + '</strong>' +
+               '&nbsp;&nbsp;→&nbsp;&nbsp;<span>Saldo final</span> <strong style="color:' +
+               (d.saldo_final >= d.saldo_inicial ? '#15803d' : '#dc2626') + '">' + _brl(d.saldo_final) + '</strong>';
+    document.getElementById('asaas-saldo-row').innerHTML = html;
+  }
+
+  function _renderMotoristas(transacoes) {
+    var map = {};
+    transacoes.forEach(function(t) {
+      if (t.categoria !== 'aluguel' && t.categoria !== 'adesao') return;
+      var nome = t.motorista || 'Desconhecido';
+      if (!map[nome]) map[nome] = { aluguel: 0, adesao: 0, n: 0 };
+      if (t.categoria === 'aluguel') { map[nome].aluguel += t.valor; map[nome].n++; }
+      if (t.categoria === 'adesao')  { map[nome].adesao  += t.valor; }
+    });
+    var rows = Object.keys(map).sort().map(function(nome) {
+      var m = map[nome];
+      var total = m.aluguel + m.adesao;
+      return '<tr>' +
+        '<td>' + nome + '</td>' +
+        '<td>' + (m.n > 0 ? m.n + ' sem.' : '—') + '</td>' +
+        '<td class="pos">' + (m.aluguel ? _brl(m.aluguel) : '—') + '</td>' +
+        '<td class="pos">' + (m.adesao  ? _brl(m.adesao)  : '—') + '</td>' +
+        '<td class="pos" style="font-weight:800">' + _brl(total) + '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('asaas-table-motoristas').innerHTML =
+      '<thead><tr><th>Motorista</th><th>Semanas</th><th>Aluguéis</th><th>Adesão</th><th>Total</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>';
+  }
+
+  function _renderSaidas(transacoes) {
+    var saidas = transacoes.filter(function(t) {
+      return ['repasse_investidor','taxa_ativuz','seguro','taxa_asaas'].indexOf(t.categoria) >= 0;
+    });
+    var rows = saidas.map(function(t) {
+      return '<tr>' +
+        '<td>' + t.data + '</td>' +
+        '<td>' + _catBadge(t.categoria) + '</td>' +
+        '<td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.descricao + '">' + t.descricao + '</td>' +
+        '<td class="neg">' + _brl(t.valor) + '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('asaas-table-saidas').innerHTML =
+      '<thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>';
+  }
+
+  function _renderDetalhe(transacoes) {
+    var rows = transacoes.map(function(t) {
+      var pos = t.valor > 0;
+      return '<tr>' +
+        '<td>' + t.data + '</td>' +
+        '<td>' + _catBadge(t.categoria) + '</td>' +
+        '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.descricao + '">' + t.descricao + '</td>' +
+        '<td class="' + (pos ? 'pos' : 'neg') + '">' + (pos ? '+' : '') + _brl(t.valor) + '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('asaas-table-det').innerHTML =
+      '<thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>';
+  }
+
+  function _processar(file) {
+    var fd = new FormData();
+    fd.append('arquivo', file);
+    var wrap = document.getElementById('asaas-upload-wrap');
+    var res  = document.getElementById('asaas-resultado');
+    wrap.innerHTML = '<div style="text-align:center;color:var(--ink-3);font-size:13px;padding:20px">Processando…</div>';
+
+    fetch('/api/asaas-parse', { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.erro) { alert('Erro: ' + d.erro); asaasReset(); return; }
+        document.getElementById('asaas-periodo-lbl').textContent = d.periodo || '';
+        _renderCards(d);
+        _renderSaldo(d);
+        _renderMotoristas(d.transacoes);
+        _renderSaidas(d.transacoes);
+        _renderDetalhe(d.transacoes);
+        wrap.style.display = 'none';
+        res.style.display  = '';
+      })
+      .catch(function(e) { alert('Erro ao processar: ' + e); asaasReset(); });
+  }
+
+  window.asaasToggleDet = function() {
+    _det = !_det;
+    document.getElementById('asaas-det-wrap').style.display = _det ? '' : 'none';
+    document.getElementById('asaas-btn-det').textContent    = _det ? 'Ocultar transações' : 'Ver todas as transações';
+  };
+
+  window.asaasReset = function() {
+    var wrap = document.getElementById('asaas-upload-wrap');
+    var res  = document.getElementById('asaas-resultado');
+    wrap.innerHTML = '<label for="asaas-file-input" class="asaas-upload-area" id="asaas-drop-area">' +
+      '<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">' +
+      '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>' +
+      '</svg><div class="asaas-upload-lbl">Clique ou arraste o extrato do ASAAS aqui</div>' +
+      '<div class="asaas-upload-sub">Arquivo .xlsx exportado pelo ASAAS</div></label>' +
+      '<input type="file" id="asaas-file-input" accept=".xlsx" style="display:none">';
+    wrap.style.display = '';
+    res.style.display  = 'none';
+    _bindInput();
+  };
+
+  function _bindInput() {
+    var inp = document.getElementById('asaas-file-input');
+    if (inp) inp.addEventListener('change', function() {
+      if (this.files[0]) _processar(this.files[0]);
+    });
+    var drop = document.getElementById('asaas-drop-area');
+    if (drop) {
+      drop.addEventListener('dragover', function(e) { e.preventDefault(); drop.classList.add('drag'); });
+      drop.addEventListener('dragleave', function()  { drop.classList.remove('drag'); });
+      drop.addEventListener('drop', function(e) {
+        e.preventDefault(); drop.classList.remove('drag');
+        if (e.dataTransfer.files[0]) _processar(e.dataTransfer.files[0]);
+      });
+    }
+  }
+
+  _bindInput();
 })();
 </script>
 

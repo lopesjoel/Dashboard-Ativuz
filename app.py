@@ -205,6 +205,137 @@ def api_todos_telefones():
     return jsonify(resultado)
 
 
+@app.route("/api/asaas-parse", methods=["POST"])
+def api_asaas_parse():
+    import openpyxl, unicodedata
+    f = request.files.get("arquivo")
+    if not f:
+        return jsonify({"erro": "Nenhum arquivo enviado"}), 400
+
+    def _norm(s):
+        s = unicodedata.normalize("NFD", str(s or "").lower())
+        return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+    wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    # Localiza linha de cabeçalho real
+    header_row = None
+    for i, r in enumerate(rows):
+        if r[0] == "Data":
+            header_row = i
+            break
+    if header_row is None:
+        return jsonify({"erro": "Formato de arquivo não reconhecido"}), 400
+
+    # Extrai período
+    periodo = ""
+    for r in rows[:header_row]:
+        for cell in r:
+            s = str(cell or "")
+            if "período" in s.lower() or "periodo" in s.lower():
+                periodo = s
+                break
+
+    # Saldo inicial e final
+    saldo_inicial = saldo_final = None
+    for r in rows:
+        desc = str(r[4] or "").strip()
+        val  = r[6]
+        if desc == "Saldo Inicial" and val is not None:
+            saldo_inicial = float(val)
+        if desc == "Saldo Final" and val is not None:
+            saldo_final = float(val)
+
+    transacoes = []
+    for r in rows[header_row + 1:]:
+        data   = str(r[0] or "").strip()
+        tipo   = str(r[2] or "").strip()
+        estorn = str(r[3] or "").strip()
+        desc   = str(r[4] or "").strip()
+        valor_raw = r[5]
+        lancam = str(r[11] or "").strip()
+
+        if not data or not desc or valor_raw is None:
+            continue
+        try:
+            valor = float(valor_raw)
+        except (TypeError, ValueError):
+            continue
+
+        desc_n = _norm(desc)
+        abs_v  = abs(valor)
+
+        # Classificação
+        if estorn:
+            categoria = "estorno"
+        elif "cobrança recebida" in desc_n or "cobranca recebida" in desc_n:
+            if abs_v >= 3000:
+                categoria = "adesao"
+            else:
+                categoria = "aluguel"
+        elif "luz divina" in desc_n:
+            categoria = "repasse_investidor"
+        elif "ativuz" in desc_n:
+            categoria = "taxa_ativuz"
+        elif "seguro" in desc_n:
+            categoria = "seguro"
+        elif "taxa" in desc_n or "notificacao" in desc_n or "notificação" in desc_n:
+            categoria = "taxa_asaas"
+        else:
+            categoria = "outro"
+
+        # Extrai nome do motorista (cobranças)
+        motorista = ""
+        if categoria in ("aluguel", "adesao"):
+            import re as _re
+            m = _re.search(r"fatura nr\.\s*\d+\s+(.+)$", desc, _re.IGNORECASE)
+            motorista = m.group(1).strip() if m else ""
+
+        # Placa do seguro
+        placa_seguro = ""
+        if categoria == "seguro":
+            import re as _re
+            m = _re.search(r"BYD\s+([A-Z0-9\-]+)", desc, _re.IGNORECASE)
+            placa_seguro = m.group(1).upper().replace(" ", "") if m else ""
+
+        transacoes.append({
+            "data":          data,
+            "tipo":          tipo,
+            "descricao":     desc,
+            "valor":         valor,
+            "lancamento":    lancam,
+            "categoria":     categoria,
+            "motorista":     motorista,
+            "placa_seguro":  placa_seguro,
+        })
+
+    # Totalizadores
+    def _soma(cat):
+        return sum(t["valor"] for t in transacoes if t["categoria"] == cat)
+
+    totais = {
+        "aluguel":            _soma("aluguel"),
+        "adesao":             _soma("adesao"),
+        "repasse_investidor": _soma("repasse_investidor"),
+        "taxa_ativuz":        _soma("taxa_ativuz"),
+        "seguro":             _soma("seguro"),
+        "taxa_asaas":         _soma("taxa_asaas"),
+        "estorno":            _soma("estorno"),
+        "outro":              _soma("outro"),
+    }
+
+    return jsonify({
+        "periodo":        periodo,
+        "saldo_inicial":  saldo_inicial,
+        "saldo_final":    saldo_final,
+        "totais":         totais,
+        "transacoes":     transacoes,
+    })
+
+
 @app.route("/admin/novo-usuario", methods=["GET", "POST"])
 def admin_novo_usuario():
     token_correto = _os.environ.get("ADMIN_TOKEN", "")
