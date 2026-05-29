@@ -2452,6 +2452,14 @@ document.addEventListener('click', function(e) {
     }
     var semanaRef = 'Semana de ' + _fmt(seg) + ' a ' + _fmt(dom);
 
+    /* Extrai nome do investidor das transações de repasse */
+    var nomeInvestidor = '';
+    var txRepasse = d.transacoes.find(function(t) { return t.categoria === 'repasse_investidor'; });
+    if (txRepasse) {
+      var mInv = txRepasse.descricao.match(/para\s+(.+)$/i);
+      if (mInv) nomeInvestidor = mInv[1].trim().toUpperCase();
+    }
+
     /* Descrição curta por categoria */
     function _descCurta(t) {
       var c = t.categoria;
@@ -2516,7 +2524,7 @@ document.addEventListener('click', function(e) {
     '.saldo-item strong{font-size:15px;font-weight:800;}' +
     '.footer{margin-top:32px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between;}' +
     '@media print{body{padding:16px 20px;}button{display:none;}}</style></head><body>' +
-    '<div class="header"><div><div class="logo-txt">ATIVUZ VEÍCULOS</div><div class="logo-sub">Gestão de Frota e Investimentos</div></div>' +
+    '<div class="header"><div><div class="logo-txt">ATIVUZ VEÍCULOS</div><div class="logo-sub">Gestão de Frota e Investimentos</div>' + (nomeInvestidor ? '<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-top:4px;">' + nomeInvestidor + '</div>' : '') + '</div>' +
     '<div style="text-align:right"><h1>Prestação de Contas</h1><div class="sub">' + semanaRef + '</div></div></div>' +
     '<div class="saldo-row">' +
     '<div class="saldo-item"><label>Saldo inicial</label><strong>' + brl(d.saldo_inicial) + '</strong></div>' +
