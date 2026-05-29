@@ -630,11 +630,6 @@
       </div>
     </div>
 
-    <p class="inv-section">Desempenho Real por Veículo</p>
-    <div class="inv-bloco" id="inv-perf-bloco">
-      <div style="color:var(--ink-3);font-size:13px;padding:8px 0">Carregando...</div>
-    </div>
-
     <p class="inv-section">Projeção Mensal de Recebimentos</p>
     <div class="inv-bloco">
       <div class="inv-bloco-title">Distribuição mensal · Recebido · Pendente · Futuro (perspectiva do investidor · 85%)</div>
@@ -1983,42 +1978,6 @@ function renderPaybackChart() {
   });
 }
 
-/* ── Bloco 4: Desempenho Real ── */
-function renderDesempenho(data) {
-  if (!data || !data.length) {
-    document.getElementById('inv-perf-bloco').innerHTML = '<p style="color:var(--ink-3);font-size:13px">Sem dados disponíveis.</p>';
-    return;
-  }
-  var rows = data.filter(function(v) {
-    var m = (v.modelo || '').toUpperCase();
-    return m.indexOf('POLO') === -1;
-  }).map(function(v) {
-    var semanas = v.semanas || [];
-    var passadas = semanas.filter(function(s){ return s.passada; });
-    var recebidas = passadas.filter(function(s){ return s.recebido; });
-    var efic = passadas.length > 0 ? (recebidas.length / passadas.length * 100) : 0;
-    var inv_rec  = v.recebido_total  * (85 / 15);
-    var inv_pend = v.pendente_total  * (85 / 15);
-    var badgeCls = efic >= 80 ? 'green' : efic >= 50 ? 'orange' : 'red';
-    return '<tr>' +
-      '<td><strong>' + v.placa + '</strong></td>' +
-      '<td>' + (v.modelo || '—') + '</td>' +
-      '<td>' + (v.proprietario || '—') + '</td>' +
-      '<td>' + passadas.length + '</td>' +
-      '<td>' + recebidas.length + '</td>' +
-      '<td><span class="inv-badge ' + badgeCls + '">' + efic.toFixed(0) + '%</span></td>' +
-      '<td style="color:#22a06b;font-weight:600">R$ ' + brl(inv_rec) + '</td>' +
-      '<td style="color:#f59e0b;font-weight:600">R$ ' + brl(inv_pend) + '</td>' +
-      '</tr>';
-  }).join('');
-  document.getElementById('inv-perf-bloco').innerHTML =
-    '<div class="inv-bloco-title">Semanas ativas · eficiência de recebimento · rendimento real</div>' +
-    '<div style="overflow-x:auto"><table class="inv-perf-table">' +
-    '<thead><tr><th>Placa</th><th>Modelo</th><th>Proprietário</th><th>Sem. Ativas</th><th>Recebidas</th><th>Eficiência</th><th>Rec. Investidor</th><th>Pendente Inv.</th></tr></thead>' +
-    '<tbody>' + rows + '</tbody>' +
-    '</table></div>';
-}
-
 /* ── Bloco 5: Projeção Mensal ── */
 function renderProjecao(data) {
   if (!data || !data.length) return;
@@ -2071,7 +2030,6 @@ window.invRenderAll = function() {
   renderExecSummary();
   renderComparacao(data);
   renderPaybackChart();
-  renderDesempenho(data);
   renderProjecao(data);
 };
 
