@@ -2303,7 +2303,7 @@ document.addEventListener('click', function(e) {
     var rows = Object.keys(map).sort().map(function(nome) {
       var m = map[nome];
       var total = m.aluguel + m.caucao;
-      return '<tr><td>' + nome + '</td>' +
+      return '<tr><td>' + nome.toUpperCase() + '</td>' +
         '<td>' + (m.n > 0 ? m.n + ' sem.' : '—') + '</td>' +
         '<td class="pos">' + (m.aluguel ? _brl(m.aluguel) : '—') + '</td>' +
         '<td class="pos">' + (m.caucao   ? _brl(m.caucao)  : '—') + '</td>' +
