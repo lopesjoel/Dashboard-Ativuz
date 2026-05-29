@@ -2176,7 +2176,9 @@ document.addEventListener('click', function(e) {
     return {
       periodo:       periodos.filter(Boolean).join(' + '),
       saldo_inicial: 0,
-      saldo_final:   transacoes.reduce(function(s, t) { return t.relevante ? s + t.valor : s; }, 0),
+      saldo_final:   transacoes.reduce(function(s, t) {
+        return (t.relevante && t.categoria !== 'repasse_investidor') ? s + t.valor : s;
+      }, 0),
       totais:        totais,
       transacoes:    transacoes,
     };
