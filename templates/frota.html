@@ -2319,7 +2319,7 @@ document.addEventListener('click', function(e) {
 
   function _renderSaidas(transacoes) {
     var saidas = transacoes.filter(function(t) {
-      return t.relevante && t.valor < 0;
+      return t.relevante && t.valor < 0 && t.categoria !== 'repasse_investidor';
     });
     var rows = saidas.map(function(t) {
       return '<tr>' +
