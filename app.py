@@ -195,6 +195,8 @@ def api_todos_telefones():
         fone = _v(row, i_tel)
         if not fone or not nome:
             continue
+        if "segcomp" in _norm(nome):
+            continue
         chave = (nome.lower(), fone)
         if chave in vistos:
             continue
