@@ -2263,21 +2263,13 @@ document.addEventListener('click', function(e) {
   }
 
   function _renderCards(d) {
-    var totalEntradas = (d.totais.aluguel || 0) + (d.totais.adesao || 0);
-    var totalSaidas   = (d.totais.repasse_investidor || 0) + (d.totais.taxa_ativuz || 0) +
-                        (d.totais.reembolso_manutencao || 0) + (d.totais.ipva || 0) +
-                        (d.totais.seguro || 0) + (d.totais.taxa_asaas || 0);
-
     var cards = [
-      { lbl: 'Total recebido',        val: totalEntradas,                    cls: 'entrada', sinal: 'pos', sub: 'Aluguéis + adesões' },
-      { lbl: 'Repasse ao investidor', val: d.totais.repasse_investidor || 0, cls: 'saida',   sinal: 'neg', sub: 'PIX Luz Divina' },
-      { lbl: 'Taxa adm (Ativuz)',      val: d.totais.taxa_ativuz || 0,               cls: 'saida', sinal: 'neg', sub: 'Gestão e administração' },
-      { lbl: 'Reembolso manutenção',  val: d.totais.reembolso_manutencao || 0,      cls: 'saida', sinal: 'neg', sub: 'PIX ao motorista' },
-      { lbl: 'Seguros',               val: d.totais.seguro || 0,                    cls: 'saida', sinal: 'neg', sub: 'Parcelas por veículo' },
-      { lbl: 'IPVA',                  val: d.totais.ipva || 0,                      cls: 'saida', sinal: 'neg', sub: 'Por veículo' },
-      { lbl: 'Taxas ASAAS',           val: d.totais.taxa_asaas || 0,         cls: 'saida',   sinal: 'neg', sub: 'Pix, WhatsApp, boleto' },
-      { lbl: 'Taxa de adesão',        val: d.totais.adesao || 0,             cls: 'entrada', sinal: 'pos', sub: 'Caução + 1ª semana' },
-      { lbl: 'Aluguéis semanais',     val: d.totais.aluguel || 0,            cls: 'entrada', sinal: 'pos', sub: 'Recorrência semanal' },
+      { lbl: 'Total recebido',        val: d.totais.total_recebido || 0,          cls: 'entrada', sinal: 'pos', sub: 'Semanas de R$1.200' },
+      { lbl: 'Cauções',               val: d.totais.caucao || 0,                  cls: 'entrada', sinal: 'pos', sub: 'R$3.000 por contrato' },
+      { lbl: 'Taxa adm (Ativuz)',     val: d.totais.taxa_ativuz || 0,             cls: 'saida',   sinal: 'neg', sub: 'Gestão e administração' },
+      { lbl: 'Reembolso manutenção',  val: d.totais.reembolso_manutencao || 0,    cls: 'saida',   sinal: 'neg', sub: 'PIX ao motorista' },
+      { lbl: 'IPVA',                  val: d.totais.ipva || 0,                    cls: 'saida',   sinal: 'neg', sub: 'Por veículo' },
+      { lbl: 'Taxas ASAAS',           val: d.totais.taxa_asaas || 0,              cls: 'saida',   sinal: 'neg', sub: 'Pix, WhatsApp, boleto' },
     ];
 
     document.getElementById('asaas-cards').innerHTML = cards.map(function(c) {
@@ -2432,12 +2424,10 @@ document.addEventListener('click', function(e) {
     }).join('');
 
     var saidasCats = [
-      {key:'repasse_investidor', label:'Repasse ao investidor (LUZ DIVINA)',  cor:'#7e22ce'},
-      {key:'taxa_ativuz',          label:'Taxa adm (ATIVUZ)',                   cor:'#c2410c'},
-      {key:'reembolso_manutencao', label:'Reembolso de manutenção (ao motorista)', cor:'#c2410c'},
-      {key:'seguro',             label:'Seguros BYD',                          cor:'#0369a1'},
-      {key:'ipva',               label:'IPVA',                                 cor:'#0369a1'},
-      {key:'taxa_asaas',         label:'Taxas da plataforma ASAAS',           cor:'#64748b'},
+      {key:'taxa_ativuz',          label:'Taxa adm (ATIVUZ)',          cor:'#c2410c'},
+      {key:'reembolso_manutencao', label:'Reembolso de manutenção',   cor:'#c2410c'},
+      {key:'ipva',                 label:'IPVA',                       cor:'#0369a1'},
+      {key:'taxa_asaas',           label:'Taxas da plataforma ASAAS', cor:'#64748b'},
     ];
     var rowsSaidas = saidasCats.filter(function(c){ return d.totais[c.key]; }).map(function(c) {
       return '<tr><td style="color:' + c.cor + ';font-weight:600">' + c.label + '</td>' +
@@ -2481,17 +2471,13 @@ document.addEventListener('click', function(e) {
     '<div class="saldo-row">' +
       '<div class="saldo-item"><label>Saldo inicial</label><strong>' + brl(d.saldo_inicial) + '</strong></div>' +
       '<div class="saldo-item"><label>Saldo final</label><strong style="color:' + (d.saldo_final >= d.saldo_inicial ? '#15803d':'#dc2626') + '">' + brl(d.saldo_final) + '</strong></div>' +
-      '<div class="saldo-item"><label>Total recebido</label><strong style="color:#15803d">' + brl(totalEntradas) + '</strong></div>' +
-      '<div class="saldo-item"><label>Total saídas</label><strong style="color:#dc2626">' + brl(totalSaidas) + '</strong></div>' +
     '</div>' +
 
     '<div class="cards">' +
-      '<div class="card entrada"><div class="card-lbl">Aluguéis semanais</div><div class="card-val pos">' + brl(d.totais.aluguel||0) + '</div></div>' +
-      '<div class="card entrada"><div class="card-lbl">Taxa de adesão</div><div class="card-val pos">' + brl(d.totais.adesao||0) + '</div></div>' +
-      '<div class="card saida"><div class="card-lbl">Repasse investidor</div><div class="card-val neg">' + brl(d.totais.repasse_investidor||0) + '</div></div>' +
+      '<div class="card entrada"><div class="card-lbl">Total recebido</div><div class="card-val pos">' + brl(d.totais.total_recebido||0) + '</div></div>' +
+      '<div class="card entrada"><div class="card-lbl">Cauções</div><div class="card-val pos">' + brl(d.totais.caucao||0) + '</div></div>' +
       '<div class="card saida"><div class="card-lbl">Taxa adm (Ativuz)</div><div class="card-val neg">' + brl(d.totais.taxa_ativuz||0) + '</div></div>' +
       (d.totais.reembolso_manutencao ? '<div class="card saida"><div class="card-lbl">Reembolso manutenção</div><div class="card-val neg">' + brl(d.totais.reembolso_manutencao) + '</div></div>' : '') +
-      '<div class="card saida"><div class="card-lbl">Seguros BYD</div><div class="card-val neg">' + brl(d.totais.seguro||0) + '</div></div>' +
       (d.totais.ipva ? '<div class="card saida"><div class="card-lbl">IPVA</div><div class="card-val neg">' + brl(d.totais.ipva) + '</div></div>' : '') +
       '<div class="card neutro"><div class="card-lbl">Taxas ASAAS</div><div class="card-val">' + brl(d.totais.taxa_asaas||0) + '</div></div>' +
     '</div>' +

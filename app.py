@@ -288,10 +288,8 @@ def api_asaas_parse():
             categoria = "repasse_investidor"
         elif "ativuz" in desc_n:
             categoria = "taxa_ativuz"
-        elif "ipva" in desc_n:
+        elif "ipva" in desc_n or "seguro" in desc_n:
             categoria = "ipva"
-        elif "seguro" in desc_n:
-            categoria = "seguro"
         elif "taxa" in desc_n or "notificacao" in desc_n or "notificação" in desc_n:
             categoria = "taxa_asaas"
         elif valor < 0 and any(c in desc_n for c in _CLIENTES_N):
@@ -347,14 +345,18 @@ def api_asaas_parse():
     def _soma(cat):
         return sum(t["valor"] for t in transacoes if t["categoria"] == cat and t["relevante"])
 
+    # Adesão = caução (R$3.000) + 1ª semana (R$1.200)
+    _SEMANA_VALOR = 1200
+    _adesoes = [t for t in transacoes if t["categoria"] == "adesao" and t["relevante"]]
+    caucao_total  = sum(max(t["valor"] - _SEMANA_VALOR, 0) for t in _adesoes)
+    semana_adesao = len(_adesoes) * _SEMANA_VALOR
+
     totais = {
-        "aluguel":              _soma("aluguel"),
-        "adesao":               _soma("adesao"),
-        "repasse_investidor":   _soma("repasse_investidor"),
+        "total_recebido":       _soma("aluguel") + semana_adesao,
+        "caucao":               caucao_total,
         "taxa_ativuz":          _soma("taxa_ativuz"),
         "reembolso_manutencao": _soma("reembolso_manutencao"),
         "ipva":                 _soma("ipva"),
-        "seguro":               _soma("seguro"),
         "taxa_asaas":           _soma("taxa_asaas"),
         "estorno":              _soma("estorno"),
     }
