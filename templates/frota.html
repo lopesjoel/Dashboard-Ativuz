@@ -648,16 +648,16 @@
         <div id="asaas-extratos-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
       </div>
 
-      <!-- Upload -->
+      <!-- Upload inicial (visível só quando não há dados) -->
       <div id="asaas-upload-wrap">
         <label for="asaas-file-input" class="asaas-upload-area" id="asaas-drop-area">
-          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
             <polyline points="17 8 12 3 7 8"/>
             <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
           <div class="asaas-upload-lbl">Clique ou arraste o extrato do ASAAS aqui</div>
-          <div class="asaas-upload-sub">Arquivo .xlsx exportado pelo ASAAS — os extratos se acumulam automaticamente</div>
+          <div class="asaas-upload-sub">Arquivo .xlsx — os extratos se acumulam automaticamente</div>
         </label>
         <input type="file" id="asaas-file-input" accept=".xlsx" style="display:none">
         <div id="asaas-load-msg" style="display:none;text-align:center;font-size:13px;color:var(--ink-3);padding:10px 0;">Processando…</div>
@@ -665,15 +665,29 @@
 
       <!-- Resultado acumulado -->
       <div id="asaas-resultado" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
           <div id="asaas-periodo-lbl" class="asaas-periodo" style="margin-bottom:0"></div>
-          <button onclick="asaasGerarPdf()" style="display:inline-flex;align-items:center;gap:8px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            Gerar PDF
-          </button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <!-- Botão compacto de adicionar extrato (dentro do resultado) -->
+            <label for="asaas-file-input" style="display:inline-flex;align-items:center;gap:6px;background:none;
+              border:1.5px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;
+              cursor:pointer;color:var(--text-muted);font-family:inherit;transition:all .12s;"
+              onmouseover="this.style.borderColor='#25D366';this.style.color='#25D366'"
+              onmouseout="this.style.borderColor='';this.style.color=''">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Adicionar extrato
+            </label>
+            <button onclick="asaasGerarPdf()" style="display:inline-flex;align-items:center;gap:8px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Gerar PDF
+            </button>
+          </div>
         </div>
         <div class="asaas-cards" id="asaas-cards"></div>
         <div class="asaas-saldo-row" id="asaas-saldo-row"></div>
@@ -2229,6 +2243,11 @@ document.addEventListener('click', function(e) {
   };
 
   function _mostrarResultado(d) {
+    // Esconde upload inicial, mostra resultado
+    var uploadWrap = document.getElementById('asaas-upload-wrap');
+    if (uploadWrap) uploadWrap.style.display = 'none';
+    document.getElementById('asaas-resultado').style.display = '';
+    // Atualiza sempre todos os elementos
     _renderCards(d);
     _renderSaldo(d);
     _renderMotoristas(d.transacoes);
@@ -2236,7 +2255,6 @@ document.addEventListener('click', function(e) {
     _renderDetalhe(d.transacoes);
     var pl = document.getElementById('asaas-periodo-lbl');
     if (pl) pl.textContent = d.periodo || '';
-    document.getElementById('asaas-resultado').style.display = '';
     // Atualiza resumo executivo com dados reais do ASAAS
     window._asaasDados = d;
     if (window.renderExecSummary) renderExecSummary();
