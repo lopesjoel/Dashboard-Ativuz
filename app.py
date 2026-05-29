@@ -52,6 +52,12 @@ def _fmt_pct(v):
     return f"{v * 100:.1f}%"
 
 
+def _nh(s):
+    """Normaliza string: minúsculas, sem acentos."""
+    s = unicodedata.normalize("NFD", str(s or "").lower())
+    return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+
 # ── Autenticação ──────────────────────────────────────────────────────────────
 
 _ROTAS_PUBLICAS = {"login", "static", "admin_novo_usuario"}
@@ -585,6 +591,7 @@ def dashboard():
     contratos_ativos = 0
     total_contratos_planilha = 0
     receita_mensal_real = None
+    lista_contratos = []
     try:
         lista_contratos, _ = _ler_contratos()
         ativos_lst = [c for c in lista_contratos if c['situacao'] == 'EM ANDAMENTO']
@@ -637,7 +644,7 @@ def dashboard():
         pass
 
     inad = _inad_summary()
-    contratos_vencendo = _contratos_vencendo(dias_limite=60)
+    contratos_vencendo = _contratos_vencendo(dias_limite=60, contratos=lista_contratos or None)
     return render_template(
         "dashboard.html",
         active="dashboard",
@@ -1872,10 +1879,11 @@ def _parse_valor_excel(raw):
         return 0.0
 
 
-def _contratos_vencendo(dias_limite: int = 60):
+def _contratos_vencendo(dias_limite: int = 60, contratos=None):
     """Return EM ANDAMENTO contracts expiring within `dias_limite` days or already expired, sorted asc."""
     try:
-        contratos, _ = _ler_contratos()
+        if contratos is None:
+            contratos, _ = _ler_contratos()
     except Exception:
         return []
     resultado = []
@@ -1897,210 +1905,20 @@ def _contratos_vencendo(dias_limite: int = 60):
     return resultado
 
 
-def _inad_summary():
-    """Read CONTAS-A-RECEBER.xlsx and return aggregated data for the dashboard."""
-    import openpyxl
-
-    def _nh(s):
-        s = unicodedata.normalize("NFD", str(s or "").lower())
-        return "".join(c for c in s if unicodedata.category(c) != "Mn")
-
-    xlsx_path = Path(__file__).parent / "planilhas" / "CONTAS-A-RECEBER.xlsx"
-    if not xlsx_path.exists():
-        return None
-
-    try:
-        wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
-        ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
-        wb.close()
-
-        header_idx = 0
-        _htargets = ["receber de", "vencimento", "valor"]
-        for ri, row in enumerate(rows[:10]):
-            nh_row = [_nh(str(c or "")) for c in row]
-            if sum(1 for t in _htargets if any(t in n for n in nh_row)) >= 2:
-                header_idx = ri
-                break
-
-        header    = rows[header_idx]
-        data_rows = rows[header_idx + 1:]
-
-        def _ci(keyword):
-            nk = _nh(keyword)
-            return next((i for i, h in enumerate(header)
-                         if h is not None and nk in _nh(str(h))), None)
-
-        i_nome  = _ci("receber de (fantasia)") or _ci("receber de")
-        i_valor = _ci("valor previsto") or _ci("valor")
-        i_venc  = _ci("data de vencimento") or _ci("vencimento")
-        i_sit   = _ci("situacao (data de vencimento)") or _ci("situacao")
-        i_doc   = _ci("numero do documento") or _ci("documento")
-        i_unid  = _ci("unidade")
-
-        hoje = date.today()
-        _MULTA_VALS = {600, 630, 650, 680, 700, 800, 1200}
-
-        def _get(row, idx):
-            return row[idx] if idx is not None and idx < len(row) else None
-
-        registros = []
-        for row in data_rows:
-            nome_raw = _get(row, i_nome)
-            if not nome_raw:
-                continue
-            nome = str(nome_raw).strip()
-            if not nome:
-                continue
-
-            if "marcelo bento" in _nh(nome):
-                continue
-
-            valor = _parse_valor_excel(_get(row, i_valor))
-            if valor <= 0:
-                continue
-
-            venc_raw = _get(row, i_venc)
-            sit_raw  = str(_get(row, i_sit) or "").lower()
-
-            venc_date = None
-            if venc_raw:
-                if isinstance(venc_raw, datetime):
-                    venc_date = venc_raw.date()
-                elif isinstance(venc_raw, date):
-                    venc_date = venc_raw
-                else:
-                    for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
-                        try:
-                            venc_date = datetime.strptime(str(venc_raw).strip(), fmt).date()
-                            break
-                        except (ValueError, TypeError):
-                            pass
-            if venc_date is None:
-                continue
-
-            if "a vencer" in sit_raw and venc_date > hoje:
-                continue
-
-            if venc_date == hoje:
-                dias = 0
-            else:
-                dias = (hoje - venc_date).days
-                if dias < 0:
-                    continue
-
-            qualifica = int(round(valor)) in _MULTA_VALS
-            multa = valor * 0.05 if (dias >= 1 and qualifica) else 0.0
-            juros = valor * 0.005 * dias if dias >= 1 else 0.0
-            total = valor + multa + juros
-
-            if dias == 0:    etapa = "Hoje"
-            elif dias == 1:  etapa = "Terça-feira"
-            elif dias == 2:  etapa = "Quarta-feira"
-            elif dias == 3:  etapa = "Quinta-feira"
-            elif dias == 4:  etapa = "Sexta-feira"
-            elif dias <= 6:  etapa = "D+5"
-            elif dias <= 9:  etapa = "D+7"
-            elif dias <= 14: etapa = "D+10"
-            else:            etapa = "D+15"
-
-            doc  = str(_get(row, i_doc) or "").strip()
-            unid = str(_get(row, i_unid) or "").strip()
-
-            registros.append({
-                "nome":    nome,
-                "placa":   doc or unid or "—",
-                "venc":    venc_date.strftime("%d/%m/%Y"),
-                "dias":    dias,
-                "total_s": _brl(total),
-                "etapa":   etapa,
-            })
-
-        if not registros:
-            return {"total_s": _brl(0), "casos": 0, "hoje": 0,
-                    "por_etapa": {}, "recentes": [], "total_raw": 0}
-
-        total_aberto = sum(_parse_valor_excel(r["total_s"]) for r in registros)
-        # Re-compute from original values stored above via closure isn't possible;
-        # sum total_s back from formatted strings by re-reading raw registros
-        total_aberto_raw = 0.0
-        for row in data_rows:
-            nome_raw = _get(row, i_nome)
-            if not nome_raw or not str(nome_raw).strip():
-                continue
-            valor = _parse_valor_excel(_get(row, i_valor))
-            if valor <= 0:
-                continue
-            venc_raw = _get(row, i_venc)
-            sit_raw  = str(_get(row, i_sit) or "").lower()
-            venc_date = None
-            if venc_raw:
-                if isinstance(venc_raw, datetime):
-                    venc_date = venc_raw.date()
-                elif isinstance(venc_raw, date):
-                    venc_date = venc_raw
-                else:
-                    for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
-                        try:
-                            venc_date = datetime.strptime(str(venc_raw).strip(), fmt).date()
-                            break
-                        except (ValueError, TypeError):
-                            pass
-            if venc_date is None:
-                continue
-            if "a vencer" in sit_raw and venc_date > hoje:
-                continue
-            if venc_date == hoje:
-                dias = 0
-            else:
-                dias = (hoje - venc_date).days
-                if dias < 0:
-                    continue
-            qualifica = int(round(valor)) in _MULTA_VALS
-            multa = valor * 0.05 if (dias >= 1 and qualifica) else 0.0
-            juros = valor * 0.005 * dias if dias >= 1 else 0.0
-            total_aberto_raw += valor + multa + juros
-
-        nomes_unicos = set(r["nome"] for r in registros)
-        hoje_count   = sum(1 for r in registros if r["dias"] == 0)
-
-        etapas = ["Hoje","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","D+5","D+7","D+10","D+15"]
-        por_etapa = {e: 0 for e in etapas}
-        for r in registros:
-            if r["etapa"] in por_etapa:
-                por_etapa[r["etapa"]] += 1
-
-        recentes = sorted(registros, key=lambda r: r["dias"], reverse=True)[:8]
-
-        return {
-            "total_s":   _brl(total_aberto_raw),
-            "total_raw": total_aberto_raw,
-            "casos":     len(nomes_unicos),
-            "hoje":      hoje_count,
-            "por_etapa": por_etapa,
-            "recentes":  recentes,
-        }
-
-    except Exception:
-        import traceback; traceback.print_exc()
-        return None
-
-
-@app.route("/inadimplencia")
-def pagina_inadimplencia():
+def _ler_inad_dados():
+    """
+    Fonte única: lê CONTAS-A-RECEBER.xlsx e retorna
+    (registros_vencidos, registros_a_vencer, erro_leitura).
+    Usada tanto por _inad_summary() quanto por pagina_inadimplencia().
+    """
     from urllib.parse import quote as _url_quote
     from collections import Counter
     import openpyxl
 
-    def _nh(s):
-        s = unicodedata.normalize("NFD", str(s or "").lower())
-        return "".join(c for c in s if unicodedata.category(c) != "Mn")
+    _base         = Path(__file__).parent / "planilhas"
+    xlsx_path     = _base / "CONTAS-A-RECEBER.xlsx"
+    clientes_path = _base / "DADOS_CLIENTES_CONS.xlsx"
 
-    _base = Path(__file__).parent / "planilhas"
-    xlsx_path       = _base / "CONTAS-A-RECEBER.xlsx"
-    clientes_path   = _base / "DADOS_CLIENTES_CONS.xlsx"
-
-    # Carrega mapa nome → telefone WhatsApp (ex: "5584981787788")
     _tel_map = {}
     if clientes_path.exists():
         try:
@@ -2117,247 +1935,287 @@ def pagina_inadimplencia():
             pass
 
     hoje = date.today()
-    registros_vencidos = []   # VENCIDO rows + A VENCER rows whose date == hoje (D+0)
-    registros_a_vencer = []   # A VENCER rows whose date > hoje
+    registros_vencidos = []
+    registros_a_vencer = []
     erro_leitura = None
 
-    if xlsx_path.exists():
-        try:
-            wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
-            ws = wb.active
-            rows = list(ws.iter_rows(values_only=True))
-            wb.close()
-
-            # Detect header row (needs "receber de" + "vencimento" + "valor")
-            header_idx = 0
-            _htargets = ["receber de", "vencimento", "valor"]
-            for ri, row in enumerate(rows[:10]):
-                nh_row = [_nh(str(c or "")) for c in row]
-                if sum(1 for t in _htargets if any(t in n for n in nh_row)) >= 2:
-                    header_idx = ri
-                    break
-
-            header    = rows[header_idx]
-            data_rows = rows[header_idx + 1:]
-
-            def _ci(keyword):
-                nk = _nh(keyword)
-                return next((i for i, h in enumerate(header)
-                             if h is not None and nk in _nh(str(h))), None)
-
-            i_nome  = _ci("receber de (fantasia)") or _ci("receber de")
-            i_valor = _ci("valor previsto") or _ci("valor")
-            i_venc  = _ci("data de vencimento") or _ci("vencimento")
-            i_sit   = _ci("situacao (data de vencimento)") or _ci("situacao")
-            i_tipo  = _ci("tipo de fatura") or _ci("tipo")
-            i_doc   = _ci("numero do documento") or _ci("documento")
-            i_unid  = _ci("unidade")
-
-            _NOMES_EXCLUIDOS = {"MARCELO BENTO DE ARAUJO"}
-
-            # Count all rows per name (vencido + a vencer) for reincidence
-            name_counts = Counter()
-            for row in data_rows:
-                if i_nome is not None and i_nome < len(row) and row[i_nome]:
-                    n = str(row[i_nome]).strip()
-                    if n and n.upper() not in _NOMES_EXCLUIDOS:
-                        name_counts[n] += 1
-
-            def _get(row, idx):
-                return row[idx] if idx is not None and idx < len(row) else None
-
-            for row in data_rows:
-                nome_raw = _get(row, i_nome)
-                if not nome_raw:
-                    continue
-                nome = str(nome_raw).strip()
-                if not nome or nome.upper() in _NOMES_EXCLUIDOS:
-                    continue
-
-                valor    = _parse_valor_excel(_get(row, i_valor))
-                venc_raw = _get(row, i_venc)
-                sit_raw  = _get(row, i_sit)
-                tipo_raw = _get(row, i_tipo)
-                doc_raw  = _get(row, i_doc)
-                unid_raw = _get(row, i_unid)
-
-                # Parse vencimento date (openpyxl returns datetime objects directly)
-                venc_date = None
-                if venc_raw:
-                    if isinstance(venc_raw, datetime):
-                        venc_date = venc_raw.date()
-                    elif isinstance(venc_raw, date):
-                        venc_date = venc_raw
-                    else:
-                        venc_str = str(venc_raw).strip().upper()
-                        if venc_str == "HOJE":
-                            venc_date = hoje
-                        else:
-                            for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
-                                try:
-                                    venc_date = datetime.strptime(venc_str, fmt).date()
-                                    break
-                                except (ValueError, TypeError):
-                                    pass
-                if venc_date is None:
-                    continue
-
-                situacao    = _nh(str(sit_raw  or ""))
-                tipo_fatura = str(tipo_raw or "").strip()
-                num_doc     = str(doc_raw  or "").strip()
-                unidade     = str(unid_raw or "").strip()
-                for s in ("None", "nan", ""):
-                    if num_doc == s: num_doc = ""
-                    if unidade == s: unidade = ""
-
-                reincidente = name_counts[nome] > 1
-                is_fatura   = _nh(tipo_fatura) == "fatura"
-                data_fmt    = venc_date.strftime("%d/%m/%Y")
-
-                # ── A VENCER (future dates) ──────────────────────────────────
-                if "a vencer" in situacao and venc_date > hoje:
-                    dias_ate = (venc_date - hoje).days
-                    registros_a_vencer.append({
-                        "nome":            nome,
-                        "num_doc":         num_doc,
-                        "unidade":         unidade,
-                        "data_vencimento": data_fmt,
-                        "dias_ate":        dias_ate,
-                        "reincidente":     reincidente,
-                        "tipo_fatura":     tipo_fatura,
-                        "valor_s":         _brl(valor),
-                        "_valor":          valor,
-                    })
-                    continue
-
-                # ── VENCIDO or vence hoje ────────────────────────────────────
-                if "a vencer" in situacao and venc_date == hoje:
-                    dias = 0
-                else:
-                    dias = (hoje - venc_date).days
-                    if dias < 0:
-                        continue
-
-                if dias == 0:
-                    etapa, etapa_cls = "Hoje",          "stage-d0"
-                    proxima = "Enviar lembrete de vencimento"
-                elif dias == 1:
-                    etapa, etapa_cls = "Terça-feira",   "stage-d1"
-                    proxima = "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
-                elif dias == 2:
-                    etapa, etapa_cls = "Quarta-feira",  "stage-d2"
-                    proxima = "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
-                elif dias == 3:
-                    etapa, etapa_cls = "Quinta-feira",  "stage-d3"
-                    proxima = "Juros de mora em contagem — regularize hoje para evitar suspensão do serviço"
-                elif dias == 4:
-                    etapa, etapa_cls = "Sexta-feira",   "stage-d4"
-                    proxima = "Aviso final — regularize até hoje ou o serviço será suspenso"
-                elif dias <= 6:
-                    etapa, etapa_cls = "D+5",  "stage-d5"
-                    proxima = "Serviço suspenso — exigir comprovante de pagamento para reativação"
-                elif dias <= 9:
-                    etapa, etapa_cls = "D+7",  "stage-d7"
-                    proxima = "Encaminhar para cobrança jurídica extrajudicial"
-                elif dias <= 14:
-                    etapa, etapa_cls = "D+10", "stage-d10"
-                    proxima = "Negativação no SPC/Serasa + encaminhamento jurídico"
-                else:
-                    etapa, etapa_cls = "D+15", "stage-d15"
-                    proxima = "Processo judicial iniciado — recolhimento imediato do veículo"
-
-                multa      = valor * 0.10 if dias >= 2 else 0.0
-                juros_mora = valor * 0.005 * dias if dias >= 3 else 0.0
-                juros      = multa + juros_mora
-                total      = valor + juros
-                pausar = total * 0.5
-
-                dias_label = (f"{dias} dia{'s' if dias != 1 else ''} de atraso"
-                              if dias > 0 else "Vence hoje")
-                dias_s = f"{dias} dia{'s' if dias != 1 else ''}"
-
-                # WhatsApp messages per stage
-                if dias == 0:
-                    msg = f"Oi, {nome}! 😊 Passando para avisar que sua parcela de *{_brl(valor)}* vence *hoje*. Qualquer dúvida, é só chamar!\n\n\n*Ativuz Veículos*"
-                elif dias == 1:
-                    msg = f"{nome}, sua parcela de *{_brl(valor)}* venceu ontem (vencimento: {data_fmt}). O valor atualizado é *{_brl(total)}*. Assim que puder, regularize para evitar encargos adicionais.\n\n\n*Ativuz Veículos*"
-                elif dias == 2:
-                    msg = f"{nome}, seu pagamento de *{_brl(total)}* ainda está em aberto (vencimento: {data_fmt}). Caso tenha alguma dúvida ou dificuldade, entre em contato antes que os encargos aumentem.\n\n\n*Ativuz Veículos*"
-                elif dias == 3:
-                    msg = f"{nome}, seu pagamento está em aberto há *{dias_s}* (vencimento: {data_fmt}). Valor atualizado: *{_brl(total)}*. Caso haja algum imprevisto, entre em contato — mas precisamos regularizar em breve para evitar a suspensão do serviço.\n\n\n*Ativuz Veículos*"
-                elif dias == 4:
-                    msg = f"{nome}, sua parcela de *{_brl(valor)}* segue em aberto há *{dias_s}* (vencimento: {data_fmt}). Valor atualizado: *{_brl(total)}*. Regularize o quanto antes para evitar a suspensão do veículo.\n\n\n*Ativuz Veículos*"
-                elif dias <= 6:   # D+5
-                    msg = f"{nome}, infelizmente precisamos suspender o serviço por inadimplência, conforme contrato. Valor atualizado: *{_brl(total)}*. Para reativação, basta regularizar o pagamento. Estamos à disposição.\n\n\n*Ativuz Veículos*"
-                elif dias <= 9:   # D+7
-                    msg = f"{nome}, seu débito de *{_brl(total)}* está em aberto há {dias_s}. Esta é uma notificação formal com prazo de *48 horas* para regularização antes de tomarmos as próximas medidas previstas em contrato.\n\n\n*Ativuz Veículos*"
-                elif dias <= 14:  # D+10
-                    msg = f"{nome}, informamos que seu débito foi encaminhado para negativação e assessoria jurídica. Valor atualizado: *{_brl(total)}*.\n\n\n*Ativuz Veículos*"
-                else:             # D+15
-                    msg = f"{nome}, comunicamos que serão iniciados os procedimentos de protesto em cartório e execução contratual. Valor atualizado: *{_brl(total)}*.\n\n\n*Ativuz Veículos*"
-
-                # Pausar cobrança: FATURA only, D+1 or D+2
-                mostrar_pausar = is_fatura and 1 <= dias <= 2
-                if mostrar_pausar:
-                    if dias == 1:
-                        msg_pausar = f"{nome}, sua parcela de *{_brl(valor)}* está em aberto (vencimento: {data_fmt}). O valor atualizado é *{_brl(total)}*. 📌 Pague *{_brl(pausar)}* hoje e quite *{_brl(pausar)}* até a sexta-feira desta semana. ⚠️ Juros de 0,5% ao dia continuam correndo sobre o saldo restante. Sem pagamento até sexta, a cobrança retoma no sábado. ⚠️ Não se trata de desconto. O valor total do débito permanece integral.\n\n\n*Ativuz Veículos*"
-                    else:  # dias == 2
-                        msg_pausar = f"{nome}, sua parcela de *{_brl(valor)}* está em aberto há *2 dias* (vencimento: {data_fmt}). O valor atualizado é *{_brl(total)}*. 📌 Pague *{_brl(pausar)}* hoje e quite *{_brl(pausar)}* até a sexta-feira desta semana. ⚠️ Juros de 0,5% ao dia continuam correndo sobre o saldo restante. Sem pagamento até sexta, a cobrança retoma no sábado. ⚠️ Não se trata de desconto. O valor total do débito permanece integral.\n\n\n*Ativuz Veículos*"
-                else:
-                    msg_pausar = None
-
-                _fone = _tel_map.get(_nh(nome), "")
-                wa_cobranca = f"https://wa.me/{_fone}?text=" + _url_quote(msg)
-                wa_pausar   = ((f"https://wa.me/{_fone}?text=" + _url_quote(msg_pausar))
-                               if mostrar_pausar else None)
-
-                sit_key = "vence-hoje" if dias == 0 else "vencido"
-
-                registros_vencidos.append({
-                    "nome":             nome,
-                    "num_doc":          num_doc,
-                    "unidade":          unidade,
-                    "tipo_fatura":      tipo_fatura,
-                    "data_vencimento":  data_fmt,
-                    "dias_atraso":      dias,
-                    "dias_label":       dias_label,
-                    "reincidente":      reincidente,
-                    "is_fatura":        is_fatura,
-                    "tem_multa":        dias >= 2,
-                    "etapa":            etapa,
-                    "etapa_cls":        etapa_cls,
-                    "proxima_acao":     proxima,
-                    "situacao_key":     sit_key,
-                    "wa_cobranca":      wa_cobranca,
-                    "wa_pausar":        wa_pausar,
-                    "msg_cobranca_txt": msg,
-                    "msg_pausar_txt":   msg_pausar,
-                    "valor_s":          _brl(valor),
-                    "multa_s":          _brl(multa),
-                    "juros_mora_s":     _brl(juros_mora),
-                    "juros_s":          _brl(juros),
-                    "total_s":          _brl(total),
-                    "pausar_s":         _brl(pausar),
-                    "_valor":           valor,
-                    "_multa":           multa,
-                    "_juros_mora":      juros_mora,
-                    "_juros":           juros,
-                    "_total":           total,
-                    "_fone":            _fone,
-                })
-
-        except Exception as e:
-            import traceback; traceback.print_exc()
-            erro_leitura = str(e)
-    else:
-        erro_leitura = (
+    if not xlsx_path.exists():
+        return registros_vencidos, registros_a_vencer, (
             "Planilha não encontrada em planilhas/. "
             "Salve o arquivo como CONTAS-A-RECEBER.xlsx nessa pasta."
         )
 
+    try:
+        wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+
+        header_idx = 0
+        for ri, row in enumerate(rows[:10]):
+            nh_row = [_nh(str(c or "")) for c in row]
+            if sum(1 for t in ["receber de", "vencimento", "valor"]
+                   if any(t in n for n in nh_row)) >= 2:
+                header_idx = ri
+                break
+
+        header    = rows[header_idx]
+        data_rows = rows[header_idx + 1:]
+
+        def _ci(keyword):
+            nk = _nh(keyword)
+            return next((i for i, h in enumerate(header)
+                         if h is not None and nk in _nh(str(h))), None)
+
+        i_nome  = _ci("receber de (fantasia)") or _ci("receber de")
+        i_valor = _ci("valor previsto") or _ci("valor")
+        i_venc  = _ci("data de vencimento") or _ci("vencimento")
+        i_sit   = _ci("situacao (data de vencimento)") or _ci("situacao")
+        i_tipo  = _ci("tipo de fatura") or _ci("tipo")
+        i_doc   = _ci("numero do documento") or _ci("documento")
+        i_unid  = _ci("unidade")
+
+        _NOMES_EXCLUIDOS = {"MARCELO BENTO DE ARAUJO"}
+
+        name_counts = Counter()
+        for row in data_rows:
+            if i_nome is not None and i_nome < len(row) and row[i_nome]:
+                n = str(row[i_nome]).strip()
+                if n and n.upper() not in _NOMES_EXCLUIDOS:
+                    name_counts[n] += 1
+
+        def _get(row, idx):
+            return row[idx] if idx is not None and idx < len(row) else None
+
+        for row in data_rows:
+            nome_raw = _get(row, i_nome)
+            if not nome_raw:
+                continue
+            nome = str(nome_raw).strip()
+            if not nome or nome.upper() in _NOMES_EXCLUIDOS:
+                continue
+
+            valor    = _parse_valor_excel(_get(row, i_valor))
+            venc_raw = _get(row, i_venc)
+            sit_raw  = _get(row, i_sit)
+            tipo_raw = _get(row, i_tipo)
+            doc_raw  = _get(row, i_doc)
+            unid_raw = _get(row, i_unid)
+
+            venc_date = None
+            if venc_raw:
+                if isinstance(venc_raw, datetime):
+                    venc_date = venc_raw.date()
+                elif isinstance(venc_raw, date):
+                    venc_date = venc_raw
+                else:
+                    venc_str = str(venc_raw).strip().upper()
+                    if venc_str == "HOJE":
+                        venc_date = hoje
+                    else:
+                        for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
+                            try:
+                                venc_date = datetime.strptime(venc_str, fmt).date()
+                                break
+                            except (ValueError, TypeError):
+                                pass
+            if venc_date is None:
+                continue
+
+            situacao    = _nh(str(sit_raw  or ""))
+            tipo_fatura = str(tipo_raw or "").strip()
+            num_doc     = str(doc_raw  or "").strip()
+            unidade     = str(unid_raw or "").strip()
+            for s in ("None", "nan", ""):
+                if num_doc == s: num_doc = ""
+                if unidade == s: unidade = ""
+
+            reincidente = name_counts[nome] > 1
+            is_fatura   = _nh(tipo_fatura) == "fatura"
+            data_fmt    = venc_date.strftime("%d/%m/%Y")
+
+            # ── A VENCER ──────────────────────────────────────────────────────
+            if "a vencer" in situacao and venc_date > hoje:
+                dias_ate = (venc_date - hoje).days
+                registros_a_vencer.append({
+                    "nome":            nome,
+                    "num_doc":         num_doc,
+                    "unidade":         unidade,
+                    "data_vencimento": data_fmt,
+                    "dias_ate":        dias_ate,
+                    "reincidente":     reincidente,
+                    "tipo_fatura":     tipo_fatura,
+                    "valor_s":         _brl(valor),
+                    "_valor":          valor,
+                })
+                continue
+
+            # ── VENCIDO ou vence hoje ─────────────────────────────────────────
+            if "a vencer" in situacao and venc_date == hoje:
+                dias = 0
+            else:
+                dias = (hoje - venc_date).days
+                if dias < 0:
+                    continue
+
+            if dias == 0:    etapa, etapa_cls = "Hoje",         "stage-d0"
+            elif dias == 1:  etapa, etapa_cls = "Terça-feira",  "stage-d1"
+            elif dias == 2:  etapa, etapa_cls = "Quarta-feira", "stage-d2"
+            elif dias == 3:  etapa, etapa_cls = "Quinta-feira", "stage-d3"
+            elif dias == 4:  etapa, etapa_cls = "Sexta-feira",  "stage-d4"
+            elif dias <= 6:  etapa, etapa_cls = "D+5",          "stage-d5"
+            elif dias <= 9:  etapa, etapa_cls = "D+7",          "stage-d7"
+            elif dias <= 14: etapa, etapa_cls = "D+10",         "stage-d10"
+            else:            etapa, etapa_cls = "D+15",         "stage-d15"
+
+            if dias == 0:    proxima = "Enviar lembrete de vencimento"
+            elif dias == 1:  proxima = "Aviso de atraso — tem até o final do dia para pagar, caso contrário amanhã entram os juros"
+            elif dias == 2:  proxima = "Juros aplicado — a partir de amanhã inicia a contagem dos juros de mora"
+            elif dias == 3:  proxima = "Juros de mora em contagem — regularize hoje para evitar suspensão do serviço"
+            elif dias == 4:  proxima = "Aviso final — regularize até hoje ou o serviço será suspenso"
+            elif dias <= 6:  proxima = "Serviço suspenso — exigir comprovante de pagamento para reativação"
+            elif dias <= 9:  proxima = "Encaminhar para cobrança jurídica extrajudicial"
+            elif dias <= 14: proxima = "Negativação no SPC/Serasa + encaminhamento jurídico"
+            else:            proxima = "Processo judicial iniciado — recolhimento imediato do veículo"
+
+            multa      = valor * 0.10 if dias >= 2 else 0.0
+            juros_mora = valor * 0.005 * dias if dias >= 3 else 0.0
+            juros      = multa + juros_mora
+            total      = valor + juros
+            pausar     = total * 0.5
+
+            dias_label = (f"{dias} dia{'s' if dias != 1 else ''} de atraso"
+                          if dias > 0 else "Vence hoje")
+            dias_s = f"{dias} dia{'s' if dias != 1 else ''}"
+
+            if dias == 0:
+                msg = f"Oi, {nome}! 😊 Passando para avisar que sua parcela de *{_brl(valor)}* vence *hoje*. Qualquer dúvida, é só chamar!\n\n\n*Ativuz Veículos*"
+            elif dias == 1:
+                msg = f"{nome}, sua parcela de *{_brl(valor)}* venceu ontem (vencimento: {data_fmt}). O valor atualizado é *{_brl(total)}*. Assim que puder, regularize para evitar encargos adicionais.\n\n\n*Ativuz Veículos*"
+            elif dias == 2:
+                msg = f"{nome}, seu pagamento de *{_brl(total)}* ainda está em aberto (vencimento: {data_fmt}). Caso tenha alguma dúvida ou dificuldade, entre em contato antes que os encargos aumentem.\n\n\n*Ativuz Veículos*"
+            elif dias == 3:
+                msg = f"{nome}, seu pagamento está em aberto há *{dias_s}* (vencimento: {data_fmt}). Valor atualizado: *{_brl(total)}*. Caso haja algum imprevisto, entre em contato — mas precisamos regularizar em breve para evitar a suspensão do serviço.\n\n\n*Ativuz Veículos*"
+            elif dias == 4:
+                msg = f"{nome}, sua parcela de *{_brl(valor)}* segue em aberto há *{dias_s}* (vencimento: {data_fmt}). Valor atualizado: *{_brl(total)}*. Regularize o quanto antes para evitar a suspensão do veículo.\n\n\n*Ativuz Veículos*"
+            elif dias <= 6:
+                msg = f"{nome}, infelizmente precisamos suspender o serviço por inadimplência, conforme contrato. Valor atualizado: *{_brl(total)}*. Para reativação, basta regularizar o pagamento. Estamos à disposição.\n\n\n*Ativuz Veículos*"
+            elif dias <= 9:
+                msg = f"{nome}, seu débito de *{_brl(total)}* está em aberto há {dias_s}. Esta é uma notificação formal com prazo de *48 horas* para regularização antes de tomarmos as próximas medidas previstas em contrato.\n\n\n*Ativuz Veículos*"
+            elif dias <= 14:
+                msg = f"{nome}, informamos que seu débito foi encaminhado para negativação e assessoria jurídica. Valor atualizado: *{_brl(total)}*.\n\n\n*Ativuz Veículos*"
+            else:
+                msg = f"{nome}, comunicamos que serão iniciados os procedimentos de protesto em cartório e execução contratual. Valor atualizado: *{_brl(total)}*.\n\n\n*Ativuz Veículos*"
+
+            mostrar_pausar = is_fatura and 1 <= dias <= 2
+            if mostrar_pausar:
+                if dias == 1:
+                    msg_pausar = f"{nome}, sua parcela de *{_brl(valor)}* está em aberto (vencimento: {data_fmt}). O valor atualizado é *{_brl(total)}*. 📌 Pague *{_brl(pausar)}* hoje e quite *{_brl(pausar)}* até a sexta-feira desta semana. ⚠️ Juros de 0,5% ao dia continuam correndo sobre o saldo restante. Sem pagamento até sexta, a cobrança retoma no sábado. ⚠️ Não se trata de desconto. O valor total do débito permanece integral.\n\n\n*Ativuz Veículos*"
+                else:
+                    msg_pausar = f"{nome}, sua parcela de *{_brl(valor)}* está em aberto há *2 dias* (vencimento: {data_fmt}). O valor atualizado é *{_brl(total)}*. 📌 Pague *{_brl(pausar)}* hoje e quite *{_brl(pausar)}* até a sexta-feira desta semana. ⚠️ Juros de 0,5% ao dia continuam correndo sobre o saldo restante. Sem pagamento até sexta, a cobrança retoma no sábado. ⚠️ Não se trata de desconto. O valor total do débito permanece integral.\n\n\n*Ativuz Veículos*"
+            else:
+                msg_pausar = None
+
+            _fone = _tel_map.get(_nh(nome), "")
+            wa_cobranca = f"https://wa.me/{_fone}?text=" + _url_quote(msg)
+            wa_pausar   = ((f"https://wa.me/{_fone}?text=" + _url_quote(msg_pausar))
+                           if mostrar_pausar else None)
+
+            registros_vencidos.append({
+                "nome":             nome,
+                "num_doc":          num_doc,
+                "unidade":          unidade,
+                "tipo_fatura":      tipo_fatura,
+                "data_vencimento":  data_fmt,
+                "dias_atraso":      dias,
+                "dias_label":       dias_label,
+                "reincidente":      reincidente,
+                "is_fatura":        is_fatura,
+                "tem_multa":        dias >= 2,
+                "etapa":            etapa,
+                "etapa_cls":        etapa_cls,
+                "proxima_acao":     proxima,
+                "situacao_key":     "vence-hoje" if dias == 0 else "vencido",
+                "wa_cobranca":      wa_cobranca,
+                "wa_pausar":        wa_pausar,
+                "msg_cobranca_txt": msg,
+                "msg_pausar_txt":   msg_pausar,
+                "valor_s":          _brl(valor),
+                "multa_s":          _brl(multa),
+                "juros_mora_s":     _brl(juros_mora),
+                "juros_s":          _brl(juros),
+                "total_s":          _brl(total),
+                "pausar_s":         _brl(pausar),
+                "_valor":           valor,
+                "_multa":           multa,
+                "_juros_mora":      juros_mora,
+                "_juros":           juros,
+                "_total":           total,
+                "_fone":            _fone,
+            })
+
+    except Exception:
+        import traceback; traceback.print_exc()
+        erro_leitura = "Erro ao ler a planilha."
+
+    return registros_vencidos, registros_a_vencer, erro_leitura
+
+
+def _inad_summary():
+    """Resumo de inadimplência para o dashboard (delega a _ler_inad_dados)."""
+    try:
+        registros_vencidos, _, _ = _ler_inad_dados()
+    except Exception:
+        return None
+
+    if not registros_vencidos:
+        return {"total_s": _brl(0), "casos": 0, "hoje": 0,
+                "por_etapa": {}, "recentes": [], "total_raw": 0}
+
+    total_raw    = sum(r["_total"] for r in registros_vencidos)
+    nomes_unicos = {r["nome"] for r in registros_vencidos}
+    hoje_count   = sum(1 for r in registros_vencidos if r["dias_atraso"] == 0)
+
+    etapas = ["Hoje", "Terça-feira", "Quarta-feira", "Quinta-feira",
+              "Sexta-feira", "D+5", "D+7", "D+10", "D+15"]
+    por_etapa = {e: 0 for e in etapas}
+    for r in registros_vencidos:
+        if r["etapa"] in por_etapa:
+            por_etapa[r["etapa"]] += 1
+
+    recentes = sorted(registros_vencidos, key=lambda r: r["dias_atraso"], reverse=True)[:8]
+    recentes_slim = [
+        {
+            "nome":    r["nome"],
+            "placa":   r["num_doc"] or r["unidade"] or "—",
+            "venc":    r["data_vencimento"],
+            "dias":    r["dias_atraso"],
+            "total_s": r["total_s"],
+            "etapa":   r["etapa"],
+        }
+        for r in recentes
+    ]
+
+    return {
+        "total_s":   _brl(total_raw),
+        "total_raw": total_raw,
+        "casos":     len(nomes_unicos),
+        "hoje":      hoje_count,
+        "por_etapa": por_etapa,
+        "recentes":  recentes_slim,
+    }
+
+
+@app.route("/inadimplencia")
+def pagina_inadimplencia():
+    from collections import Counter
+
+    registros_vencidos, registros_a_vencer, erro_leitura = _ler_inad_dados()
+
     registros_vencidos.sort(key=lambda r: r["dias_atraso"], reverse=True)
     registros_a_vencer.sort(key=lambda r: r["dias_ate"])
 
+    hoje = date.today()
     total_vencidos        = len(registros_vencidos)
     total_a_vencer_cnt    = len(registros_a_vencer)
     total_valor_orig      = _brl(sum(r["_valor"] for r in registros_vencidos))
@@ -2367,9 +2225,8 @@ def pagina_inadimplencia():
     reincidentes_criticos = sum(1 for r in registros_vencidos
                                 if r["dias_atraso"] >= 7 and r["reincidente"])
 
-    # Clientes críticos
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
-    _nome_cnt   = Counter(
+    _nome_cnt = Counter(
         r["nome"] for r in registros_vencidos
         if _nh(r["nome"]) not in _EXCLUIR_OCORR
     )
@@ -2391,7 +2248,6 @@ def pagina_inadimplencia():
     else:
         critico_valor_nome, critico_valor_total = "—", "—"
 
-    # ── Observações por devedor ────────────────────────────────
     obs_map = {}
     try:
         sb_obs = _supabase()
@@ -2445,10 +2301,6 @@ def exportar_inadimplencia():
             ws_src = wb_src.active
             rows   = list(ws_src.iter_rows(values_only=True))
             wb_src.close()
-
-            def _nh(s):
-                s = unicodedata.normalize("NFD", str(s or "").lower())
-                return "".join(c for c in s if unicodedata.category(c) != "Mn")
 
             header_idx = 0
             for ri, row in enumerate(rows[:10]):
