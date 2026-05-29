@@ -287,12 +287,26 @@ def api_asaas_parse():
         else:
             categoria = "outro"
 
+        # Mapeamento fatura → motorista real (caução paga por terceiro)
+        _PROXY_FATURA = {
+            "799563477": "JACKSON CASSIANO VERISSIMO",   # Joel pagou por Jackson
+            "803445386": "ADRIANO TEOTONIO DA SILVA",    # Andrier pagou por Adriano
+            "811925256": "MARCIANO EZEQUIEL VALDEVINO DA SILVA",  # Andrier pagou por Marciano
+        }
+
         # Extrai nome do motorista (cobranças)
         motorista = ""
+        pagador   = ""
         if categoria in ("aluguel", "adesao"):
             import re as _re
-            m = _re.search(r"fatura nr\.\s*\d+\s+(.+)$", desc, _re.IGNORECASE)
-            motorista = m.group(1).strip() if m else ""
+            mf = _re.search(r"fatura nr\.\s*(\d+)\s+(.+)$", desc, _re.IGNORECASE)
+            if mf:
+                fatura_nr = mf.group(1)
+                pagador   = mf.group(2).strip()
+                motorista = _PROXY_FATURA.get(fatura_nr, pagador)
+            else:
+                pagador   = ""
+                motorista = ""
 
         # Placa do seguro
         placa_seguro = ""
@@ -309,6 +323,7 @@ def api_asaas_parse():
             "lancamento":    lancam,
             "categoria":     categoria,
             "motorista":     motorista,
+            "pagador":       pagador if pagador != motorista else "",
             "placa_seguro":  placa_seguro,
         })
 

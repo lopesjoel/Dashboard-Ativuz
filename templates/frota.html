@@ -2297,15 +2297,19 @@ document.addEventListener('click', function(e) {
     transacoes.forEach(function(t) {
       if (t.categoria !== 'aluguel' && t.categoria !== 'adesao') return;
       var nome = t.motorista || 'Desconhecido';
-      if (!map[nome]) map[nome] = { aluguel: 0, adesao: 0, n: 0 };
+      if (!map[nome]) map[nome] = { aluguel: 0, adesao: 0, n: 0, pagadores: [] };
       if (t.categoria === 'aluguel') { map[nome].aluguel += t.valor; map[nome].n++; }
-      if (t.categoria === 'adesao')  { map[nome].adesao  += t.valor; }
+      if (t.categoria === 'adesao')  {
+        map[nome].adesao += t.valor;
+        if (t.pagador) map[nome].pagadores.push(t.pagador);
+      }
     });
     var rows = Object.keys(map).sort().map(function(nome) {
       var m = map[nome];
       var total = m.aluguel + m.adesao;
+      var pagStr = m.pagadores.length ? '<br><span style="font-size:10.5px;color:#64748b;">pago por: ' + m.pagadores.join(', ') + '</span>' : '';
       return '<tr>' +
-        '<td>' + nome + '</td>' +
+        '<td>' + nome + pagStr + '</td>' +
         '<td>' + (m.n > 0 ? m.n + ' sem.' : '—') + '</td>' +
         '<td class="pos">' + (m.aluguel ? _brl(m.aluguel) : '—') + '</td>' +
         '<td class="pos">' + (m.adesao  ? _brl(m.adesao)  : '—') + '</td>' +
