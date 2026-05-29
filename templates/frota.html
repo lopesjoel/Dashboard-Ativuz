@@ -280,10 +280,6 @@
 .inv-exec.vermelho{ background:linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%); border-color:#fca5a5; }
 .inv-exec-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
 .inv-exec-icon { font-size:28px; line-height:1; }
-.inv-exec-titulo { font-size:20px; font-weight:800; }
-.inv-exec.verde   .inv-exec-titulo { color:#15803d; }
-.inv-exec.laranja .inv-exec-titulo { color:#c2410c; }
-.inv-exec.vermelho .inv-exec-titulo { color:#be123c; }
 .inv-exec-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
 @media(max-width:640px){ .inv-exec-metrics { grid-template-columns:repeat(2,1fr); } }
 .inv-exec-metric { background:rgba(255,255,255,.7); border-radius:10px; padding:12px 14px; border:1px solid rgba(0,0,0,.06); position:relative; cursor:default; }
@@ -1817,35 +1813,19 @@ function renderExecSummary() {
   var diffCDI  = c.yield_aa - CDI_AA;
   var diffPoup = c.yield_aa - POUP_AA;
 
-  var cls, icon, titulo, desc;
+  var cls, icon;
   if (c.yield_aa >= CDI_AA * 1.5) {
-    cls    = 'verde';
-    icon   = '✅';
-    titulo = 'Vale muito a pena investir';
-    desc   = 'O retorno líquido de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong> é ' +
-             (c.yield_aa / CDI_AA).toFixed(1) + '× o CDI e ' +
-             (c.yield_aa / POUP_AA).toFixed(1) + '× a poupança. ' +
-             'O investimento se paga em <strong>' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</strong> ' +
-             'e a partir daí é lucro puro — sem precisar vender o veículo.';
+    cls  = 'verde';
+    icon = '✅';
   } else if (c.yield_aa >= CDI_AA) {
-    cls    = 'verde';
-    icon   = '✅';
-    titulo = 'Vale a pena investir';
-    desc   = 'O retorno líquido de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong> supera o CDI em ' +
-             diffCDI.toFixed(1) + ' p.p. O investimento se paga em <strong>' +
-             (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</strong>.';
+    cls  = 'verde';
+    icon = '✅';
   } else if (c.yield_aa >= POUP_AA) {
-    cls    = 'laranja';
-    icon   = '⚠️';
-    titulo = 'Retorno moderado — avalie com cuidado';
-    desc   = 'O retorno de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong> supera a poupança mas fica abaixo do CDI (' +
-             CDI_AA + '% a.a.). Verifique os custos e a ocupação real.';
+    cls  = 'laranja';
+    icon = '⚠️';
   } else {
-    cls    = 'vermelho';
-    icon   = '❌';
-    titulo = 'Não recomendado nos parâmetros atuais';
-    desc   = 'Com retorno de <strong>' + c.yield_aa.toFixed(1) + '% a.a.</strong>, o investimento perde até para a poupança. ' +
-             'Revise os custos ou o aluguel semanal.';
+    cls  = 'vermelho';
+    icon = '❌';
   }
 
   var paybackStr = isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—';
@@ -1856,7 +1836,6 @@ function renderExecSummary() {
   el.innerHTML =
     '<div class="inv-exec-top">' +
       '<span class="inv-exec-icon">' + icon + '</span>' +
-      '<span class="inv-exec-titulo">' + titulo + '</span>' +
     '</div>' +
     '<div class="inv-exec-metrics">' +
       '<div class="inv-exec-metric" data-tooltip="(Renda líquida + depreciação) × 12 ÷ aquisição&#10;(R$ ' + brl(c.liq_mes) + ' + R$ ' + brl(c.depreciacao_mes) + ') × 12 ÷ R$ ' + brl(params.aquisicao) + ' = ' + c.yield_sem_deprec.toFixed(1) + '%"><div class="inv-exec-metric-lbl">Yield líquido a.a.</div><div class="inv-exec-metric-val">' + c.yield_sem_deprec.toFixed(1) + '%</div><div class="inv-exec-metric-sub">por veículo BYD</div></div>' +
