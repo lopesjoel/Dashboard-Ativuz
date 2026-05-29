@@ -2304,9 +2304,8 @@ document.addEventListener('click', function(e) {
     var rows = Object.keys(map).sort().map(function(nome) {
       var m = map[nome];
       var total = m.aluguel + m.adesao;
-      var pagStr = m.pagadores.length ? '<br><span style="font-size:10.5px;color:#64748b;">pago por: ' + m.pagadores.join(', ') + '</span>' : '';
       return '<tr>' +
-        '<td>' + nome + pagStr + '</td>' +
+        '<td>' + nome + '</td>' +
         '<td>' + (m.n > 0 ? m.n + ' sem.' : '—') + '</td>' +
         '<td class="pos">' + (m.aluguel ? _brl(m.aluguel) : '—') + '</td>' +
         '<td class="pos">' + (m.adesao  ? _brl(m.adesao)  : '—') + '</td>' +
