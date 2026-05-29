@@ -354,8 +354,8 @@ def api_asaas_parse():
     semana_adesao = len(_adesoes) * _SEMANA_VALOR
 
     totais = {
-        "total_recebido":       _soma("aluguel") + semana_adesao,
-        "aluguel":              _soma("aluguel"),
+        "total_recebido":       _soma("aluguel") + _soma("adesao"),
+        "aluguel":              _soma("aluguel") + semana_adesao,
         "caucao":               caucao_total,
         "taxa_ativuz":          _soma("taxa_ativuz"),
         "reembolso_manutencao": _soma("reembolso_manutencao"),
