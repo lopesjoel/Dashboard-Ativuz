@@ -352,12 +352,6 @@
 .inv-row-val.green  { color:#22a06b; }
 .inv-row-val.purple { color:#6366f1; }
 .inv-row-val.red    { color:#ef4444; }
-.inv-input-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
-.inv-input-row label { color:var(--ink-3); }
-.inv-input-num { width:110px; border:1px solid var(--line); border-radius:6px; padding:4px 8px; font-size:12.5px; color:var(--ink-1); background:var(--bg); text-align:right; }
-.inv-input-num:focus { outline:none; border-color:#6366f1; }
-.inv-calc-out { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
-@media(max-width:600px){ .inv-calc-out { grid-template-columns:1fr; } }
 .inv-out-card { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; position:relative; cursor:default; transition:box-shadow .15s, border-color .15s; }
 .inv-out-card:hover { box-shadow:0 4px 18px rgba(0,0,0,.12); border-color:var(--accent,#6366f1); }
 .inv-out-card[data-tip]:hover::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(18,18,30,.96); color:#e8e8f2; padding:9px 13px; border-radius:9px; font-size:12px; line-height:1.55; max-width:230px; width:max-content; z-index:300; box-shadow:0 6px 20px rgba(0,0,0,.35); pointer-events:none; white-space:normal; font-weight:400; }
@@ -626,40 +620,6 @@
       <div class="inv-cards" id="inv-compare-cards">
         <div style="color:var(--ink-3);font-size:13px;padding:10px 0">Carregando dados...</div>
       </div>
-    </div>
-
-    <p class="inv-section">Calculadora de Retorno (BYD)</p>
-    <div class="inv-bloco">
-      <div class="inv-bloco-title">Simulador de ROI · Parâmetros Editáveis</div>
-      <div class="inv-input-row">
-        <label for="inv-aquisicao">Preço de Aquisição</label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:12px;color:var(--ink-3)">R$</span>
-          <input type="number" class="inv-input-num" id="inv-aquisicao" value="102000" min="1" step="1000" oninput="invCalcUpdate()">
-        </div>
-      </div>
-      <div class="inv-input-row">
-        <label for="inv-ipva">IPVA Anual (por veículo)</label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:12px;color:var(--ink-3)">R$</span>
-          <input type="number" class="inv-input-num" id="inv-ipva" value="5100" min="0" step="100" oninput="invCalcUpdate()">
-        </div>
-      </div>
-      <div class="inv-input-row">
-        <label for="inv-manutencao">Revisão Programada (por veículo / ano)</label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:12px;color:var(--ink-3)">R$</span>
-          <input type="number" class="inv-input-num" id="inv-manutencao" value="3096" min="0" step="1" oninput="invCalcUpdate()">
-        </div>
-      </div>
-      <div class="inv-input-row" style="border-bottom:none">
-        <label for="inv-deprec">Depreciação Anual <span style="font-size:11px;color:var(--ink-3)">(Mobiauto 2024–2025)</span></label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" class="inv-input-num" id="inv-deprec" value="7.8" min="0" max="100" step="0.25" oninput="invCalcUpdate()">
-          <span style="font-size:12px;color:var(--ink-3)">% a.a.</span>
-        </div>
-      </div>
-      <div class="inv-calc-out" id="inv-calc-out"></div>
     </div>
 
     <p class="inv-section">Recuperação do Investimento</p>
@@ -1854,11 +1814,7 @@ function brl(v) {
 }
 
 function getParams() {
-  var aq = parseFloat(document.getElementById('inv-aquisicao').value)   || 102000;
-  var ma   = (parseFloat(document.getElementById('inv-manutencao').value) || 3096) / 12;
-  var ipva = parseFloat(document.getElementById('inv-ipva').value)       || 0;
-  var dep  = parseFloat(document.getElementById('inv-deprec').value)     || 7.8;
-  return { aquisicao: aq, manutencao: ma, ipva_total: ipva, depreciacao_pct: dep };
+  return { aquisicao: 102000, manutencao: 3096 / 12, ipva_total: 5100, depreciacao_pct: 7.8 };
 }
 
 function calcMetrics(valor_semanal, params) {
@@ -1990,34 +1946,6 @@ function renderComparacao(data) {
   document.getElementById('inv-compare-cards').innerHTML = html;
 }
 
-/* ── Bloco 2: Calculadora ── */
-function renderCalc() {
-  var params = getParams();
-  var c = calcMetrics(1200, params);
-
-
-  var diffCDI  = (c.yield_aa - CDI_AA).toFixed(1);
-  var diffPoup = (c.yield_aa - POUP_AA).toFixed(1);
-  var html =
-    '<div class="inv-out-card" data-tip="O investidor recebe 85% do aluguel semanal. Os 15% restantes são a taxa de administração da Ativuz."><div class="inv-out-lbl">Renda Bruta Semanal (85%)</div><div class="inv-out-val">R$ ' + brl(c.inv_sem) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="Total que o veículo gera por mês, antes de descontar qualquer custo. É a base de cálculo da margem."><div class="inv-out-lbl">Renda Bruta Mensal</div><div class="inv-out-val">R$ ' + brl(c.inv_mes) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="O IPVA é pago uma vez por ano. Aqui ele é dividido em 12 para mostrar o impacto mensal real no retorno."><div class="inv-out-lbl">IPVA mensal (R$ ' + brl(params.ipva_total) + '/ano ÷ 12)</div><div class="inv-out-val orange">− R$ ' + brl(c.ipva_mes) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="Total anual das 10 revisões obrigatórias do BYD Dolphin Mini. Aqui dividido por 12 para mostrar o impacto mensal real no retorno."><div class="inv-out-lbl">Revisão Programada (R$ ' + brl(params.manutencao * 12) + '/ano ÷ 12)</div><div class="inv-out-val orange">− R$ ' + brl(params.manutencao) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="O que efetivamente fica no bolso todo mês, depois de descontar IPVA, revisão e depreciação do veículo."><div class="inv-out-lbl">Renda Líquida Mensal</div><div class="inv-out-val green">R$ ' + brl(c.liq_mes) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="De cada R$100 gerado bruto, quanto sobra após os custos. Quanto maior, mais eficiente é o investimento."><div class="inv-out-lbl">Margem Líquida</div><div class="inv-out-val purple">' + c.margem_liq.toFixed(1) + '%</div></div>' +
-    '<div class="inv-out-card" data-tip="Rentabilidade anual sobre o valor pago no veículo. Não considera a desvalorização — veja o Retorno Real para o número mais honesto."><div class="inv-out-lbl">Yield Anual (a.a.)</div><div class="inv-out-val purple">' + c.yield_aa.toFixed(1) + '%</div></div>' +
-    '<div class="inv-out-card" data-tip="Quanto o carro perde de valor por mês (' + params.depreciacao_pct + '% a.a. ÷ 12). Dado real da Mobiauto (2024–2025). Você pode ajustar o % acima."><div class="inv-out-lbl">Depreciação Mensal (' + params.depreciacao_pct + '% a.a.)</div><div class="inv-out-val red">− R$ ' + brl(c.depreciacao_mes) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="O retorno verdadeiro: yield menos a perda de valor do veículo. É o número que importa na hora de comparar com outros investimentos."><div class="inv-out-lbl">Retorno Real a.a.</div><div class="inv-out-val ' + (c.retorno_real_aa >= 0 ? 'green' : 'red') + '">' + c.retorno_real_aa.toFixed(1) + '%</div></div>' +
-    '<div class="inv-out-card" data-tip="Mínimo de semanas alugadas no ano para que a renda cubra IPVA e revisão. Abaixo disso, o investimento começa a dar prejuízo operacional."><div class="inv-out-lbl">Ocupação de Equilíbrio</div><div class="inv-out-val">' + c.pct_ocupacao.toFixed(1) + '% · ' + c.sem_equilibrio.toFixed(1) + ' sem./ano</div></div>' +
-    '<div class="inv-out-card" data-tip="Total líquido acumulado em 12 meses mantendo esses parâmetros. Não considera valorização ou desvalorização do veículo."><div class="inv-out-lbl">Renda Acumulada 1 Ano</div><div class="inv-out-val">R$ ' + brl(c.acum_ano1) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="Total líquido em 24 meses. A partir daqui o retorno já representa uma parcela relevante do valor investido."><div class="inv-out-lbl">Renda Acumulada 2 Anos</div><div class="inv-out-val">R$ ' + brl(c.acum_ano2) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="Total líquido em 36 meses. Compare com o preço de aquisição para ter uma visão clara do retorno no médio prazo."><div class="inv-out-lbl">Renda Acumulada 3 Anos</div><div class="inv-out-val">R$ ' + brl(c.acum_ano3) + '</div></div>' +
-    '<div class="inv-out-card" data-tip="Em quantos meses a renda acumulada paga o valor total do veículo. Depois disso, tudo que entrar é lucro puro."><div class="inv-out-lbl">Payback Estimado</div><div class="inv-out-val">' + (isFinite(c.payback) ? c.payback.toFixed(1) + ' meses' : '—') + '</div></div>' +
-    '<div class="inv-out-card" data-tip="Diferença entre o yield do veículo e o CDI atual. Positivo significa que o carro rende mais do que deixar o dinheiro no banco."><div class="inv-out-lbl">vs CDI (' + CDI_AA + '% a.a.)</div><div class="inv-out-val ' + (diffCDI >= 0 ? 'green' : 'red') + '">' + (diffCDI >= 0 ? '+' : '') + diffCDI + ' p.p.</div></div>' +
-    '<div class="inv-out-card" data-tip="Comparação com a poupança. Se for positivo, o investimento no veículo rende mais do que a alternativa mais conservadora do mercado."><div class="inv-out-lbl">vs Poupança (' + POUP_AA + '% a.a.)</div><div class="inv-out-val ' + (diffPoup >= 0 ? 'green' : 'red') + '">' + (diffPoup >= 0 ? '+' : '') + diffPoup + ' p.p.</div></div>';
-  document.getElementById('inv-calc-out').innerHTML = html;
-}
-
 /* ── Bloco 3: Gráfico Payback ── */
 function renderPaybackChart() {
   var params = getParams();
@@ -2138,37 +2066,10 @@ function renderProjecao(data) {
 }
 
 /* ── Entry point ── */
-window.invCalcUpdate = function() {
-  var params = getParams();
-  localStorage.setItem('inv_aquisicao',  params.aquisicao);
-  localStorage.setItem('inv_manutencao', document.getElementById('inv-manutencao').value);
-  localStorage.setItem('inv_ipva',       params.ipva_total);
-  localStorage.setItem('inv_deprec',     params.depreciacao_pct);
-  var data = window._getAdmData ? window._getAdmData() : null;
-  renderExecSummary();
-  renderComparacao(data);
-  renderCalc();
-  renderPaybackChart();
-};
-
 window.invRenderAll = function() {
   var data = window._getAdmData ? window._getAdmData() : null;
-  /* restore saved params */
-  var aqSaved   = localStorage.getItem('inv_aquisicao');
-  var maSaved   = localStorage.getItem('inv_manutencao');
-  var ipvaSaved = localStorage.getItem('inv_ipva');
-  var depSaved  = localStorage.getItem('inv_deprec');
-  if (aqSaved)   document.getElementById('inv-aquisicao').value  = aqSaved;
-  if (maSaved) {
-    var maVal = parseFloat(maSaved);
-    /* old saves stored the monthly value (~254); detect and reset to annual default */
-    document.getElementById('inv-manutencao').value = (maVal < 500) ? 3096 : Math.round(maVal);
-  }
-  if (ipvaSaved) document.getElementById('inv-ipva').value       = ipvaSaved;
-  if (depSaved)  document.getElementById('inv-deprec').value     = depSaved;
   renderExecSummary();
   renderComparacao(data);
-  renderCalc();
   renderPaybackChart();
   renderDesempenho(data);
   renderProjecao(data);
