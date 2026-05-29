@@ -2407,16 +2407,25 @@ document.addEventListener('click', function(e) {
       if (t.categoria === 'adesao')  motorMap[nome].adesao  += t.valor;
     });
     var SEMANA_V = 1200;
+    var totAluguel = 0, totCaucao = 0, totSemanas = 0;
     var rowsMotoristas = Object.keys(motorMap).sort().map(function(nome) {
       var m = motorMap[nome];
       var aluguel = m.aluguel + (m.adesao > 0 ? SEMANA_V : 0);
       var caucao  = m.adesao > 0 ? Math.max(m.adesao - SEMANA_V, 0) : 0;
       var total   = aluguel + caucao;
+      totAluguel += aluguel; totCaucao += caucao; totSemanas += (m.n||0);
       return '<tr><td>' + nome.toUpperCase() + '</td><td style="text-align:center">' + (m.n||'—') + '</td>' +
         '<td style="text-align:right;color:#15803d">' + (aluguel ? brl(aluguel) : '—') + '</td>' +
         '<td style="text-align:right;color:#1d4ed8">' + (caucao  ? brl(caucao)  : '—') + '</td>' +
         '<td style="text-align:right;font-weight:700">' + brl(total) + '</td></tr>';
-    }).join('');
+    }).join('') +
+    '<tr style="background:#f1f5f9;border-top:2px solid #cbd5e1;">' +
+      '<td style="font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Total</td>' +
+      '<td style="text-align:center;font-weight:700">' + totSemanas + '</td>' +
+      '<td style="text-align:right;font-weight:800;color:#15803d">' + brl(totAluguel) + '</td>' +
+      '<td style="text-align:right;font-weight:800;color:#1d4ed8">' + brl(totCaucao) + '</td>' +
+      '<td style="text-align:right;font-weight:800;font-size:13px">' + brl(totAluguel + totCaucao) + '</td>' +
+    '</tr>';
     var saidasCats = [
       {key:'taxa_ativuz',          label:'Taxa adm (ATIVUZ)',          cor:'#c2410c'},
       {key:'reembolso_manutencao', label:'Reembolso de manutenção',   cor:'#c2410c'},
