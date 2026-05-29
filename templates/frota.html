@@ -2200,7 +2200,7 @@ document.addEventListener('click', function(e) {
     });
     return {
       periodo:       periodos.filter(Boolean).join(' + '),
-      saldo_inicial: lista[0].saldo_inicial,
+      saldo_inicial: 0,
       saldo_final:   lista[lista.length - 1].saldo_final,
       totais:        totais,
       transacoes:    transacoes,
