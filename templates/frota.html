@@ -2390,7 +2390,7 @@ document.addEventListener('click', function(e) {
     });
     var rowsMotoristas = Object.keys(motorMap).sort().map(function(nome) {
       var m = motorMap[nome];
-      return '<tr><td>' + nome + '</td><td style="text-align:center">' + (m.n||'—') + '</td>' +
+      return '<tr><td>' + nome.toUpperCase() + '</td><td style="text-align:center">' + (m.n||'—') + '</td>' +
         '<td style="text-align:right;color:#15803d">' + (m.aluguel ? brl(m.aluguel) : '—') + '</td>' +
         '<td style="text-align:right;color:#1d4ed8">' + (m.adesao  ? brl(m.adesao)  : '—') + '</td>' +
         '<td style="text-align:right;font-weight:700">' + brl(m.aluguel + m.adesao) + '</td></tr>';
