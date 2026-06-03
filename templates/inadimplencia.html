@@ -2232,7 +2232,6 @@ const _detalhe = [
               <th class="jud-th">CPF/CNPJ</th>
               <th class="jud-th">Valor da Dívida</th>
               <th class="jud-th">Valor Negociado</th>
-              <th class="jud-th">Total</th>
             </tr>
           </thead>
           <tbody id="jud-tbody-quitados"></tbody>
@@ -2654,14 +2653,12 @@ const _detalhe = [
     var ad = r.acordo_dados || {};
     var valorDivida    = Number(r.valor_atual) || 0;
     var valorNegociado = Number(ad.valor_acordado) || 0;
-    var total          = valorDivida + valorNegociado;
     var tr = document.createElement('tr');
     tr.innerHTML =
       '<td class="jud-td">' + r.cliente + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#64748b;">' + (r.cpf_cnpj || '—') + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#dc2626; font-weight:600;">' + _brl(valorDivida) + '</td>' +
-      '<td class="jud-td" style="white-space:nowrap; color:#065f46; font-weight:600;">' + _brl(valorNegociado) + '</td>' +
-      '<td class="jud-td" style="white-space:nowrap; font-weight:700;">' + _brl(total) + '</td>';
+      '<td class="jud-td" style="white-space:nowrap; color:#065f46; font-weight:600;">' + _brl(valorNegociado) + '</td>';
     return tr;
   }
 
@@ -2701,7 +2698,6 @@ const _detalhe = [
           '<td class="jud-td" colspan="2">Total</td>' +
           '<td class="jud-td" style="white-space:nowrap; color:#dc2626;">' + _brl(totalDivida) + '</td>' +
           '<td class="jud-td" style="white-space:nowrap; color:#065f46;">' + _brl(totalNegociado) + '</td>' +
-          '<td class="jud-td" style="white-space:nowrap;">' + _brl(totalDivida + totalNegociado) + '</td>' +
         '</tr>';
     } else if (tfootQ) {
       tfootQ.innerHTML = '';
