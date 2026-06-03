@@ -7,51 +7,78 @@ CREDENTIALS_FILE = Path(__file__).parent.parent / 'google_credentials.json'
 TOKEN_FILE        = Path(__file__).parent.parent / 'google_token.json'
 
 
+def _credentials_dict():
+    """Retorna o dict de credenciais — do arquivo local ou da variável de ambiente."""
+    env_val = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+    if env_val:
+        return json.loads(env_val)
+    if CREDENTIALS_FILE.exists():
+        return json.loads(CREDENTIALS_FILE.read_text())
+    return None
+
+
+def _token_json():
+    """Retorna o token salvo — do arquivo local ou da variável de ambiente."""
+    env_val = os.environ.get('GOOGLE_TOKEN_JSON')
+    if env_val:
+        return env_val
+    if TOKEN_FILE.exists():
+        return TOKEN_FILE.read_text()
+    return None
+
+
+def _save_token(token_json_str):
+    """Salva o token no arquivo local (em produção o Railway precisa de outra estratégia)."""
+    try:
+        TOKEN_FILE.write_text(token_json_str)
+    except Exception:
+        pass
+
+
 def _get_service():
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
 
+    token_str = _token_json()
     creds = None
-    if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+    if token_str:
+        creds = Credentials.from_authorized_user_info(json.loads(token_str), SCOPES)
 
     if creds and creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        TOKEN_FILE.write_text(creds.to_json())
+        _save_token(creds.to_json())
 
     if not creds or not creds.valid:
-        return None  # precisa autorizar
+        return None
 
     return build('calendar', 'v3', credentials=creds)
 
 
 def is_authorized():
-    svc = _get_service()
-    return svc is not None
+    return _get_service() is not None
+
+
+def has_credentials():
+    return _credentials_dict() is not None
 
 
 def get_auth_url(redirect_uri):
     from google_auth_oauthlib.flow import Flow
-    flow = Flow.from_client_secrets_file(
-        str(CREDENTIALS_FILE),
-        scopes=SCOPES,
-        redirect_uri=redirect_uri,
-    )
+    creds_dict = _credentials_dict()
+    if not creds_dict:
+        raise RuntimeError('Credenciais não encontradas')
+    flow = Flow.from_client_config(creds_dict, scopes=SCOPES, redirect_uri=redirect_uri)
     url, state = flow.authorization_url(access_type='offline', prompt='consent')
     return url, state
 
 
 def exchange_code(code, state, redirect_uri):
     from google_auth_oauthlib.flow import Flow
-    flow = Flow.from_client_secrets_file(
-        str(CREDENTIALS_FILE),
-        scopes=SCOPES,
-        state=state,
-        redirect_uri=redirect_uri,
-    )
+    creds_dict = _credentials_dict()
+    flow = Flow.from_client_config(creds_dict, scopes=SCOPES, state=state, redirect_uri=redirect_uri)
     flow.fetch_token(code=code)
-    TOKEN_FILE.write_text(flow.credentials.to_json())
+    _save_token(flow.credentials.to_json())
 
 
 def criar_eventos_parcelas(registro):

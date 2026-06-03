@@ -4317,8 +4317,8 @@ def api_jud_acordo_salvar(registro_id):
 @app.route("/api/google-calendar/status")
 def api_gcal_status():
     try:
-        from services.google_calendar import is_authorized, CREDENTIALS_FILE
-        tem_creds = CREDENTIALS_FILE.exists()
+        from services.google_calendar import is_authorized, has_credentials
+        tem_creds = has_credentials()
         autorizado = is_authorized() if tem_creds else False
         return jsonify({"ok": True, "autorizado": autorizado, "tem_credenciais": tem_creds})
     except ImportError:
