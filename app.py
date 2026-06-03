@@ -4366,6 +4366,26 @@ def api_jud_sync_calendar(registro_id):
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)}), 500
 
+@app.route("/api/carteira-judicializada/sync-calendar-todos", methods=["POST"])
+def api_jud_sync_calendar_todos():
+    from services.google_calendar import criar_eventos_parcelas, is_authorized
+    if not is_authorized():
+        return jsonify({"ok": False, "erro": "Google Calendar não autorizado"}), 403
+    sb = _supabase()
+    if sb is None:
+        return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
+    try:
+        res = sb.table("carteira_judicializada").select("*").eq("status", "Acordo").execute()
+        registros = res.data or []
+        total_criados = 0
+        for registro in registros:
+            ok, resultado = criar_eventos_parcelas(registro)
+            if ok:
+                total_criados += resultado
+        return jsonify({"ok": True, "criados": total_criados, "acordos": len(registros)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
 
 # ── Checklist Judicializada ───────────────────────────────────────────────────
 

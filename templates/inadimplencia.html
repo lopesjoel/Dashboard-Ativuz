@@ -2153,7 +2153,18 @@ const _detalhe = [
   </div>
 
   <!-- Barra de ação -->
-  <div style="display:flex; align-items:center; justify-content:flex-end; margin-bottom:12px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; flex-wrap:wrap;">
+    <button id="btn-sync-gcal-todos" onclick="judSyncTodos()"
+            style="display:inline-flex; align-items:center; gap:6px;
+                   padding:6px 14px; background:#1a73e8; color:#fff;
+                   border:none; border-radius:8px; font-size:0.82rem; font-weight:600;
+                   font-family:inherit; cursor:pointer; transition:opacity .15s;"
+            onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 3h-1V1h-2v2H8V1H6v2H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+      </svg>
+      Sincronizar todos os acordos
+    </button>
     <button onclick="judAbrirModal(null)"
             style="display:inline-flex; align-items:center; gap:6px;
                    padding:6px 14px; background:#1e3a5f; color:#fff;
@@ -2899,6 +2910,52 @@ const _detalhe = [
             if (btn) {
               btn.disabled = false;
               btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg> Sincronizar Agenda';
+            }
+          });
+      });
+  };
+
+  window.judSyncTodos = function () {
+    var btn = document.getElementById('btn-sync-gcal-todos');
+
+    fetch('/api/google-calendar/status')
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (!json.tem_credenciais) {
+          alert('Arquivo google_credentials.json não encontrado.\nSiga as instruções de configuração.');
+          return;
+        }
+        if (!json.autorizado) {
+          fetch('/api/google-calendar/auth')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              if (j.ok) {
+                var popup = window.open(j.url, 'gcal_auth', 'width=500,height=650');
+                var check = setInterval(function () {
+                  if (popup && popup.closed) { clearInterval(check); judSyncTodos(); }
+                }, 800);
+              } else {
+                alert('Erro ao obter URL de autorização: ' + j.erro);
+              }
+            });
+          return;
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Sincronizando…'; }
+        fetch('/api/carteira-judicializada/sync-calendar-todos', { method: 'POST' })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j.ok) {
+              alert(j.criados + (j.criados === 1 ? ' evento criado' : ' eventos criados') + ' no Google Agenda\n(' + j.acordos + (j.acordos === 1 ? ' acordo' : ' acordos') + ' processados)');
+            } else {
+              alert('Erro: ' + j.erro);
+            }
+          })
+          .catch(function (e) { alert('Erro de conexão: ' + e); })
+          .finally(function () {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg> Sincronizar todos os acordos';
             }
           });
       });
