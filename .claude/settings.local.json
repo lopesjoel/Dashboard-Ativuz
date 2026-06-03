@@ -124,7 +124,8 @@
       "Bash(.venv/bin/python *)",
       "Bash(pip show *)",
       "Bash(pip3 list *)",
-      "Bash(open *)"
+      "Bash(open *)",
+      "Bash(echo \"PID: $!\")"
     ]
   }
 }
