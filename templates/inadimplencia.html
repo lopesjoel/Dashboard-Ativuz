@@ -748,8 +748,12 @@
   }
   #jud-tbody tr:last-child .jud-td,
   #jud-tbody-perdidos tr:last-child .jud-td { border-bottom: none; }
+  #jud-tbody-acordos tr:last-child .jud-td { border-bottom: none; }
+  #jud-tbody-quitados tr:last-child .jud-td { border-bottom: none; }
   #jud-tbody tr:hover,
   #jud-tbody-perdidos tr:hover { background: #f8fafc; }
+  #jud-tbody-acordos tr:hover  { background: #f0fdf4; }
+  #jud-tbody-quitados tr:hover { background: #eff6ff; }
 
   .jud-badge {
     display: inline-block;
@@ -2163,7 +2167,7 @@ const _detalhe = [
     </button>
   </div>
 
-  <!-- Tabela principal (Ajuizado / Acordo / Em Análise) -->
+  <!-- Tabela principal (Ajuizado / Em Análise) -->
   <div class="card" style="padding:0; overflow:hidden;">
     <div style="overflow-x:auto;">
       <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
@@ -2180,6 +2184,61 @@ const _detalhe = [
         </thead>
         <tbody id="jud-tbody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Tabela: Acordos -->
+  <div id="jud-sec-acordos" style="display:none; margin-top:28px;">
+    <div class="section-hdr" style="color:#065f46;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
+        <path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/>
+      </svg>
+      Acordos
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
+          <thead>
+            <tr>
+              <th class="jud-th">Cliente</th>
+              <th class="jud-th">CPF/CNPJ</th>
+              <th class="jud-th">Início dívida</th>
+              <th class="jud-th">Valor atual</th>
+              <th class="jud-th">Status</th>
+              <th class="jud-th">Nº processo</th>
+              <th class="jud-th"></th>
+            </tr>
+          </thead>
+          <tbody id="jud-tbody-acordos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela: Quitados -->
+  <div id="jud-sec-quitados" style="display:none; margin-top:28px;">
+    <div class="section-hdr" style="color:#1e40af;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Quitados
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
+          <thead>
+            <tr>
+              <th class="jud-th">Cliente</th>
+              <th class="jud-th">CPF/CNPJ</th>
+              <th class="jud-th">Valor da Dívida</th>
+              <th class="jud-th">Valor Negociado</th>
+              <th class="jud-th">Total</th>
+            </tr>
+          </thead>
+          <tbody id="jud-tbody-quitados"></tbody>
+          <tfoot id="jud-tfoot-quitados"></tfoot>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -2585,16 +2644,69 @@ const _detalhe = [
     return tr;
   }
 
+  function _isQuitado(r) {
+    var ad = r.acordo_dados || {};
+    var parcelas = ad.parcelas || [];
+    return parcelas.length > 0 && parcelas.every(function (p) { return p.pago; });
+  }
+
+  function _renderRowQuitado(r) {
+    var ad = r.acordo_dados || {};
+    var valorDivida    = Number(r.valor_atual) || 0;
+    var valorNegociado = Number(ad.valor_acordado) || 0;
+    var total          = valorDivida + valorNegociado;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="jud-td">' + r.cliente + '</td>' +
+      '<td class="jud-td" style="white-space:nowrap; color:#64748b;">' + (r.cpf_cnpj || '—') + '</td>' +
+      '<td class="jud-td" style="white-space:nowrap; color:#dc2626; font-weight:600;">' + _brl(valorDivida) + '</td>' +
+      '<td class="jud-td" style="white-space:nowrap; color:#065f46; font-weight:600;">' + _brl(valorNegociado) + '</td>' +
+      '<td class="jud-td" style="white-space:nowrap; font-weight:700;">' + _brl(total) + '</td>';
+    return tr;
+  }
+
   function _renderizar(dados) {
     _dados = dados;
-    var ativos   = dados.filter(function (r) { return r.status !== 'Perdido'; });
-    var perdidos = dados.filter(function (r) { return r.status === 'Perdido'; });
+    var emAndamento = dados.filter(function (r) { return r.status !== 'Perdido' && r.status !== 'Acordo'; });
+    var acordosAtivos = dados.filter(function (r) { return r.status === 'Acordo' && !_isQuitado(r); });
+    var quitados   = dados.filter(function (r) { return r.status === 'Acordo' && _isQuitado(r); });
+    var perdidos   = dados.filter(function (r) { return r.status === 'Perdido'; });
 
     var tbody = document.getElementById('jud-tbody');
     if (tbody) {
       tbody.innerHTML = '';
-      ativos.forEach(function (r) { tbody.appendChild(_renderRow(r)); });
+      emAndamento.forEach(function (r) { tbody.appendChild(_renderRow(r)); });
     }
+
+    var tbodyA = document.getElementById('jud-tbody-acordos');
+    var secA   = document.getElementById('jud-sec-acordos');
+    if (tbodyA) {
+      tbodyA.innerHTML = '';
+      acordosAtivos.forEach(function (r) { tbodyA.appendChild(_renderRow(r)); });
+    }
+    if (secA) secA.style.display = acordosAtivos.length > 0 ? '' : 'none';
+
+    var tbodyQ = document.getElementById('jud-tbody-quitados');
+    var tfootQ = document.getElementById('jud-tfoot-quitados');
+    var secQ   = document.getElementById('jud-sec-quitados');
+    if (tbodyQ) {
+      tbodyQ.innerHTML = '';
+      quitados.forEach(function (r) { tbodyQ.appendChild(_renderRowQuitado(r)); });
+    }
+    if (tfootQ && quitados.length > 0) {
+      var totalDivida    = quitados.reduce(function (s, r) { return s + (Number(r.valor_atual) || 0); }, 0);
+      var totalNegociado = quitados.reduce(function (s, r) { return s + (Number((r.acordo_dados || {}).valor_acordado) || 0); }, 0);
+      tfootQ.innerHTML =
+        '<tr style="background:#f1f5f9; font-weight:700;">' +
+          '<td class="jud-td" colspan="2">Total</td>' +
+          '<td class="jud-td" style="white-space:nowrap; color:#dc2626;">' + _brl(totalDivida) + '</td>' +
+          '<td class="jud-td" style="white-space:nowrap; color:#065f46;">' + _brl(totalNegociado) + '</td>' +
+          '<td class="jud-td" style="white-space:nowrap;">' + _brl(totalDivida + totalNegociado) + '</td>' +
+        '</tr>';
+    } else if (tfootQ) {
+      tfootQ.innerHTML = '';
+    }
+    if (secQ) secQ.style.display = quitados.length > 0 ? '' : 'none';
 
     var tbodyP = document.getElementById('jud-tbody-perdidos');
     var secP   = document.getElementById('jud-sec-perdidos');
