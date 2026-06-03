@@ -125,7 +125,10 @@
       "Bash(pip show *)",
       "Bash(pip3 list *)",
       "Bash(open *)",
-      "Bash(echo \"PID: $!\")"
+      "Bash(echo \"PID: $!\")",
+      "Bash(lsof -ti:8080)",
+      "Bash(xargs kill -9)",
+      "Bash(lsof -ti:5000)"
     ]
   }
 }
