@@ -45,3 +45,7 @@ dist-ssr
 
 # Next.js build output
 .next/
+
+# Google Calendar
+google_credentials.json
+google_token.json

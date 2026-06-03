@@ -4312,6 +4312,61 @@ def api_jud_acordo_salvar(registro_id):
         return jsonify({"ok": False, "erro": str(e)}), 500
 
 
+# ── Google Calendar — Carteira Judicializada ─────────────────────────────────
+
+@app.route("/api/google-calendar/status")
+def api_gcal_status():
+    try:
+        from services.google_calendar import is_authorized, CREDENTIALS_FILE
+        tem_creds = CREDENTIALS_FILE.exists()
+        autorizado = is_authorized() if tem_creds else False
+        return jsonify({"ok": True, "autorizado": autorizado, "tem_credenciais": tem_creds})
+    except ImportError:
+        return jsonify({"ok": True, "autorizado": False, "tem_credenciais": False})
+
+@app.route("/api/google-calendar/auth")
+def api_gcal_auth():
+    from services.google_calendar import get_auth_url, CREDENTIALS_FILE
+    if not CREDENTIALS_FILE.exists():
+        return jsonify({"ok": False, "erro": "Arquivo google_credentials.json não encontrado"}), 400
+    redirect_uri = _os.environ.get("GCAL_REDIRECT_URI", "http://localhost:5000/oauth2callback")
+    url, state = get_auth_url(redirect_uri)
+    session['gcal_state'] = state
+    return jsonify({"ok": True, "url": url})
+
+@app.route("/oauth2callback")
+def oauth2callback():
+    from services.google_calendar import exchange_code
+    code  = request.args.get('code')
+    state = request.args.get('state')
+    redirect_uri = _os.environ.get("GCAL_REDIRECT_URI", "http://localhost:5000/oauth2callback")
+    try:
+        exchange_code(code, state, redirect_uri)
+        return "<script>window.close(); window.opener && window.opener.location.reload();</script><p>Autorizado! Pode fechar esta aba.</p>"
+    except Exception as e:
+        return f"<p>Erro: {e}</p>", 400
+
+@app.route("/api/carteira-judicializada/<uuid:registro_id>/sync-calendar", methods=["POST"])
+def api_jud_sync_calendar(registro_id):
+    from services.google_calendar import criar_eventos_parcelas, is_authorized
+    if not is_authorized():
+        return jsonify({"ok": False, "erro": "Google Calendar não autorizado"}), 403
+    sb = _supabase()
+    if sb is None:
+        return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
+    try:
+        res = sb.table("carteira_judicializada").select("*").eq("id", str(registro_id)).single().execute()
+        registro = res.data
+        if not registro:
+            return jsonify({"ok": False, "erro": "Registro não encontrado"}), 404
+        ok, resultado = criar_eventos_parcelas(registro)
+        if not ok:
+            return jsonify({"ok": False, "erro": resultado}), 500
+        return jsonify({"ok": True, "criados": resultado})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
 # ── Checklist Judicializada ───────────────────────────────────────────────────
 
 @app.route("/api/jud-checklist/<uuid:registro_id>", methods=["GET"])

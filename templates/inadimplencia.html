@@ -2421,14 +2421,23 @@ const _detalhe = [
     </div>
 
     <!-- Footer -->
-    <div style="display:flex; gap:.75rem; padding-top:.25rem; border-top:1px solid #f1f5f9;">
+    <div style="display:flex; gap:.75rem; padding-top:.25rem; border-top:1px solid #f1f5f9; flex-wrap:wrap;">
       <button onclick="judSalvarAcordo()"
-              style="flex:1; padding:.7rem; background:#065f46; color:#fff; border:none;
+              style="flex:1; min-width:100px; padding:.7rem; background:#065f46; color:#fff; border:none;
                      border-radius:8px; font-weight:600; cursor:pointer; font-size:.875rem; font-family:inherit;">
         Salvar
       </button>
+      <button id="btn-sync-gcal" onclick="judSyncCalendar()"
+              style="flex:1; min-width:100px; padding:.7rem; background:#1a73e8; color:#fff; border:none;
+                     border-radius:8px; font-weight:600; cursor:pointer; font-size:.875rem; font-family:inherit;
+                     display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3h-1V1h-2v2H8V1H6v2H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+        </svg>
+        Sincronizar Agenda
+      </button>
       <button onclick="judFecharAcordo()"
-              style="flex:1; padding:.7rem; background:#f1f5f9; color:#374151; border:none;
+              style="flex:1; min-width:100px; padding:.7rem; background:#f1f5f9; color:#374151; border:none;
                      border-radius:8px; font-weight:600; cursor:pointer; font-size:.875rem; font-family:inherit;">
         Cancelar
       </button>
@@ -2843,6 +2852,56 @@ const _detalhe = [
     if (m) m.style.display = 'none';
     _acRegistroId = null;
     _acParcelas   = [];
+  };
+
+  window.judSyncCalendar = function () {
+    if (!_acRegistroId) return;
+    var btn = document.getElementById('btn-sync-gcal');
+
+    fetch('/api/google-calendar/status')
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (!json.tem_credenciais) {
+          alert('Arquivo google_credentials.json não encontrado.\nSiga as instruções de configuração.');
+          return;
+        }
+        if (!json.autorizado) {
+          fetch('/api/google-calendar/auth')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              if (j.ok) {
+                var popup = window.open(j.url, 'gcal_auth', 'width=500,height=650');
+                var check = setInterval(function () {
+                  if (popup && popup.closed) {
+                    clearInterval(check);
+                    judSyncCalendar();
+                  }
+                }, 800);
+              } else {
+                alert('Erro ao obter URL de autorização: ' + j.erro);
+              }
+            });
+          return;
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+        fetch('/api/carteira-judicializada/' + _acRegistroId + '/sync-calendar', { method: 'POST' })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j.ok) {
+              alert(j.criados + (j.criados === 1 ? ' evento criado' : ' eventos criados') + ' no Google Agenda!');
+            } else {
+              alert('Erro: ' + j.erro);
+            }
+          })
+          .catch(function (e) { alert('Erro de conexão: ' + e); })
+          .finally(function () {
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg> Sincronizar Agenda';
+            }
+          });
+      });
   };
 
   function _acAddDias(dateStr, dias) {
