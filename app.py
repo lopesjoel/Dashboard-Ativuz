@@ -2474,6 +2474,11 @@ def pagina_inadimplencia():
     reincidentes_criticos = sum(1 for r in registros_vencidos
                                 if r["dias_atraso"] >= 7 and r["reincidente"])
 
+    _vencido_raw   = sum(r["_valor"] for r in registros_vencidos)
+    _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
+    _carteira_raw  = _vencido_raw + _a_vencer_raw
+    taxa_inadimplencia = round(_vencido_raw / _carteira_raw * 100, 1) if _carteira_raw > 0 else 0.0
+
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
     _nome_cnt = Counter(
         r["nome"] for r in registros_vencidos
@@ -2521,6 +2526,7 @@ def pagina_inadimplencia():
         critico_ocorr_qtd=critico_ocorr_qtd,
         critico_valor_nome=critico_valor_nome,
         critico_valor_total=critico_valor_total,
+        taxa_inadimplencia=taxa_inadimplencia,
         erro_leitura=erro_leitura,
         hoje=hoje.strftime("%d/%m/%Y"),
         active="inadimplencia",

@@ -1225,6 +1225,14 @@
     </div>
   </div>
 
+  <div class="inad-card {% if taxa_inadimplencia < 10 %}c-green{% elif taxa_inadimplencia < 25 %}c-orange{% else %}c-red{% endif %}">
+    <div class="inad-card-top">Taxa de Inadimplência</div>
+    <div>
+      <div class="inad-card-val">{{ taxa_inadimplencia }}%</div>
+      <div class="inad-card-sub">do total da carteira (valor original)</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- Filter bar -->
