@@ -2101,6 +2101,416 @@ const _detalhe = [
 })();
 </script>
 
+<!-- ══════════════ LINHA DO TEMPO ══════════════ -->
+<style>
+  .lt-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+    margin-top: 28px;
+  }
+  .lt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .lt-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lt-title svg { opacity: 0.6; }
+  .lt-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lt-chart-wrap { position: relative; height: 240px; }
+  .lt-empty {
+    text-align: center;
+    padding: 48px 16px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+  }
+  .lt-table-wrap { margin-top: 20px; overflow-x: auto; }
+  .lt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .lt-table th {
+    background: #f8fafc;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  .lt-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #374151;
+    white-space: nowrap;
+  }
+  .lt-table tbody tr:hover { background: #f8fafc; }
+  .lt-table .td-val { font-weight: 600; color: #0f172a; }
+  .lt-table .td-crit { color: #dc2626; font-weight: 600; }
+  .lt-del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    transition: color .15s;
+  }
+  .lt-del-btn:hover { color: #dc2626; }
+
+  /* Modal manual */
+  .lt-modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1200;
+    align-items: center;
+    justify-content: center;
+  }
+  .lt-modal-overlay.open { display: flex; }
+  .lt-modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .lt-modal h3 { font-size: 1rem; font-weight: 700; margin: 0 0 20px; color: #0f172a; }
+  .lt-modal label { display: block; font-size: 0.75rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .lt-modal input[type=date],
+  .lt-modal input[type=number] {
+    width: 100%; box-sizing: border-box;
+    padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px;
+    font-size: 0.875rem; margin-bottom: 14px;
+    outline: none;
+  }
+  .lt-modal input:focus { border-color: #FF4713; }
+  .lt-modal-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .lt-msg {
+    font-size: 0.75rem;
+    margin-top: 8px;
+    min-height: 18px;
+    color: #16a34a;
+    text-align: center;
+  }
+  .lt-msg.err { color: #dc2626; }
+</style>
+
+<div class="lt-card">
+  <div class="lt-header">
+    <div class="lt-title">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      Linha do Tempo — Inadimplência Semanal
+    </div>
+    <div class="lt-actions">
+      <button class="btn btn-secondary btn-sm" onclick="ltOpenModal()">
+        + Adicionar semana anterior
+      </button>
+      <button class="btn btn-primary btn-sm" id="lt-snap-btn" onclick="ltSaveSnapshot()">
+        Salvar semana atual
+      </button>
+    </div>
+  </div>
+
+  <div id="lt-chart-area">
+    <div class="lt-empty" id="lt-empty-msg">Carregando dados...</div>
+    <div class="lt-chart-wrap" id="lt-chart-wrap" style="display:none;">
+      <canvas id="lt-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="lt-table-wrap" id="lt-table-wrap" style="display:none;">
+    <table class="lt-table">
+      <thead>
+        <tr>
+          <th>Semana</th>
+          <th>Casos</th>
+          <th>Valor Total</th>
+          <th>Críticos (+7d)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="lt-table-body"></tbody>
+    </table>
+  </div>
+
+  <div id="lt-snap-msg" class="lt-msg"></div>
+</div>
+
+<!-- Modal: adicionar semana manual -->
+<div class="lt-modal-overlay" id="lt-modal-overlay" onclick="if(event.target===this)ltCloseModal()">
+  <div class="lt-modal">
+    <h3>Adicionar Semana Anterior</h3>
+    <label>Qualquer dia da semana</label>
+    <input type="date" id="lt-m-semana" />
+    <label>Total de casos (clientes)</label>
+    <input type="number" id="lt-m-casos" min="0" placeholder="ex: 12" />
+    <label>Valor total inadimplente (R$)</label>
+    <input type="number" id="lt-m-valor" min="0" step="0.01" placeholder="ex: 8500.00" />
+    <label>Críticos (atraso ≥ 7 dias)</label>
+    <input type="number" id="lt-m-criticos" min="0" placeholder="ex: 3" />
+    <div id="lt-m-msg" class="lt-msg"></div>
+    <div class="lt-modal-foot">
+      <button class="btn btn-secondary btn-sm" onclick="ltCloseModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="ltSaveManual()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var _chart = null;
+  var _snapshots = [];
+
+  function _brl(v) {
+    return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  function renderChart(rows) {
+    var labels   = rows.map(function(r){ return r.semana_fmt; });
+    var valores  = rows.map(function(r){ return parseFloat(r.total_valor); });
+    var casos    = rows.map(function(r){ return r.total_casos; });
+    var criticos = rows.map(function(r){ return r.criticos; });
+
+    var ctx = document.getElementById('lt-chart').getContext('2d');
+    if (_chart) { _chart.destroy(); }
+    _chart = new Chart(ctx, {
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Valor Total (R$)',
+            data: valores,
+            backgroundColor: 'rgba(255,71,19,0.18)',
+            borderColor: '#FF4713',
+            borderWidth: 2,
+            borderRadius: 6,
+            yAxisID: 'y',
+            order: 2,
+          },
+          {
+            type: 'line',
+            label: 'Casos',
+            data: casos,
+            borderColor: '#1d4ed8',
+            backgroundColor: 'rgba(29,78,216,0.10)',
+            borderWidth: 2.5,
+            pointRadius: 4,
+            pointBackgroundColor: '#1d4ed8',
+            tension: 0.35,
+            yAxisID: 'y2',
+            order: 1,
+          },
+          {
+            type: 'line',
+            label: 'Críticos (+7d)',
+            data: criticos,
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220,38,38,0.08)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#dc2626',
+            tension: 0.35,
+            borderDash: [5,4],
+            yAxisID: 'y2',
+            order: 1,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                if (ctx.dataset.yAxisID === 'y') {
+                  return ' ' + ctx.dataset.label + ': ' + _brl(ctx.parsed.y);
+                }
+                return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: {
+            position: 'left',
+            ticks: {
+              font: { size: 10 },
+              callback: function(v) {
+                if (v >= 1000) return 'R$' + (v/1000).toFixed(0) + 'k';
+                return 'R$' + v.toFixed(0);
+              }
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          y2: {
+            position: 'right',
+            ticks: { font: { size: 10 }, stepSize: 1 },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function renderTable(rows) {
+    var tbody = document.getElementById('lt-table-body');
+    tbody.innerHTML = '';
+    var sorted = rows.slice().reverse();
+    sorted.forEach(function(r) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + r.semana_fmt + '/' + r.semana.substr(0,4) + '</td>' +
+        '<td class="td-val">' + r.total_casos + '</td>' +
+        '<td class="td-val">' + _brl(r.total_valor) + '</td>' +
+        '<td class="td-crit">' + r.criticos + '</td>' +
+        '<td><button class="lt-del-btn" title="Remover" onclick="ltDelete(\'' + r.semana + '\',this)">&#10005;</button></td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadHistorico() {
+    fetch('/inadimplencia/historico')
+      .then(function(r){ return r.json(); })
+      .then(function(rows) {
+        _snapshots = rows;
+        var emptyEl = document.getElementById('lt-empty-msg');
+        var wrapEl  = document.getElementById('lt-chart-wrap');
+        var tableEl = document.getElementById('lt-table-wrap');
+        if (!rows || rows.length === 0) {
+          emptyEl.textContent = 'Nenhum snapshot salvo ainda. Clique em "Salvar semana atual" para começar.';
+          emptyEl.style.display = '';
+          wrapEl.style.display  = 'none';
+          tableEl.style.display = 'none';
+        } else {
+          emptyEl.style.display = 'none';
+          wrapEl.style.display  = '';
+          tableEl.style.display = '';
+          renderChart(rows);
+          renderTable(rows);
+        }
+      })
+      .catch(function() {
+        document.getElementById('lt-empty-msg').textContent = 'Erro ao carregar histórico.';
+      });
+  }
+
+  window.ltSaveSnapshot = function() {
+    var btn = document.getElementById('lt-snap-btn');
+    var msg = document.getElementById('lt-snap-msg');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    msg.className = 'lt-msg';
+    msg.textContent = '';
+    fetch('/inadimplencia/snapshot', { method: 'POST' })
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        btn.disabled = false;
+        btn.textContent = 'Salvar semana atual';
+        if (d.ok) {
+          msg.className = 'lt-msg';
+          msg.textContent = d.msg;
+          loadHistorico();
+        } else {
+          msg.className = 'lt-msg err';
+          msg.textContent = d.erro || 'Erro ao salvar.';
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Salvar semana atual';
+        msg.className = 'lt-msg err';
+        msg.textContent = 'Erro de conexão.';
+      });
+  };
+
+  window.ltOpenModal = function() {
+    document.getElementById('lt-modal-overlay').classList.add('open');
+    document.getElementById('lt-m-msg').textContent = '';
+    document.getElementById('lt-m-msg').className = 'lt-msg';
+  };
+
+  window.ltCloseModal = function() {
+    document.getElementById('lt-modal-overlay').classList.remove('open');
+  };
+
+  window.ltSaveManual = function() {
+    var semana   = document.getElementById('lt-m-semana').value;
+    var casos    = document.getElementById('lt-m-casos').value;
+    var valor    = document.getElementById('lt-m-valor').value;
+    var criticos = document.getElementById('lt-m-criticos').value;
+    var msg      = document.getElementById('lt-m-msg');
+
+    if (!semana || casos === '' || valor === '') {
+      msg.className = 'lt-msg err';
+      msg.textContent = 'Preencha semana, casos e valor.';
+      return;
+    }
+
+    fetch('/inadimplencia/historico/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ semana: semana, total_casos: casos, total_valor: valor, criticos: criticos || 0 })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        msg.className = 'lt-msg';
+        msg.textContent = 'Semana ' + d.semana_fmt + ' salva!';
+        loadHistorico();
+        setTimeout(ltCloseModal, 900);
+      } else {
+        msg.className = 'lt-msg err';
+        msg.textContent = d.erro || 'Erro ao salvar.';
+      }
+    })
+    .catch(function() {
+      msg.className = 'lt-msg err';
+      msg.textContent = 'Erro de conexão.';
+    });
+  };
+
+  window.ltDelete = function(semana, btn) {
+    if (!confirm('Remover snapshot da semana ' + semana + '?')) return;
+    fetch('/inadimplencia/historico/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ semana: semana })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (d.ok) { loadHistorico(); }
+      else { alert('Erro: ' + (d.erro || 'não foi possível remover.')); }
+    });
+  };
+
+  loadHistorico();
+})();
+</script>
+
 </div><!-- /inad-tab-controle -->
 
 <!-- ══════════════ ABA: CARTEIRA JUDICIALIZADA ══════════════ -->

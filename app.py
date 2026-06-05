@@ -2860,6 +2860,134 @@ def inadimplencia_upload():
     return redirect(url_for("pagina_inadimplencia"))
 
 
+# ── Linha do Tempo: snapshot semanal ─────────────────────────────────────────
+
+def _segunda_da_semana(d):
+    """Retorna a segunda-feira da semana de uma data."""
+    return d - timedelta(days=d.weekday())
+
+
+@app.route("/inadimplencia/snapshot", methods=["POST"])
+def inadimplencia_snapshot():
+    """Salva snapshot da semana atual com os dados atuais da planilha."""
+    sb = _supabase()
+    if not sb:
+        return jsonify({"ok": False, "erro": "Supabase não configurado."}), 500
+
+    try:
+        registros_vencidos, _, _ = _ler_inad_dados()
+        hoje = date.today()
+        semana = _segunda_da_semana(hoje)
+
+        nomes_unicos = {r["nome"] for r in registros_vencidos}
+        total_casos  = len(nomes_unicos)
+        total_valor  = sum(r["_total"] for r in registros_vencidos)
+        criticos     = sum(1 for r in registros_vencidos if r["dias_atraso"] >= 7)
+
+        etapas = ["Hoje", "Terça-feira", "Quarta-feira", "Quinta-feira",
+                  "Sexta-feira", "D+5", "D+7", "D+10", "D+15"]
+        por_etapa = {e: 0 for e in etapas}
+        for r in registros_vencidos:
+            if r["etapa"] in por_etapa:
+                por_etapa[r["etapa"]] += 1
+
+        semana_str = semana.isoformat()
+        existing = sb.table("inad_snapshots").select("id").eq("semana", semana_str).execute()
+        payload = {
+            "semana":       semana_str,
+            "total_casos":  total_casos,
+            "total_valor":  round(total_valor, 2),
+            "criticos":     criticos,
+            "por_etapa":    por_etapa,
+        }
+        if existing.data:
+            sb.table("inad_snapshots").update(payload).eq("semana", semana_str).execute()
+            msg = f"Snapshot da semana {semana.strftime('%d/%m/%Y')} atualizado."
+        else:
+            sb.table("inad_snapshots").insert(payload).execute()
+            msg = f"Snapshot da semana {semana.strftime('%d/%m/%Y')} salvo."
+
+        return jsonify({"ok": True, "msg": msg, "semana": semana_str,
+                        "total_casos": total_casos, "total_valor": round(total_valor, 2),
+                        "criticos": criticos})
+    except Exception:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "erro": "Erro ao salvar snapshot."}), 500
+
+
+@app.route("/inadimplencia/historico", methods=["GET"])
+def inadimplencia_historico():
+    """Retorna snapshots históricos como JSON para o gráfico."""
+    sb = _supabase()
+    if not sb:
+        return jsonify([])
+    try:
+        res = sb.table("inad_snapshots") \
+                .select("semana,total_casos,total_valor,criticos,por_etapa") \
+                .order("semana", desc=False) \
+                .execute()
+        rows = res.data or []
+        for r in rows:
+            d = date.fromisoformat(r["semana"])
+            r["semana_fmt"] = d.strftime("%d/%m")
+            r["total_valor_fmt"] = _brl(float(r["total_valor"]))
+        return jsonify(rows)
+    except Exception:
+        return jsonify([])
+
+
+@app.route("/inadimplencia/historico/manual", methods=["POST"])
+def inadimplencia_historico_manual():
+    """Insere ou atualiza um snapshot manual de semana anterior."""
+    sb = _supabase()
+    if not sb:
+        return jsonify({"ok": False, "erro": "Supabase não configurado."}), 500
+    try:
+        data = request.get_json(force=True)
+        semana_raw   = str(data.get("semana", "")).strip()
+        total_casos  = int(data.get("total_casos", 0))
+        total_valor  = float(str(data.get("total_valor", "0")).replace(",", "."))
+        criticos     = int(data.get("criticos", 0))
+
+        semana = date.fromisoformat(semana_raw)
+        semana = _segunda_da_semana(semana)
+        semana_str = semana.isoformat()
+
+        payload = {
+            "semana":      semana_str,
+            "total_casos": total_casos,
+            "total_valor": round(total_valor, 2),
+            "criticos":    criticos,
+            "por_etapa":   {},
+        }
+        existing = sb.table("inad_snapshots").select("id").eq("semana", semana_str).execute()
+        if existing.data:
+            sb.table("inad_snapshots").update(payload).eq("semana", semana_str).execute()
+        else:
+            sb.table("inad_snapshots").insert(payload).execute()
+
+        return jsonify({"ok": True, "semana": semana_str,
+                        "semana_fmt": semana.strftime("%d/%m/%Y")})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
+@app.route("/inadimplencia/historico/delete", methods=["POST"])
+def inadimplencia_historico_delete():
+    """Remove um snapshot pelo campo semana (YYYY-MM-DD)."""
+    sb = _supabase()
+    if not sb:
+        return jsonify({"ok": False, "erro": "Supabase não configurado."}), 500
+    try:
+        data = request.get_json(force=True)
+        semana_str = str(data.get("semana", "")).strip()
+        date.fromisoformat(semana_str)
+        sb.table("inad_snapshots").delete().eq("semana", semana_str).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
 _MESES_PT = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
              "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 _MESES_PT_CURTO = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",

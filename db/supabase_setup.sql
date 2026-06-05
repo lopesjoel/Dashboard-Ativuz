@@ -179,3 +179,18 @@ insert into public.financiamentos_contratos (operacao, contrato, placa, data_ven
 ('AGN 02',      '62970',      '',                    '2029-02-15', 36,  3678.57),
 ('AGN 01',      '62329',      '',                    '2029-12-15', 46,  2564.67)
 on conflict do nothing;
+
+
+-- ── Snapshots semanais de inadimplência ──────────────────────────────────────
+create table if not exists public.inad_snapshots (
+  id           uuid primary key default gen_random_uuid(),
+  semana       date not null unique,   -- segunda-feira da semana
+  total_casos  integer not null,
+  total_valor  numeric(12,2) not null,
+  criticos     integer not null default 0,
+  por_etapa    jsonb,
+  criado_em    timestamptz default now()
+);
+
+alter table public.inad_snapshots disable row level security;
+create index if not exists idx_inad_snapshots_semana on public.inad_snapshots(semana);
