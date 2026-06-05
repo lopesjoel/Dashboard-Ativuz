@@ -2243,7 +2243,6 @@ const _detalhe = [
           <th>Data</th>
           <th>Casos</th>
           <th>Valor Total</th>
-          <th>Críticos (+7d)</th>
           <th></th>
         </tr>
       </thead>
@@ -2264,8 +2263,6 @@ const _detalhe = [
     <input type="number" id="lt-m-casos" min="0" placeholder="ex: 12" />
     <label>Valor total inadimplente (R$)</label>
     <input type="number" id="lt-m-valor" min="0" step="0.01" placeholder="ex: 8500.00" />
-    <label>Críticos (atraso ≥ 7 dias)</label>
-    <input type="number" id="lt-m-criticos" min="0" placeholder="ex: 3" />
     <div id="lt-m-msg" class="lt-msg"></div>
     <div class="lt-modal-foot">
       <button class="btn btn-secondary btn-sm" onclick="ltCloseModal()">Cancelar</button>
@@ -2284,58 +2281,55 @@ const _detalhe = [
     return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
 
+  var WEEK_COLORS = [
+    '#FF4713', '#1d4ed8', '#16a34a', '#9333ea', '#f59e0b',
+    '#06b6d4', '#be185d', '#0369a1'
+  ];
+  var DIAS_LABEL = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+  function mondayOf(isoDate) {
+    var parts = isoDate.split('-');
+    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    var dow = (d.getDay() + 6) % 7; // 0=Seg...6=Dom
+    d.setDate(d.getDate() - dow);
+    return d.toISOString().slice(0, 10);
+  }
+
   function renderChart(rows) {
-    var labels   = rows.map(function(r){ return r.semana_fmt; });
-    var valores  = rows.map(function(r){ return parseFloat(r.total_valor); });
-    var casos    = rows.map(function(r){ return r.total_casos; });
-    var criticos = rows.map(function(r){ return r.criticos; });
+    // Agrupa por semana (chave = segunda-feira), mapeia valor por dia da semana
+    var weekMap = {};
+    rows.forEach(function(r) {
+      var wk  = mondayOf(r.semana);
+      var parts = r.semana.split('-');
+      var d   = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+      var idx = (d.getDay() + 6) % 7; // 0=Seg...6=Dom
+      if (!weekMap[wk]) weekMap[wk] = new Array(7).fill(null);
+      weekMap[wk][idx] = parseFloat(r.total_valor);
+    });
+
+    var weekKeys = Object.keys(weekMap).sort();
+    var datasets = weekKeys.map(function(wk, i) {
+      var parts = wk.split('-');
+      var d  = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+      var dd = String(d.getDate()).padStart(2, '0');
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var c  = WEEK_COLORS[i % WEEK_COLORS.length];
+      return {
+        label:           'Sem. ' + dd + '/' + mm,
+        data:            weekMap[wk],
+        backgroundColor: c + 'bb',
+        borderColor:     c,
+        borderWidth:     1.5,
+        borderRadius:    5,
+        borderSkipped:   false,
+      };
+    });
 
     var ctx = document.getElementById('lt-chart').getContext('2d');
     if (_chart) { _chart.destroy(); }
     _chart = new Chart(ctx, {
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            type: 'bar',
-            label: 'Valor Total (R$)',
-            data: valores,
-            backgroundColor: 'rgba(255,71,19,0.18)',
-            borderColor: '#FF4713',
-            borderWidth: 2,
-            borderRadius: 6,
-            yAxisID: 'y',
-            order: 2,
-          },
-          {
-            type: 'line',
-            label: 'Casos',
-            data: casos,
-            borderColor: '#1d4ed8',
-            backgroundColor: 'rgba(29,78,216,0.10)',
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#1d4ed8',
-            tension: 0.35,
-            yAxisID: 'y2',
-            order: 1,
-          },
-          {
-            type: 'line',
-            label: 'Críticos (+7d)',
-            data: criticos,
-            borderColor: '#dc2626',
-            backgroundColor: 'rgba(220,38,38,0.08)',
-            borderWidth: 2,
-            pointRadius: 4,
-            pointBackgroundColor: '#dc2626',
-            tension: 0.35,
-            borderDash: [5,4],
-            yAxisID: 'y2',
-            order: 1,
-          }
-        ]
-      },
+      type: 'bar',
+      data: { labels: DIAS_LABEL, datasets: datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -2345,31 +2339,22 @@ const _detalhe = [
           tooltip: {
             callbacks: {
               label: function(ctx) {
-                if (ctx.dataset.yAxisID === 'y') {
-                  return ' ' + ctx.dataset.label + ': ' + _brl(ctx.parsed.y);
-                }
-                return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y;
+                if (ctx.parsed.y === null) return null;
+                return ' ' + ctx.dataset.label + ': ' + _brl(ctx.parsed.y);
               }
             }
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 12 } } },
           y: {
-            position: 'left',
             ticks: {
               font: { size: 10 },
               callback: function(v) {
-                if (v >= 1000) return 'R$' + (v/1000).toFixed(0) + 'k';
-                return 'R$' + v.toFixed(0);
+                return v >= 1000 ? 'R$' + (v / 1000).toFixed(0) + 'k' : 'R$' + v.toFixed(0);
               }
             },
             grid: { color: 'rgba(0,0,0,0.05)' }
-          },
-          y2: {
-            position: 'right',
-            ticks: { font: { size: 10 }, stepSize: 1 },
-            grid: { display: false }
           }
         }
       }
@@ -2379,14 +2364,12 @@ const _detalhe = [
   function renderTable(rows) {
     var tbody = document.getElementById('lt-table-body');
     tbody.innerHTML = '';
-    var sorted = rows.slice().reverse();
-    sorted.forEach(function(r) {
+    rows.slice().reverse().forEach(function(r) {
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + r.semana_fmt + '</td>' +
         '<td class="td-val">' + r.total_casos + '</td>' +
         '<td class="td-val">' + _brl(r.total_valor) + '</td>' +
-        '<td class="td-crit">' + r.criticos + '</td>' +
         '<td><button class="lt-del-btn" title="Remover" onclick="ltDelete(\'' + r.semana + '\',this)">&#10005;</button></td>';
       tbody.appendChild(tr);
     });
@@ -2401,7 +2384,7 @@ const _detalhe = [
         var wrapEl  = document.getElementById('lt-chart-wrap');
         var tableEl = document.getElementById('lt-table-wrap');
         if (!rows || rows.length === 0) {
-          emptyEl.textContent = 'Nenhum snapshot salvo ainda. Clique em "Salvar semana atual" para começar.';
+          emptyEl.textContent = 'Nenhum snapshot salvo ainda. Clique em "Salvar hoje" para começar.';
           emptyEl.style.display = '';
           wrapEl.style.display  = 'none';
           tableEl.style.display = 'none';
@@ -2458,22 +2441,21 @@ const _detalhe = [
   };
 
   window.ltSaveManual = function() {
-    var semana   = document.getElementById('lt-m-semana').value;
-    var casos    = document.getElementById('lt-m-casos').value;
-    var valor    = document.getElementById('lt-m-valor').value;
-    var criticos = document.getElementById('lt-m-criticos').value;
-    var msg      = document.getElementById('lt-m-msg');
+    var semana = document.getElementById('lt-m-semana').value;
+    var casos  = document.getElementById('lt-m-casos').value;
+    var valor  = document.getElementById('lt-m-valor').value;
+    var msg    = document.getElementById('lt-m-msg');
 
     if (!semana || casos === '' || valor === '') {
       msg.className = 'lt-msg err';
-      msg.textContent = 'Preencha semana, casos e valor.';
+      msg.textContent = 'Preencha data, casos e valor.';
       return;
     }
 
     fetch('/inadimplencia/historico/manual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ semana: semana, total_casos: casos, total_valor: valor, criticos: criticos || 0 })
+      body: JSON.stringify({ semana: semana, total_casos: casos, total_valor: valor, criticos: 0 })
     })
     .then(function(r){ return r.json(); })
     .then(function(d) {
