@@ -2282,23 +2282,23 @@ const _detalhe = [
   }
 
   var WEEK_COLORS = ['#FF4713', '#1d4ed8', '#16a34a', '#9333ea'];
-  var DIAS_LABEL  = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  var DIAS_LABEL  = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-  function sundayOf(isoDate) {
+  function mondayOf(isoDate) {
     var parts = isoDate.split('-');
     var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-    d.setDate(d.getDate() - d.getDay()); // d.getDay(): Dom=0, recua ao domingo
+    d.setDate(d.getDate() - (d.getDay() + 6) % 7); // recua à segunda
     return d.toISOString().slice(0, 10);
   }
 
   function renderChart(rows) {
-    // Agrupa por semana (chave = domingo), mapeia valor por dia — Dom=0 … Sáb=6
+    // Agrupa por semana (chave = segunda), mapeia valor por dia — Seg=0 … Dom=6
     var weekMap = {};
     rows.forEach(function(r) {
-      var wk    = sundayOf(r.semana);
+      var wk    = mondayOf(r.semana);
       var parts = r.semana.split('-');
       var d     = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-      var idx   = d.getDay(); // Dom=0, Seg=1 … Sáb=6
+      var idx   = (d.getDay() + 6) % 7; // Seg=0, Ter=1 … Dom=6
       if (!weekMap[wk]) weekMap[wk] = new Array(7).fill(null);
       weekMap[wk][idx] = parseFloat(r.total_valor);
     });
