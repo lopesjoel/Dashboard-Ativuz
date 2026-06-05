@@ -2217,14 +2217,14 @@ const _detalhe = [
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
       </svg>
-      Linha do Tempo — Inadimplência Semanal
+      Linha do Tempo — Inadimplência Diária
     </div>
     <div class="lt-actions">
       <button class="btn btn-secondary btn-sm" onclick="ltOpenModal()">
-        + Adicionar semana anterior
+        + Adicionar dia anterior
       </button>
       <button class="btn btn-primary btn-sm" id="lt-snap-btn" onclick="ltSaveSnapshot()">
-        Salvar semana atual
+        Salvar hoje
       </button>
     </div>
   </div>
@@ -2240,7 +2240,7 @@ const _detalhe = [
     <table class="lt-table">
       <thead>
         <tr>
-          <th>Semana</th>
+          <th>Data</th>
           <th>Casos</th>
           <th>Valor Total</th>
           <th>Críticos (+7d)</th>
@@ -2257,8 +2257,8 @@ const _detalhe = [
 <!-- Modal: adicionar semana manual -->
 <div class="lt-modal-overlay" id="lt-modal-overlay" onclick="if(event.target===this)ltCloseModal()">
   <div class="lt-modal">
-    <h3>Adicionar Semana Anterior</h3>
-    <label>Qualquer dia da semana</label>
+    <h3>Adicionar Dia Anterior</h3>
+    <label>Data</label>
     <input type="date" id="lt-m-semana" />
     <label>Total de casos (clientes)</label>
     <input type="number" id="lt-m-casos" min="0" placeholder="ex: 12" />
@@ -2383,7 +2383,7 @@ const _detalhe = [
     sorted.forEach(function(r) {
       var tr = document.createElement('tr');
       tr.innerHTML =
-        '<td>' + r.semana_fmt + '/' + r.semana.substr(0,4) + '</td>' +
+        '<td>' + r.semana_fmt + '</td>' +
         '<td class="td-val">' + r.total_casos + '</td>' +
         '<td class="td-val">' + _brl(r.total_valor) + '</td>' +
         '<td class="td-crit">' + r.criticos + '</td>' +
@@ -2423,13 +2423,13 @@ const _detalhe = [
     var msg = document.getElementById('lt-snap-msg');
     btn.disabled = true;
     btn.textContent = 'Salvando...';
-    msg.className = 'lt-msg';
+    msg.className   = 'lt-msg';
     msg.textContent = '';
     fetch('/inadimplencia/snapshot', { method: 'POST' })
       .then(function(r){ return r.json(); })
       .then(function(d) {
         btn.disabled = false;
-        btn.textContent = 'Salvar semana atual';
+        btn.textContent = 'Salvar hoje';
         if (d.ok) {
           msg.className = 'lt-msg';
           msg.textContent = d.msg;
@@ -2441,7 +2441,7 @@ const _detalhe = [
       })
       .catch(function() {
         btn.disabled = false;
-        btn.textContent = 'Salvar semana atual';
+        btn.textContent = 'Salvar hoje';
         msg.className = 'lt-msg err';
         msg.textContent = 'Erro de conexão.';
       });

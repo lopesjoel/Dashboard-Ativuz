@@ -2860,16 +2860,18 @@ def inadimplencia_upload():
     return redirect(url_for("pagina_inadimplencia"))
 
 
-# ── Linha do Tempo: snapshot semanal ─────────────────────────────────────────
+# ── Linha do Tempo: snapshot diário ──────────────────────────────────────────
 
-def _segunda_da_semana(d):
-    """Retorna a segunda-feira da semana de uma data."""
-    return d - timedelta(days=d.weekday())
+_DIAS_PT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+
+def _fmt_dia(d):
+    return f"{_DIAS_PT[d.weekday()]} {d.strftime('%d/%m')}"
 
 
 @app.route("/inadimplencia/snapshot", methods=["POST"])
 def inadimplencia_snapshot():
-    """Salva snapshot da semana atual com os dados atuais da planilha."""
+    """Salva snapshot do dia atual com os dados atuais da planilha."""
     sb = _supabase()
     if not sb:
         return jsonify({"ok": False, "erro": "Supabase não configurado."}), 500
@@ -2877,7 +2879,6 @@ def inadimplencia_snapshot():
     try:
         registros_vencidos, _, _ = _ler_inad_dados()
         hoje = date.today()
-        semana = _segunda_da_semana(hoje)
 
         nomes_unicos = {r["nome"] for r in registros_vencidos}
         total_casos  = len(nomes_unicos)
@@ -2891,23 +2892,23 @@ def inadimplencia_snapshot():
             if r["etapa"] in por_etapa:
                 por_etapa[r["etapa"]] += 1
 
-        semana_str = semana.isoformat()
-        existing = sb.table("inad_snapshots").select("id").eq("semana", semana_str).execute()
-        payload = {
-            "semana":       semana_str,
-            "total_casos":  total_casos,
-            "total_valor":  round(total_valor, 2),
-            "criticos":     criticos,
-            "por_etapa":    por_etapa,
+        dia_str  = hoje.isoformat()
+        existing = sb.table("inad_snapshots").select("id").eq("semana", dia_str).execute()
+        payload  = {
+            "semana":      dia_str,
+            "total_casos": total_casos,
+            "total_valor": round(total_valor, 2),
+            "criticos":    criticos,
+            "por_etapa":   por_etapa,
         }
         if existing.data:
-            sb.table("inad_snapshots").update(payload).eq("semana", semana_str).execute()
-            msg = f"Snapshot da semana {semana.strftime('%d/%m/%Y')} atualizado."
+            sb.table("inad_snapshots").update(payload).eq("semana", dia_str).execute()
+            msg = f"Snapshot de {_fmt_dia(hoje)} atualizado."
         else:
             sb.table("inad_snapshots").insert(payload).execute()
-            msg = f"Snapshot da semana {semana.strftime('%d/%m/%Y')} salvo."
+            msg = f"Snapshot de {_fmt_dia(hoje)} salvo."
 
-        return jsonify({"ok": True, "msg": msg, "semana": semana_str,
+        return jsonify({"ok": True, "msg": msg, "semana": dia_str,
                         "total_casos": total_casos, "total_valor": round(total_valor, 2),
                         "criticos": criticos})
     except Exception:
@@ -2929,7 +2930,7 @@ def inadimplencia_historico():
         rows = res.data or []
         for r in rows:
             d = date.fromisoformat(r["semana"])
-            r["semana_fmt"] = d.strftime("%d/%m")
+            r["semana_fmt"]      = _fmt_dia(d)
             r["total_valor_fmt"] = _brl(float(r["total_valor"]))
         return jsonify(rows)
     except Exception:
@@ -2938,36 +2939,35 @@ def inadimplencia_historico():
 
 @app.route("/inadimplencia/historico/manual", methods=["POST"])
 def inadimplencia_historico_manual():
-    """Insere ou atualiza um snapshot manual de semana anterior."""
+    """Insere ou atualiza um snapshot manual de dia anterior."""
     sb = _supabase()
     if not sb:
         return jsonify({"ok": False, "erro": "Supabase não configurado."}), 500
     try:
-        data = request.get_json(force=True)
-        semana_raw   = str(data.get("semana", "")).strip()
-        total_casos  = int(data.get("total_casos", 0))
-        total_valor  = float(str(data.get("total_valor", "0")).replace(",", "."))
-        criticos     = int(data.get("criticos", 0))
+        data        = request.get_json(force=True)
+        dia_raw     = str(data.get("semana", "")).strip()
+        total_casos = int(data.get("total_casos", 0))
+        total_valor = float(str(data.get("total_valor", "0")).replace(",", "."))
+        criticos    = int(data.get("criticos", 0))
 
-        semana = date.fromisoformat(semana_raw)
-        semana = _segunda_da_semana(semana)
-        semana_str = semana.isoformat()
+        dia     = date.fromisoformat(dia_raw)
+        dia_str = dia.isoformat()
 
         payload = {
-            "semana":      semana_str,
+            "semana":      dia_str,
             "total_casos": total_casos,
             "total_valor": round(total_valor, 2),
             "criticos":    criticos,
             "por_etapa":   {},
         }
-        existing = sb.table("inad_snapshots").select("id").eq("semana", semana_str).execute()
+        existing = sb.table("inad_snapshots").select("id").eq("semana", dia_str).execute()
         if existing.data:
-            sb.table("inad_snapshots").update(payload).eq("semana", semana_str).execute()
+            sb.table("inad_snapshots").update(payload).eq("semana", dia_str).execute()
         else:
             sb.table("inad_snapshots").insert(payload).execute()
 
-        return jsonify({"ok": True, "semana": semana_str,
-                        "semana_fmt": semana.strftime("%d/%m/%Y")})
+        return jsonify({"ok": True, "semana": dia_str,
+                        "semana_fmt": _fmt_dia(dia)})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)}), 400
 
@@ -2979,10 +2979,10 @@ def inadimplencia_historico_delete():
     if not sb:
         return jsonify({"ok": False, "erro": "Supabase não configurado."}), 500
     try:
-        data = request.get_json(force=True)
-        semana_str = str(data.get("semana", "")).strip()
-        date.fromisoformat(semana_str)
-        sb.table("inad_snapshots").delete().eq("semana", semana_str).execute()
+        data    = request.get_json(force=True)
+        dia_str = str(data.get("semana", "")).strip()
+        date.fromisoformat(dia_str)
+        sb.table("inad_snapshots").delete().eq("semana", dia_str).execute()
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)}), 400
