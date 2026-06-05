@@ -2388,12 +2388,23 @@ const _detalhe = [
           emptyEl.style.display = 'none';
           wrapEl.style.display  = '';
           tableEl.style.display = '';
-          renderChart(rows);
-          renderTable(rows);
+          // requestAnimationFrame garante que o canvas já tem dimensões antes do Chart.js inicializar
+          requestAnimationFrame(function() {
+            try {
+              renderChart(rows);
+              renderTable(rows);
+            } catch(e) {
+              emptyEl.textContent    = 'Erro ao renderizar gráfico: ' + e.message;
+              emptyEl.style.display  = '';
+              wrapEl.style.display   = 'none';
+            }
+          });
         }
       })
-      .catch(function() {
-        document.getElementById('lt-empty-msg').textContent = 'Erro ao carregar histórico.';
+      .catch(function(e) {
+        var el = document.getElementById('lt-empty-msg');
+        el.textContent    = 'Erro ao carregar histórico.';
+        el.style.display  = '';
       });
   }
 
