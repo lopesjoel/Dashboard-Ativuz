@@ -2223,6 +2223,9 @@ const _detalhe = [
       <button class="btn btn-secondary btn-sm" onclick="ltOpenModal()">
         + Adicionar dia anterior
       </button>
+      <button class="btn btn-secondary btn-sm" id="lt-labels-btn" onclick="ltToggleLabels()">
+        Mostrar Valores
+      </button>
       <button class="btn btn-primary btn-sm" id="lt-snap-btn" onclick="ltSaveSnapshot()">
         Salvar hoje
       </button>
@@ -2272,10 +2275,12 @@ const _detalhe = [
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
 (function () {
-  var _chart = null;
-  var _snapshots = [];
+  var _chart        = null;
+  var _snapshots    = [];
+  var _labelsOn     = false;
 
   function _brl(v) {
     return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -2326,6 +2331,7 @@ const _detalhe = [
     _chart = new Chart(ctx, {
       type: 'bar',
       data: { labels: DIAS_LABEL, datasets: datasets },
+      plugins: [ChartDataLabels],
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -2339,6 +2345,20 @@ const _detalhe = [
                 return ' ' + ctx.dataset.label + ': ' + _brl(ctx.parsed.y);
               }
             }
+          },
+          datalabels: {
+            display: false,
+            anchor: 'end',
+            align: 'end',
+            offset: 2,
+            rotation: -90,
+            formatter: function(value) {
+              if (value === null) return null;
+              return value >= 1000 ? 'R$' + (value / 1000).toFixed(1) + 'k' : 'R$' + value.toFixed(0);
+            },
+            font: { size: 8, weight: '700' },
+            color: function(ctx) { return ctx.dataset.borderColor; },
+            clip: false,
           }
         },
         scales: {
@@ -2352,10 +2372,24 @@ const _detalhe = [
             },
             grid: { color: 'rgba(0,0,0,0.05)' }
           }
-        }
+        },
+        layout: { padding: { top: 20 } }
       }
     });
   }
+
+  window.ltToggleLabels = function() {
+    var btn = document.getElementById('lt-labels-btn');
+    _labelsOn = !_labelsOn;
+    if (_chart) {
+      _chart.options.plugins.datalabels.display = _labelsOn;
+      _chart.update();
+    }
+    btn.textContent = _labelsOn ? 'Ocultar Valores' : 'Mostrar Valores';
+    btn.style.background = _labelsOn ? '#FF4713' : '';
+    btn.style.color      = _labelsOn ? '#fff' : '';
+    btn.style.borderColor = _labelsOn ? '#FF4713' : '';
+  };
 
   function renderTable(rows) {
     var tbody = document.getElementById('lt-table-body');
