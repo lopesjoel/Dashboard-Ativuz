@@ -1229,7 +1229,7 @@
     <div class="inad-card-top">Taxa de Inadimplência</div>
     <div>
       <div class="inad-card-val">{{ taxa_inadimplencia }}%</div>
-      <div class="inad-card-sub">valor original D+1+ ÷ base semanal (D+0)</div>
+      <div class="inad-card-sub">{{ "R$ {:,.2f}".format(taxa_numerador).replace(",","X").replace(".",",").replace("X",".") }} ÷ {{ "R$ {:,.2f}".format(taxa_denominador).replace(",","X").replace(".",",").replace("X",".") }}</div>
     </div>
   </div>
 

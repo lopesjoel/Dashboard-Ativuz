@@ -2549,6 +2549,8 @@ def pagina_inadimplencia():
         critico_valor_nome=critico_valor_nome,
         critico_valor_total=critico_valor_total,
         taxa_inadimplencia=taxa_inadimplencia,
+        taxa_numerador=round(_overdue_raw, 2),
+        taxa_denominador=round(_base_semanal, 2),
         erro_leitura=erro_leitura,
         hoje=hoje.strftime("%d/%m/%Y"),
         active="inadimplencia",
