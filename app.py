@@ -2328,7 +2328,7 @@ def _ler_inad_dados():
             else:            proxima = "Processo judicial iniciado — recolhimento imediato do veículo"
 
             multa      = valor * 0.10 if dias >= 2 else 0.0
-            juros_mora = valor * 0.00033 * dias if dias >= 3 else 0.0
+            juros_mora = (valor + multa) * 0.00033 * dias if dias >= 3 else 0.0
             juros      = multa + juros_mora
             total      = valor + juros
             pausar     = total * 0.5
@@ -2613,7 +2613,7 @@ def exportar_inadimplencia():
                     continue
 
                 multa      = valor * 0.10 if dias >= 2 else 0.0
-                juros_mora = valor * 0.00033 * dias if dias >= 3 else 0.0
+                juros_mora = (valor + multa) * 0.00033 * dias if dias >= 3 else 0.0
                 juros      = multa + juros_mora
                 total      = valor + juros
 
