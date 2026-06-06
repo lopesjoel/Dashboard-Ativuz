@@ -2328,7 +2328,7 @@ def _ler_inad_dados():
             else:            proxima = "Processo judicial iniciado — recolhimento imediato do veículo"
 
             multa      = valor * 0.10 if dias >= 2 else 0.0
-            juros_mora = valor * 0.005 * dias if dias >= 3 else 0.0
+            juros_mora = valor * 0.00033 * dias if dias >= 3 else 0.0
             juros      = multa + juros_mora
             total      = valor + juros
             pausar     = total * 0.5
@@ -2478,8 +2478,8 @@ def pagina_inadimplencia():
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
     # D+0 = contratos com vencimento hoje (segunda-feira) = base semanal a receber
     _d0_raw        = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
-    # Genuinamente em atraso = D+1 em diante, usando valor atualizado (com multa e juros)
-    _overdue_raw   = sum(r["_total"] for r in registros_vencidos if r["dias_atraso"] > 0)
+    # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
+    _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
     taxa_inadimplencia = round(_overdue_raw / _d0_raw * 100, 1) if _d0_raw > 0 else 0.0
 
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
@@ -2613,7 +2613,7 @@ def exportar_inadimplencia():
                     continue
 
                 multa      = valor * 0.10 if dias >= 2 else 0.0
-                juros_mora = valor * 0.005 * dias if dias >= 3 else 0.0
+                juros_mora = valor * 0.00033 * dias if dias >= 3 else 0.0
                 juros      = multa + juros_mora
                 total      = valor + juros
 
