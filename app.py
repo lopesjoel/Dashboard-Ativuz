@@ -2480,6 +2480,7 @@ def pagina_inadimplencia():
     # Base semanal = snapshot da última segunda (total_valor em valor original)
     _base_semanal = 0.0
     _taxa_debug   = ""
+    # 1º: snapshot salvo para a segunda desta semana
     _sb = _supabase()
     if _sb:
         _ultima_segunda = (hoje - timedelta(days=hoje.weekday())).isoformat()
@@ -2492,17 +2493,22 @@ def pagina_inadimplencia():
             if _snap.data:
                 _base_semanal = float(_snap.data[0].get("total_valor") or 0)
                 _taxa_debug = f"snapshot {_ultima_segunda}"
-            else:
-                _taxa_debug = f"sem snapshot para {_ultima_segunda}"
-        except Exception as _e:
-            _taxa_debug = f"erro Supabase: {_e}"
-    else:
-        _taxa_debug = "Supabase indisponível"
-    # Fallback: próxima segunda nos lançamentos "a vencer"
+        except Exception:
+            pass
+    # 2º: entradas da segunda ainda na planilha (dias_atraso == dias desde segunda)
+    if _base_semanal == 0 and hoje.weekday() > 0:
+        _dias_desde_segunda = hoje.weekday()
+        _base_semanal = sum(r["_valor"] for r in registros_vencidos
+                            if r["dias_atraso"] == _dias_desde_segunda)
+        if _base_semanal > 0:
+            _taxa_debug = f"D+{_dias_desde_segunda} da planilha"
+    # 3º: próxima segunda nos lançamentos "a vencer"
     if _base_semanal == 0:
-        _dias_ate_segunda = 7 - hoje.weekday()  # Ter=6, Qua=5, Qui=4, Sex=3, Sáb=2, Dom=1
+        _dias_ate_segunda = 7 - hoje.weekday()
         _base_semanal = sum(r["_valor"] for r in registros_a_vencer
                             if r.get("dias_ate") == _dias_ate_segunda)
+        if _base_semanal > 0:
+            _taxa_debug = f"a_vencer D+{_dias_ate_segunda}"
     # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
     _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
     taxa_inadimplencia = round(_overdue_raw / _base_semanal * 100, 1) if _base_semanal > 0 else 0.0
