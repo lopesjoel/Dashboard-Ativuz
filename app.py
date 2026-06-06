@@ -2479,10 +2479,11 @@ def pagina_inadimplencia():
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
     # Base semanal = snapshot da última segunda (total_valor em valor original)
     _base_semanal = 0.0
-    try:
-        _sb = _supabase()
-        if _sb:
-            _ultima_segunda = (hoje - timedelta(days=hoje.weekday())).isoformat()
+    _taxa_debug   = ""
+    _sb = _supabase()
+    if _sb:
+        _ultima_segunda = (hoje - timedelta(days=hoje.weekday())).isoformat()
+        try:
             _snap = (_sb.table("inad_snapshots")
                        .select("total_valor")
                        .eq("semana", _ultima_segunda)
@@ -2490,8 +2491,13 @@ def pagina_inadimplencia():
                        .execute())
             if _snap.data:
                 _base_semanal = float(_snap.data[0].get("total_valor") or 0)
-    except Exception:
-        pass
+                _taxa_debug = f"snapshot {_ultima_segunda}"
+            else:
+                _taxa_debug = f"sem snapshot para {_ultima_segunda}"
+        except Exception as _e:
+            _taxa_debug = f"erro Supabase: {_e}"
+    else:
+        _taxa_debug = "Supabase indisponível"
     # Fallback: próxima segunda nos lançamentos "a vencer"
     if _base_semanal == 0:
         _dias_ate_segunda = 7 - hoje.weekday()  # Ter=6, Qua=5, Qui=4, Sex=3, Sáb=2, Dom=1
@@ -2551,6 +2557,7 @@ def pagina_inadimplencia():
         taxa_inadimplencia=taxa_inadimplencia,
         taxa_numerador=round(_overdue_raw, 2),
         taxa_denominador=round(_base_semanal, 2),
+        taxa_debug=_taxa_debug,
         erro_leitura=erro_leitura,
         hoje=hoje.strftime("%d/%m/%Y"),
         active="inadimplencia",
