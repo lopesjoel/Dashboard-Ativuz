@@ -2477,17 +2477,29 @@ def pagina_inadimplencia():
 
     _vencido_raw   = sum(r["_valor"] for r in registros_vencidos)
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
-    # D+0 = contratos com vencimento hoje (segunda-feira) = base semanal a receber
-    _d0_raw = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
-    # Fora de segunda: usa os lançamentos "a vencer" da próxima segunda como proxy
-    # (mesmos contratos ativos, antes de qualquer pagamento)
-    if _d0_raw == 0:
+    # Base semanal = snapshot da última segunda (total_valor em valor original)
+    _base_semanal = 0.0
+    try:
+        _sb = _supabase()
+        if _sb:
+            _ultima_segunda = (hoje - timedelta(days=hoje.weekday())).isoformat()
+            _snap = (_sb.table("inad_snapshots")
+                       .select("total_valor")
+                       .eq("semana", _ultima_segunda)
+                       .limit(1)
+                       .execute())
+            if _snap.data:
+                _base_semanal = float(_snap.data[0].get("total_valor") or 0)
+    except Exception:
+        pass
+    # Fallback: próxima segunda nos lançamentos "a vencer"
+    if _base_semanal == 0:
         _dias_ate_segunda = 7 - hoje.weekday()  # Ter=6, Qua=5, Qui=4, Sex=3, Sáb=2, Dom=1
-        _d0_raw = sum(r["_valor"] for r in registros_a_vencer
-                      if r.get("dias_ate") == _dias_ate_segunda)
+        _base_semanal = sum(r["_valor"] for r in registros_a_vencer
+                            if r.get("dias_ate") == _dias_ate_segunda)
     # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
     _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
-    taxa_inadimplencia = round(_overdue_raw / _d0_raw * 100, 1) if _d0_raw > 0 else 0.0
+    taxa_inadimplencia = round(_overdue_raw / _base_semanal * 100, 1) if _base_semanal > 0 else 0.0
 
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
     _nome_cnt = Counter(
@@ -2899,7 +2911,7 @@ def inadimplencia_snapshot():
 
         nomes_unicos = {r["nome"] for r in registros_vencidos}
         total_casos  = len(nomes_unicos)
-        total_valor  = sum(r["_total"] for r in registros_vencidos)
+        total_valor  = sum(r["_valor"] for r in registros_vencidos)  # valor original, sem multa/juros
         criticos     = sum(1 for r in registros_vencidos if r["dias_atraso"] >= 7)
         base_semanal = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
 
