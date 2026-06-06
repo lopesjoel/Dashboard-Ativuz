@@ -2479,6 +2479,21 @@ def pagina_inadimplencia():
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
     # D+0 = contratos com vencimento hoje (segunda-feira) = base semanal a receber
     _d0_raw        = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
+    # Se não é segunda (D+0 ausente), busca a base_semanal do snapshot mais recente
+    if _d0_raw == 0:
+        try:
+            _sb = _supabase()
+            if _sb:
+                _snap = (_sb.table("inad_snapshots")
+                           .select("base_semanal")
+                           .gt("base_semanal", 0)
+                           .order("semana", desc=True)
+                           .limit(1)
+                           .execute())
+                if _snap.data:
+                    _d0_raw = float(_snap.data[0].get("base_semanal") or 0)
+        except Exception:
+            pass
     # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
     _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
     taxa_inadimplencia = round(_overdue_raw / _d0_raw * 100, 1) if _d0_raw > 0 else 0.0
@@ -2895,6 +2910,7 @@ def inadimplencia_snapshot():
         total_casos  = len(nomes_unicos)
         total_valor  = sum(r["_total"] for r in registros_vencidos)
         criticos     = sum(1 for r in registros_vencidos if r["dias_atraso"] >= 7)
+        base_semanal = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
 
         etapas = ["Hoje", "Terça-feira", "Quarta-feira", "Quinta-feira",
                   "Sexta-feira", "D+5", "D+7", "D+10", "D+15"]
@@ -2906,11 +2922,12 @@ def inadimplencia_snapshot():
         dia_str  = hoje.isoformat()
         existing = sb.table("inad_snapshots").select("id").eq("semana", dia_str).execute()
         payload  = {
-            "semana":      dia_str,
-            "total_casos": total_casos,
-            "total_valor": round(total_valor, 2),
-            "criticos":    criticos,
-            "por_etapa":   por_etapa,
+            "semana":       dia_str,
+            "total_casos":  total_casos,
+            "total_valor":  round(total_valor, 2),
+            "criticos":     criticos,
+            "por_etapa":    por_etapa,
+            "base_semanal": round(base_semanal, 2),
         }
         if existing.data:
             sb.table("inad_snapshots").update(payload).eq("semana", dia_str).execute()
@@ -2921,7 +2938,7 @@ def inadimplencia_snapshot():
 
         return jsonify({"ok": True, "msg": msg, "semana": dia_str,
                         "total_casos": total_casos, "total_valor": round(total_valor, 2),
-                        "criticos": criticos})
+                        "criticos": criticos, "base_semanal": round(base_semanal, 2)})
     except Exception:
         import traceback; traceback.print_exc()
         return jsonify({"ok": False, "erro": "Erro ao salvar snapshot."}), 500
