@@ -2327,8 +2327,9 @@ def _ler_inad_dados():
             elif dias <= 14: proxima = "Negativação no SPC/Serasa + encaminhamento jurídico"
             else:            proxima = "Processo judicial iniciado — recolhimento imediato do veículo"
 
-            multa      = valor * 0.10 if dias >= 2 else 0.0
-            juros_mora = (valor + multa) * 0.00033 * dias if dias >= 3 else 0.0
+            tem_fatura = bool(num_doc)
+            multa      = valor * 0.10 if (tem_fatura and dias >= 2) else 0.0
+            juros_mora = (valor + multa) * 0.00033 * dias if (tem_fatura and dias >= 3) else 0.0
             juros      = multa + juros_mora
             total      = valor + juros
             pausar     = total * 0.5
@@ -2612,8 +2613,9 @@ def exportar_inadimplencia():
                 if dias < 0:
                     continue
 
-                multa      = valor * 0.10 if dias >= 2 else 0.0
-                juros_mora = (valor + multa) * 0.00033 * dias if dias >= 3 else 0.0
+                tem_fatura = bool(num_doc)
+                multa      = valor * 0.10 if (tem_fatura and dias >= 2) else 0.0
+                juros_mora = (valor + multa) * 0.00033 * dias if (tem_fatura and dias >= 3) else 0.0
                 juros      = multa + juros_mora
                 total      = valor + juros
 
