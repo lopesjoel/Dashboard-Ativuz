@@ -2476,8 +2476,11 @@ def pagina_inadimplencia():
 
     _vencido_raw   = sum(r["_valor"] for r in registros_vencidos)
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
-    _carteira_raw  = _vencido_raw + _a_vencer_raw
-    taxa_inadimplencia = round(_vencido_raw / _carteira_raw * 100, 1) if _carteira_raw > 0 else 0.0
+    # D+0 = contratos com vencimento hoje (segunda-feira) = base semanal a receber
+    _d0_raw        = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
+    # Genuinamente em atraso = D+1 em diante
+    _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
+    taxa_inadimplencia = round(_overdue_raw / _d0_raw * 100, 1) if _d0_raw > 0 else 0.0
 
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
     _nome_cnt = Counter(
