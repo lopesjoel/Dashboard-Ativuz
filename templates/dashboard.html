@@ -577,12 +577,21 @@
 ══════════════════════════════════════════════════ -->
 {% set contratos_vencidos = contratos_vencendo | selectattr('vencido') | list %}
 {% set contratos_7dias = contratos_vencendo | rejectattr('vencido') | selectattr('dias_restantes', 'le', 7) | list %}
-{% if contratos_vencidos or contratos_7dias %}
 <div class="dash-section">
   <span class="dash-section-label">Contratos a Vencer</span>
   <div class="dash-section-line"></div>
   <a href="{{ url_for('pagina_checklist') }}" class="btn btn-ghost btn-sm dash-section-action">Ver contratos</a>
 </div>
+
+{% if not contratos_vencidos and not contratos_7dias %}
+<div class="vencer-banner" style="border-color:#16a34a;background:#052e16;color:#bbf7d0;">
+  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+  <span><strong>Tudo em dia.</strong> Nenhum contrato vencido ou vencendo nos próximos 7 dias.</span>
+</div>
+{% endif %}
 
 {% if contratos_vencidos %}
 <div class="vencer-banner critical" style="border-color:#6b7280;background:#1f2937;color:#f9fafb;">
@@ -659,8 +668,6 @@
     </table>
   </div>
 </div>
-{% endif %}
-
 {% endif %}
 
 <!-- ══════════════════════════════════════════════════
