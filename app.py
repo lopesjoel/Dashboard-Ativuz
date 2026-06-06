@@ -2478,22 +2478,13 @@ def pagina_inadimplencia():
     _vencido_raw   = sum(r["_valor"] for r in registros_vencidos)
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
     # D+0 = contratos com vencimento hoje (segunda-feira) = base semanal a receber
-    _d0_raw        = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
-    # Se não é segunda (D+0 ausente), busca a base_semanal do snapshot mais recente
+    _d0_raw = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] == 0)
+    # Fora de segunda: usa os lançamentos "a vencer" da próxima segunda como proxy
+    # (mesmos contratos ativos, antes de qualquer pagamento)
     if _d0_raw == 0:
-        try:
-            _sb = _supabase()
-            if _sb:
-                _snap = (_sb.table("inad_snapshots")
-                           .select("base_semanal")
-                           .gt("base_semanal", 0)
-                           .order("semana", desc=True)
-                           .limit(1)
-                           .execute())
-                if _snap.data:
-                    _d0_raw = float(_snap.data[0].get("base_semanal") or 0)
-        except Exception:
-            pass
+        _dias_ate_segunda = 7 - hoje.weekday()  # Ter=6, Qua=5, Qui=4, Sex=3, Sáb=2, Dom=1
+        _d0_raw = sum(r["_valor"] for r in registros_a_vencer
+                      if r.get("dias_ate") == _dias_ate_segunda)
     # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
     _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
     taxa_inadimplencia = round(_overdue_raw / _d0_raw * 100, 1) if _d0_raw > 0 else 0.0
