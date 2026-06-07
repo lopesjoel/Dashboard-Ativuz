@@ -754,6 +754,8 @@
   #jud-tbody-perdidos tr:hover { background: #f8fafc; }
   #jud-tbody-acordos tr:hover  { background: #f0fdf4; }
   #jud-tbody-quitados tr:hover { background: #eff6ff; }
+  .jud-tfoot-row { background: #e8edf2; }
+  .jud-tfoot-row .jud-td { font-weight: 700; border-top: 2px solid #cbd5e1; border-bottom: none; }
 
   .jud-badge {
     display: inline-block;
@@ -2685,6 +2687,7 @@ const _detalhe = [
               <th class="jud-th">CPF/CNPJ</th>
               <th class="jud-th">Valor da Dívida</th>
               <th class="jud-th">Valor Negociado</th>
+              <th class="jud-th">% Desconto</th>
             </tr>
           </thead>
           <tbody id="jud-tbody-quitados"></tbody>
@@ -3115,12 +3118,15 @@ const _detalhe = [
     var ad = r.acordo_dados || {};
     var valorDivida    = Number(r.valor_atual) || 0;
     var valorNegociado = Number(ad.valor_acordado) || 0;
+    var desconto = valorDivida > 0 ? ((valorDivida - valorNegociado) / valorDivida * 100) : 0;
+    var descontoFmt = desconto > 0 ? desconto.toFixed(1).replace('.', ',') + '%' : '—';
     var tr = document.createElement('tr');
     tr.innerHTML =
       '<td class="jud-td">' + r.cliente + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#64748b;">' + (r.cpf_cnpj || '—') + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#dc2626; font-weight:600;">' + _brl(valorDivida) + '</td>' +
-      '<td class="jud-td" style="white-space:nowrap; color:#065f46; font-weight:600;">' + _brl(valorNegociado) + '</td>';
+      '<td class="jud-td" style="white-space:nowrap; color:#065f46; font-weight:600;">' + _brl(valorNegociado) + '</td>' +
+      '<td class="jud-td" style="white-space:nowrap; color:#7c3aed; font-weight:600;">' + descontoFmt + '</td>';
     return tr;
   }
 
@@ -3152,18 +3158,7 @@ const _detalhe = [
       tbodyQ.innerHTML = '';
       quitados.forEach(function (r) { tbodyQ.appendChild(_renderRowQuitado(r)); });
     }
-    if (tfootQ && quitados.length > 0) {
-      var totalDivida    = quitados.reduce(function (s, r) { return s + (Number(r.valor_atual) || 0); }, 0);
-      var totalNegociado = quitados.reduce(function (s, r) { return s + (Number((r.acordo_dados || {}).valor_acordado) || 0); }, 0);
-      tfootQ.innerHTML =
-        '<tr style="font-weight:700;">' +
-          '<td class="jud-td" colspan="2">Total</td>' +
-          '<td class="jud-td" style="white-space:nowrap; color:#dc2626;">' + _brl(totalDivida) + '</td>' +
-          '<td class="jud-td" style="white-space:nowrap; color:#065f46;">' + _brl(totalNegociado) + '</td>' +
-        '</tr>';
-    } else if (tfootQ) {
-      tfootQ.innerHTML = '';
-    }
+    if (tfootQ) tfootQ.innerHTML = '';
     if (secQ) secQ.style.display = quitados.length > 0 ? '' : 'none';
 
     var tbodyP = document.getElementById('jud-tbody-perdidos');

@@ -976,6 +976,8 @@
 [data-theme="dark"] #jud-tbody-acordos tr:hover,
 [data-theme="dark"] #jud-tbody-quitados tr:hover,
 [data-theme="dark"] #jud-tfoot-quitados tr:hover { background: var(--surface-2); }
+[data-theme="dark"] .jud-tfoot-row { background: var(--surface-2); }
+[data-theme="dark"] .jud-tfoot-row .jud-td { border-top-color: var(--line); }
 
 [data-theme="dark"] .jud-ajuizado { background: rgba(29,78,216,.2);  color: #60a5fa; }
 [data-theme="dark"] .jud-acordo   { background: rgba(6,95,70,.2);    color: #34d399; }
