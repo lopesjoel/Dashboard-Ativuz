@@ -102,10 +102,14 @@
   <h1 class="page-title">DRE</h1>
 </div>
 
+{% set meses_nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'] %}
+
 <!-- Abas -->
 <div class="dre-tabs">
-  <a href="{{ url_for('pagina_dre', aba='caixa', mes=mes, ano=ano) }}"
-     class="dre-tab {% if aba == 'caixa' %}active{% endif %}">Regime de Caixa</a>
+  <a href="{{ url_for('pagina_dre', aba='pagamento', mes=mes, ano=ano) }}"
+     class="dre-tab {% if aba == 'pagamento' %}active{% endif %}">Por Data de Pagamento</a>
+  <a href="{{ url_for('pagina_dre', aba='referencia', mes=mes, ano=ano) }}"
+     class="dre-tab {% if aba == 'referencia' %}active{% endif %}">Referência</a>
   <a href="{{ url_for('pagina_dre', aba='ajustes', mes=mes, ano=ano) }}"
      class="dre-tab {% if aba == 'ajustes' %}active{% endif %}">
     Ajustes de Natureza
@@ -116,55 +120,49 @@
 {% if sem_dados %}
 <div class="dre-empty">
   <strong>Nenhum lançamento importado</strong>
-  Importe um arquivo "Lançamentos por natureza" exportado do sistema.
+  Coloque os arquivos "Lançamentos por natureza" na pasta <code>planilhas/dre/</code>.
 </div>
 {% else %}
 
-{# ══════════════════ ABA: REGIME DE CAIXA ══════════════════ #}
-{% if aba == 'caixa' %}
-
-<!-- Seletor de período -->
+{# ══ MACRO: conteúdo de lançamentos (reutilizado nas duas abas) ══ #}
+{% macro render_lancamentos(resumo, aba_id) %}
 <div class="dre-bar">
   <form method="get" style="display:flex;gap:10px;align-items:center;">
-    <input type="hidden" name="aba" value="caixa">
+    <input type="hidden" name="aba" value="{{ aba_id }}">
     <select name="mes" onchange="this.form.submit()">
-      {% set meses_nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'] %}
       {% for (a, m) in meses_disponiveis %}
       <option value="{{ m }}" {% if m == mes and a == ano %}selected{% endif %}>
         {{ meses_nomes[m-1] }}/{{ a }}
       </option>
       {% endfor %}
     </select>
-    <select name="ano" onchange="this.form.submit()" style="display:none;"></select>
   </form>
 </div>
 
-<!-- KPIs -->
 <div class="dre-totais">
   <div class="dre-total-card">
     <div class="dre-total-label">Total Entradas</div>
-    <div class="dre-total-val green">{{ total_entrada | brl }}</div>
+    <div class="dre-total-val green">{{ resumo.total_entrada | brl }}</div>
   </div>
   <div class="dre-total-card">
     <div class="dre-total-label">Total Saídas</div>
-    <div class="dre-total-val red">{{ total_saida | brl }}</div>
+    <div class="dre-total-val red">{{ resumo.total_saida | brl }}</div>
   </div>
   <div class="dre-total-card">
     <div class="dre-total-label">Resultado</div>
-    <div class="dre-total-val {% if resultado >= 0 %}green{% else %}red{% endif %}">
-      {{ resultado | brl }}
+    <div class="dre-total-val {% if resumo.resultado >= 0 %}green{% else %}red{% endif %}">
+      {{ resumo.resultado | brl }}
     </div>
   </div>
 </div>
 
-<!-- Entradas -->
-{% if grupos_entrada %}
+{% if resumo.grupos_entrada %}
 <div class="dre-section">
   <div class="dre-section-title">
     Entradas
-    <span class="badge green" style="background:#dcfce7;color:#15803d;">{{ grupos_entrada|length }} natureza{{ 's' if grupos_entrada|length != 1 }}</span>
+    <span class="badge" style="background:#dcfce7;color:#15803d;">{{ resumo.grupos_entrada|length }} natureza{{ 's' if resumo.grupos_entrada|length != 1 }}</span>
   </div>
-  {% for g in grupos_entrada %}
+  {% for g in resumo.grupos_entrada %}
   <div class="dre-grupo">
     <div class="dre-grupo-header" onclick="toggleGrupo(this)">
       <span class="dre-grupo-nome">{{ g.natureza }}</span>
@@ -185,14 +183,13 @@
 </div>
 {% endif %}
 
-<!-- Saídas -->
-{% if grupos_saida %}
+{% if resumo.grupos_saida %}
 <div class="dre-section">
   <div class="dre-section-title">
     Saídas
-    <span class="badge" style="background:#fee2e2;color:#b91c1c;">{{ grupos_saida|length }} natureza{{ 's' if grupos_saida|length != 1 }}</span>
+    <span class="badge" style="background:#fee2e2;color:#b91c1c;">{{ resumo.grupos_saida|length }} natureza{{ 's' if resumo.grupos_saida|length != 1 }}</span>
   </div>
-  {% for g in grupos_saida %}
+  {% for g in resumo.grupos_saida %}
   <div class="dre-grupo">
     <div class="dre-grupo-header" onclick="toggleGrupo(this)">
       <span class="dre-grupo-nome">{{ g.natureza }}</span>
@@ -213,12 +210,21 @@
 </div>
 {% endif %}
 
-{% if not grupos_entrada and not grupos_saida %}
+{% if not resumo.grupos_entrada and not resumo.grupos_saida %}
 <div class="dre-empty">
   <strong>Sem lançamentos neste período</strong>
   Selecione outro mês ou importe um novo arquivo.
 </div>
 {% endif %}
+{% endmacro %}
+
+{# ══════════════════ ABA: POR DATA DE PAGAMENTO ══════════════════ #}
+{% if aba == 'pagamento' %}
+{{ render_lancamentos(resumo_pag, 'pagamento') }}
+
+{# ══════════════════ ABA: REFERÊNCIA ══════════════════ #}
+{% elif aba == 'referencia' %}
+{{ render_lancamentos(resumo_ref, 'referencia') }}
 
 {# ══════════════════ ABA: AJUSTES DE NATUREZA ══════════════════ #}
 {% elif aba == 'ajustes' %}

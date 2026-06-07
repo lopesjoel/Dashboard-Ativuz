@@ -3303,18 +3303,21 @@ _DRE_LAYOUT = [
 ]
 
 
-def _dre_ler_lancamentos():
+def _dre_ler_lancamentos(filtro_tipo=None):
     """
     Lê arquivos 'Lançamentos por natureza*.xlsx' da pasta planilhas/dre/.
-    Formato esperado (exportação do sistema):
-      row 1-4: cabeçalho/filtros
-      row 5:   Tipo | Descrição | Data de Vencimento | Natureza | Valor alocado | Confirmado por
-      row 6+:  dados
+    Formato (exportação do sistema):
+      row 2: filtro — contém "PAGAMENTO" ou "REFERÊNCIA"
+      row 5: cabeçalho — Tipo | Descrição | Data | Natureza | Pagar/Receber | Valor | Confirmado
+      row 6+: dados
+
+    filtro_tipo: "pagamento" | "referencia" | None (todos)
     """
     import openpyxl
 
     pasta = Path(__file__).resolve().parent / "planilhas" / "dre"
-    arquivos = [p for p in sorted(pasta.glob("*.xlsx")) if "lancamento" in p.name.lower() or "lançamento" in p.name.lower()]
+    arquivos = [p for p in sorted(pasta.glob("*.xlsx"))
+                if "lancamento" in p.name.lower() or "lançamento" in p.name.lower()]
     if not arquivos:
         return []
 
@@ -3325,6 +3328,14 @@ def _dre_ler_lancamentos():
             return cod.strip(), label.strip()
         return s, s
 
+    def _detectar_tipo(rows):
+        filtro = str(rows[1][0] or "").upper() if len(rows) > 1 else ""
+        if "PAGAMENTO" in filtro:
+            return "pagamento"
+        if "REFER" in filtro:
+            return "referencia"
+        return "desconhecido"
+
     def _ler_arquivo(path):
         registros = []
         try:
@@ -3332,16 +3343,16 @@ def _dre_ler_lancamentos():
             ws = wb.active
             rows = list(ws.iter_rows(values_only=True))
             wb.close()
-            for row in rows[5:]:           # pula 5 linhas de cabeçalho
+            tipo_arquivo = _detectar_tipo(rows)
+            for row in rows[5:]:
                 tipo = str(row[0] or "").strip().upper()
                 if tipo not in ("ENTRADA", "SAÍDA", "SAIDA"):
                     continue
                 descricao = str(row[1] or "").strip()
                 dt_raw    = row[2]
                 nat_raw   = row[3]
-                val_raw   = row[4]
+                val_raw   = row[5]   # col 5 = Valor alocado na Natureza
 
-                # data
                 if isinstance(dt_raw, datetime):
                     dt = dt_raw
                 elif isinstance(dt_raw, str):
@@ -3352,7 +3363,6 @@ def _dre_ler_lancamentos():
                 else:
                     continue
 
-                # valor
                 try:
                     valor = float(str(val_raw).replace(",", ".").replace(" ", ""))
                 except Exception:
@@ -3360,12 +3370,13 @@ def _dre_ler_lancamentos():
 
                 cod, nat_label = _parse_natureza(nat_raw)
                 registros.append({
-                    "tipo":      tipo,
-                    "descricao": descricao,
-                    "dt":        dt,
-                    "codigo":    cod,
-                    "natureza":  nat_label,
-                    "valor":     abs(valor) * (-1 if tipo in ("SAÍDA", "SAIDA") else 1),
+                    "tipo_arquivo": tipo_arquivo,
+                    "tipo":         tipo,
+                    "descricao":    descricao,
+                    "dt":           dt,
+                    "codigo":       cod,
+                    "natureza":     nat_label,
+                    "valor":        abs(valor) * (-1 if tipo in ("SAÍDA", "SAIDA") else 1),
                 })
         except Exception:
             import traceback; traceback.print_exc()
@@ -3375,7 +3386,9 @@ def _dre_ler_lancamentos():
     result = []
     for arq in sorted(arquivos, key=lambda p: p.stat().st_mtime):
         for reg in _ler_arquivo(arq):
-            chave = (reg["descricao"], reg["dt"].date(), reg["codigo"])
+            if filtro_tipo and reg["tipo_arquivo"] != filtro_tipo:
+                continue
+            chave = (reg["tipo_arquivo"], reg["descricao"], reg["dt"].date(), reg["codigo"])
             if chave in vistos:
                 continue
             vistos.add(chave)
@@ -3622,7 +3635,7 @@ def pagina_dre():
     from calendar import monthrange
     from collections import defaultdict
     hoje = datetime.now(_BRT)
-    aba  = request.args.get("aba", "caixa")  # "caixa" | "ajustes"
+    aba  = request.args.get("aba", "pagamento")  # "pagamento" | "referencia" | "ajustes"
 
     try:
         mes = int(request.args.get("mes", hoje.month))
@@ -3632,33 +3645,38 @@ def pagina_dre():
     except (ValueError, TypeError):
         mes, ano = hoje.month, hoje.year
 
-    todos = _dre_ler_lancamentos()
-    meses_disponiveis = sorted({(l["dt"].year, l["dt"].month) for l in todos})
+    pag  = _dre_ler_lancamentos("pagamento")
+    ref  = _dre_ler_lancamentos("referencia")
+    todos = pag + ref
 
-    # ── REGIME DE CAIXA ──────────────────────────────────────────────
-    d_ini = datetime(ano, mes, 1)
-    d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
-    filtrados = [l for l in todos if d_ini <= l["dt"] <= d_fim]
+    meses_pag = sorted({(l["dt"].year, l["dt"].month) for l in pag})
+    meses_ref = sorted({(l["dt"].year, l["dt"].month) for l in ref})
+    meses_disponiveis = sorted(set(meses_pag) | set(meses_ref))
 
-    entradas = [l for l in filtrados if l["tipo"] == "ENTRADA"]
-    saidas   = [l for l in filtrados if l["tipo"] in ("SAÍDA", "SAIDA")]
-
-    def _agrupar(lancamentos):
+    def _resumo_periodo(lancamentos, ano, mes):
+        d_ini = datetime(ano, mes, 1)
+        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
+        filtrados = [l for l in lancamentos if d_ini <= l["dt"] <= d_fim]
+        entradas = [l for l in filtrados if l["tipo"] == "ENTRADA"]
+        saidas   = [l for l in filtrados if l["tipo"] in ("SAÍDA", "SAIDA")]
         grupos = defaultdict(lambda: {"natureza": "", "valor": 0.0, "itens": []})
-        for l in lancamentos:
-            chave = l["codigo"]
-            grupos[chave]["natureza"] = l["natureza"] or l["codigo"]
-            grupos[chave]["valor"]   += abs(l["valor"])
-            grupos[chave]["itens"].append(l)
-        return sorted(grupos.values(), key=lambda g: -g["valor"])
+        for l in filtrados:
+            k = l["codigo"]
+            grupos[k]["natureza"] = l["natureza"] or l["codigo"]
+            grupos[k]["valor"]   += abs(l["valor"])
+            grupos[k]["itens"].append(l)
+        return {
+            "grupos_entrada": sorted((g for g in grupos.values() if any(i["tipo"]=="ENTRADA" for i in g["itens"])), key=lambda g: -g["valor"]),
+            "grupos_saida":   sorted((g for g in grupos.values() if any(i["tipo"] in ("SAÍDA","SAIDA") for i in g["itens"])), key=lambda g: -g["valor"]),
+            "total_entrada":  sum(abs(l["valor"]) for l in entradas),
+            "total_saida":    sum(abs(l["valor"]) for l in saidas),
+            "resultado":      sum(abs(l["valor"]) for l in entradas) - sum(abs(l["valor"]) for l in saidas),
+        }
 
-    grupos_entrada = _agrupar(entradas)
-    grupos_saida   = _agrupar(saidas)
-    total_entrada  = sum(abs(l["valor"]) for l in entradas)
-    total_saida    = sum(abs(l["valor"]) for l in saidas)
-    resultado      = total_entrada - total_saida
+    resumo_pag = _resumo_periodo(pag, ano, mes)
+    resumo_ref = _resumo_periodo(ref, ano, mes)
 
-    # ── AJUSTES DE NATUREZA ──────────────────────────────────────────
+    # Ajustes usam todos os lançamentos (sem filtro de período)
     ajustes = _dre_ajustes_natureza(todos)
 
     return render_template("dre.html",
@@ -3666,11 +3684,8 @@ def pagina_dre():
         aba=aba,
         mes=mes, ano=ano,
         meses_disponiveis=meses_disponiveis,
-        grupos_entrada=grupos_entrada,
-        grupos_saida=grupos_saida,
-        total_entrada=total_entrada,
-        total_saida=total_saida,
-        resultado=resultado,
+        resumo_pag=resumo_pag,
+        resumo_ref=resumo_ref,
         ajustes=ajustes,
         sem_dados=len(todos) == 0,
     )
