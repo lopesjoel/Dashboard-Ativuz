@@ -2316,9 +2316,33 @@ const _detalhe = [
     return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
 
-  function _isQuarta(isoDate) {
+  function _diaSemana(isoDate) {
     var p = isoDate.split('-');
-    return new Date(+p[0], +p[1] - 1, +p[2]).getDay() === 3;
+    return new Date(+p[0], +p[1] - 1, +p[2]).getDay(); // 0=Dom … 3=Qua 4=Qui
+  }
+
+  function _isQuarta(isoDate)  { return _diaSemana(isoDate) === 3; }
+  function _isQuinta(isoDate)  { return _diaSemana(isoDate) === 4; }
+
+  /* Retorna chave da semana (segunda-feira) para agrupar Qua/Qui */
+  function _chaveSemana(isoDate) {
+    var p = isoDate.split('-');
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    var dow = d.getDay() || 7; // dom=7
+    d.setDate(d.getDate() - dow + 1); // recua até segunda
+    return d.toISOString().split('T')[0];
+  }
+
+  /* Para cada semana: prefere quarta; usa quinta se não houver quarta */
+  function _selecionarPontos(rows) {
+    var byWeek = {};
+    rows.forEach(function(r) {
+      var dow = _diaSemana(r.semana);
+      if (dow !== 3 && dow !== 4) return; // só Qua e Qui
+      var chave = _chaveSemana(r.semana);
+      if (!byWeek[chave] || dow === 3) byWeek[chave] = r; // quarta tem prioridade
+    });
+    return Object.keys(byWeek).sort().map(function(k) { return byWeek[k]; });
   }
 
   function _fmtCurta(isoDate) {
@@ -2336,9 +2360,10 @@ const _detalhe = [
   }
 
   function renderChart(rows) {
-    var quartas = rows.filter(function(r) { return _isQuarta(r.semana); })
-                      .sort(function(a, b) { return a.semana.localeCompare(b.semana); });
-    var labels  = quartas.map(function(r) { return _fmtCurta(r.semana); });
+    var quartas = _selecionarPontos(rows);
+    var labels  = quartas.map(function(r) {
+      return _fmtCurta(r.semana) + (_isQuinta(r.semana) ? ' (Qui)' : '');
+    });
     var valores = quartas.map(function(r) { return parseFloat(r.total_valor); });
 
     var ctx = document.getElementById('lt-chart').getContext('2d');
@@ -2421,11 +2446,16 @@ const _detalhe = [
       var prev  = sorted[i + 1] ? parseFloat(sorted[i + 1].total_valor) : null;
       var cur   = parseFloat(r.total_valor);
       var isQua = _isQuarta(r.semana);
+      var isQui = _isQuinta(r.semana);
       var tr    = document.createElement('tr');
       if (isQua) tr.style.background = 'rgba(255,71,19,0.06)';
+      if (isQui) tr.style.background = 'rgba(251,191,36,0.06)';
+      var badge = isQua ? ' <span style="font-size:0.65rem;color:#FF4713;font-weight:700;">QUA</span>'
+                : isQui ? ' <span style="font-size:0.65rem;color:#d97706;font-weight:700;">QUI ↩</span>'
+                : '';
       tr.innerHTML =
-        '<td style="font-weight:' + (isQua ? '700' : '400') + ';">' +
-          r.semana_fmt + (isQua ? ' <span style="font-size:0.65rem;color:#FF4713;font-weight:700;">QUA</span>' : '') +
+        '<td style="font-weight:' + (isQua || isQui ? '700' : '400') + ';">' +
+          r.semana_fmt + badge +
         '</td>' +
         '<td class="td-val">' + r.total_casos + '</td>' +
         '<td class="td-val">' + _brl(cur) + '</td>' +
@@ -2436,18 +2466,18 @@ const _detalhe = [
   }
 
   function renderResumo(rows) {
-    var quartas = rows.filter(function(r) { return _isQuarta(r.semana); })
-                      .sort(function(a, b) { return b.semana.localeCompare(a.semana); });
+    var pontos = _selecionarPontos(rows).reverse(); // mais recente primeiro
     var el = document.getElementById('lt-resumo');
-    if (!quartas.length) { el.style.display = 'none'; return; }
+    if (!pontos.length) { el.style.display = 'none'; return; }
     el.style.display = 'flex';
-    var ult = quartas[0];
-    var ant = quartas[1] || null;
-    document.getElementById('lt-resumo-data').textContent  = ult.semana_fmt;
+    var ult = pontos[0];
+    var ant = pontos[1] || null;
+    var sufixo = _isQuinta(ult.semana) ? ' (Qui)' : '';
+    document.getElementById('lt-resumo-data').textContent  = ult.semana_fmt + sufixo;
     document.getElementById('lt-resumo-valor').textContent = _brl(parseFloat(ult.total_valor));
     document.getElementById('lt-resumo-var').innerHTML = ant
       ? _varHtml(parseFloat(ult.total_valor), parseFloat(ant.total_valor))
-      : '<span style="color:#94a3b8;">Primeira quarta registrada</span>';
+      : '<span style="color:#94a3b8;">Primeiro registro</span>';
   }
 
   function loadHistorico() {
