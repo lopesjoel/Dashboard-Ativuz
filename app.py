@@ -865,16 +865,18 @@ def dashboard():
         if s > 0:
             receita_mensal_real = s
         ct_app = sum(
-            1 for c in ativos_lst
+            1 for c in ativos_filtrados
             if 'MOTOR' in (c.get('tipo_contrato') or '').upper()
-            and not _excluir_app(c)
         )
-        ct_terceirizacao = sum(1 for c in ativos_lst if 'TERCEI' in (c.get('tipo_contrato') or '').upper())
+        ct_terceirizacao = sum(
+            1 for c in ativos_filtrados
+            if 'TERCEI' in (c.get('tipo_contrato') or '').upper()
+        )
+        contratos_ativos = ct_app + ct_terceirizacao
         _rec_sem = sum(
             c.get('valor_locacao') or 0
-            for c in ativos_lst
+            for c in ativos_filtrados
             if 'MOTOR' in (c.get('tipo_contrato') or '').upper()
-            and not _excluir_app(c)
         )
         if _rec_sem > 0:
             receita_semanal_app = _rec_sem
