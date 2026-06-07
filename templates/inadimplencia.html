@@ -2160,28 +2160,28 @@ const _detalhe = [
     font-size: 0.8rem;
   }
   .lt-table th {
-    background: #f8fafc;
+    background: rgba(99,179,237,0.08);
     padding: 8px 12px;
     text-align: left;
     font-weight: 600;
-    color: #475569;
-    border-bottom: 1px solid #e2e8f0;
+    color: var(--ink);
+    border-bottom: 1px solid rgba(99,179,237,0.18);
     white-space: nowrap;
   }
   .lt-table td {
     padding: 8px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #374151;
+    border-bottom: 1px solid var(--line, rgba(255,255,255,0.07));
+    color: var(--ink);
     white-space: nowrap;
   }
-  .lt-table tbody tr:hover { background: #f8fafc; }
-  .lt-table .td-val { font-weight: 600; color: #0f172a; }
+  .lt-table tbody tr:hover { background: rgba(99,179,237,0.06); }
+  .lt-table .td-val { font-weight: 600; color: var(--ink); }
   .lt-table .td-crit { color: #dc2626; font-weight: 600; }
   .lt-del-btn {
     background: none;
     border: none;
     cursor: pointer;
-    color: #94a3b8;
+    color: var(--ink-3, #94a3b8);
     padding: 2px 6px;
     border-radius: 4px;
     font-size: 0.75rem;
