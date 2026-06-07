@@ -5025,6 +5025,18 @@ def api_jud_acordo_salvar(registro_id):
         return jsonify({"ok": False, "erro": str(e)}), 500
 
 
+@app.route("/api/carteira-judicializada/<uuid:registro_id>", methods=["DELETE"])
+def api_jud_excluir(registro_id):
+    sb = _supabase()
+    if sb is None:
+        return jsonify({"ok": False, "erro": "Supabase não configurado"}), 503
+    try:
+        sb.table("carteira_judicializada").delete().eq("id", str(registro_id)).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
 # ── Google Calendar — Carteira Judicializada ─────────────────────────────────
 
 @app.route("/api/google-calendar/status")

@@ -2688,6 +2688,7 @@ const _detalhe = [
               <th class="jud-th">Valor da Dívida</th>
               <th class="jud-th">Valor Negociado</th>
               <th class="jud-th">% Desconto</th>
+              <th class="jud-th"></th>
             </tr>
           </thead>
           <tbody id="jud-tbody-quitados"></tbody>
@@ -3120,14 +3121,40 @@ const _detalhe = [
     var valorNegociado = Number(ad.valor_acordado) || 0;
     var desconto = valorDivida > 0 ? ((valorDivida - valorNegociado) / valorDivida * 100) : 0;
     var descontoFmt = desconto > 0 ? desconto.toFixed(1).replace('.', ',') + '%' : '—';
+    var clienteEsc = r.cliente.replace(/'/g, "\\'");
     var tr = document.createElement('tr');
     tr.innerHTML =
       '<td class="jud-td">' + r.cliente + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#64748b;">' + (r.cpf_cnpj || '—') + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#dc2626; font-weight:600;">' + _brl(valorDivida) + '</td>' +
       '<td class="jud-td" style="white-space:nowrap; color:#065f46; font-weight:600;">' + _brl(valorNegociado) + '</td>' +
-      '<td class="jud-td" style="white-space:nowrap; color:#7c3aed; font-weight:600;">' + descontoFmt + '</td>';
+      '<td class="jud-td" style="white-space:nowrap; color:#7c3aed; font-weight:600;">' + descontoFmt + '</td>' +
+      '<td class="jud-td" style="white-space:nowrap;">' +
+        '<button onclick="judExcluirQuitado(\'' + r.id + '\', \'' + clienteEsc + '\')" ' +
+                'style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;' +
+                       'background:#dc2626;color:#fff;border:none;border-radius:6px;' +
+                       'font-size:0.75rem;font-weight:600;font-family:inherit;cursor:pointer;" ' +
+                'onmouseover="this.style.opacity=\'.8\'" onmouseout="this.style.opacity=\'1\'">' +
+          '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">' +
+            '<polyline points="3 6 5 6 21 6"/>' +
+            '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
+            '<path d="M10 11v6M14 11v6"/>' +
+            '<path d="M9 6V4h6v2"/>' +
+          '</svg>Excluir' +
+        '</button>' +
+      '</td>';
     return tr;
+  }
+
+  function judExcluirQuitado(id, nome) {
+    if (!confirm('Excluir "' + nome + '" permanentemente?')) return;
+    fetch('/api/carteira-judicializada/' + id, { method: 'DELETE' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.ok) _carregar();
+        else alert('Erro ao excluir: ' + (j.erro || 'desconhecido'));
+      })
+      .catch(function (e) { alert('Erro: ' + e); });
   }
 
   function _renderizar(dados) {
