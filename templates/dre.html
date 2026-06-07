@@ -80,14 +80,23 @@
   background: var(--surface); border: 1px solid #f59e0b44;
   border-left: 3px solid #f59e0b;
   border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+  transition: opacity .3s;
 }
+.ajuste-card.aceito { opacity: .4; pointer-events: none; }
 .ajuste-desc { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
 .ajuste-meta { font-size: 12px; color: var(--ink-3); display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
 .ajuste-arrow {
-  font-size: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
 }
 .ajuste-nat-atual { background: #fee2e2; color: #b91c1c; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
 .ajuste-nat-sug   { background: #dcfce7; color: #15803d; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+.btn-aceitar {
+  font-size: 12px; font-weight: 700; padding: 5px 14px;
+  background: #16a34a; color: #fff; border: none; border-radius: 6px;
+  cursor: pointer; transition: background .15s;
+}
+.btn-aceitar:hover { background: #15803d; }
+.btn-aceitar:disabled { background: #6b7280; cursor: default; }
 
 .dre-empty {
   text-align: center; padding: 60px 20px; color: var(--ink-3);
@@ -235,7 +244,7 @@
   Corrija no sistema e reimporte a planilha.
 </p>
 {% for a in ajustes %}
-<div class="ajuste-card">
+<div class="ajuste-card" id="ajuste-{{ loop.index }}">
   <div class="ajuste-desc">{{ a.descricao }}</div>
   <div class="ajuste-meta">
     <span>{{ a.dt }}</span>
@@ -244,9 +253,17 @@
   </div>
   <div class="ajuste-arrow">
     <span class="ajuste-nat-atual">{{ a.natureza_atual }}</span>
-    <span style="color:var(--ink-3);">→ prefixo sugerido:</span>
-    <span class="ajuste-nat-sug">{{ a.prefixo_sugerido }}</span>
+    <span style="color:var(--ink-3);">→</span>
+    <span class="ajuste-nat-sug">{{ a.natureza_nova }}</span>
   </div>
+  <button class="btn-aceitar"
+    onclick="aceitarAjuste(this,
+      {{ a.codigo_atual | tojson }},
+      {{ a.descricao | tojson }},
+      {{ a.codigo_novo | tojson }},
+      {{ a.natureza_nova | tojson }})">
+    Aceitar
+  </button>
 </div>
 {% endfor %}
 {% else %}
@@ -263,6 +280,36 @@
 function toggleGrupo(header) {
   var itens = header.nextElementSibling;
   itens.classList.toggle('open');
+}
+
+async function aceitarAjuste(btn, codigoAtual, descricao, codigoNovo, naturezaNova) {
+  btn.disabled = true;
+  btn.textContent = 'Salvando…';
+  try {
+    const resp = await fetch('/dre/api/aceitar-ajuste', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        codigo_atual: codigoAtual,
+        descricao: descricao,
+        codigo_novo: codigoNovo,
+        natureza_nova: naturezaNova
+      })
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      btn.textContent = '✓ Aceito';
+      btn.closest('.ajuste-card').classList.add('aceito');
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Aceitar';
+      alert('Erro: ' + (data.erro || 'desconhecido'));
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Aceitar';
+    alert('Erro de rede: ' + e.message);
+  }
 }
 </script>
 {% endblock %}

@@ -3396,46 +3396,144 @@ def _dre_ler_lancamentos(filtro_tipo=None):
     return result
 
 
-# Regras para AJUSTES DE NATUREZA:
-# keywords na descrição → prefixo de natureza esperado
+# Regras: (keywords, codigo_sugerido_saida, codigo_sugerido_entrada)
+# None = mesmo código para os dois tipos
 _NATUREZA_KEYWORDS = [
-    (["combustível","gasolina","etanol","abastec","posto"],          "02.02.03"),
-    (["manutenção","revisão","mecânic","borracharia","lanternagem",
-      "funilaria","compra de peç","troca de óleo","filtro","pneu"], "02.02.05"),
-    (["seguro","seguradora","apólice"],                              "02.02.04"),
-    (["multa","infração","infracao","detran","autuação"],            "02.02.06"),
-    (["ipva","licenciamento","dpvat","crlv"],                        "02.02.07"),
-    (["salário","salario","folha","holerite","férias","fgts",
-      "inss","rescisão"],                                            "02.01"),
-    (["aluguel","locação de veículo","locacao de veiculo"],          "01.01"),
-    (["das","simples nacional","imposto","iss","pis","cofins"],      "03.01"),
-    (["financiamento","parcela","banco","bradesco","itaú","itau",
-      "sicredi","santander","caixa econômica","bndes"],              "02.03"),
-    (["distribuição de lucro","distribui","pro-labore","pró-labore"],"04.04.01"),
-    (["aporte","capital social"],                                    "04.04.01.003"),
-    (["reembolso"],                                                  "04.04.02"),
+    (["gasolina","etanol","combustivel","combustível","abastec"],
+     "02.02.04.005 - GASOLINA",              None),
+    (["manutenção preventiva","manutencao preventiva"],
+     "02.02.05.001 - MANUTENÇÃO PREVENTIVA",  None),
+    (["manutenção corretiva","manutencao corretiva"],
+     "02.02.05.002 - MANUTENÇÃO CORRETIVA",   None),
+    (["compra de peç","compra de pneu"],
+     "02.02.05.009 - COMPRA DE PEÇAS",        None),
+    (["lavagem"],
+     "02.02.05.008 - LAVAGEM VEICULAR NÃO REEMBOLSÁVEL", None),
+    (["seguro total","seguradora","apólice","apolice"],
+     "02.02.03.001 - SEGURO TOTAL",           None),
+    (["guincho"],
+     "02.02.03.004 - GUINCHO",                None),
+    (["rastreador"],
+     "02.02.03.005 - RASTREADOR VEICULAR",    None),
+    (["saída de multa","saida de multa","multa de trânsito","multa de transito"],
+     "02.02.06.001 - SAÍDA DE MULTA DE TRÂNSITO",
+     "01.01.02.002 - ENTRADA DE MULTA DE TRANSITO"),
+    (["ipva"],
+     "02.02.01.003 - IPVA",                   None),
+    (["licenciamento","crlv"],
+     "02.02.01.005 - TAXA DE LICENCIAMENTO",  None),
+    (["emplacamento"],
+     "02.02.01.001 - EMPLACAMENTO",           None),
+    (["transferência veicular","transferencia veicular"],
+     "02.02.01.002 - TRANSFERÊNCIA VEICULAR", None),
+    (["salário quinzenal","salario quinzenal","adiantamento salarial","adto salarial"],
+     "02.03.01.001 - SALARIO",                None),
+    (["férias","ferias"],
+     "02.03.01.003 - FÉRIAS",                 None),
+    (["13° salario","13 salario","décimo terceiro"],
+     "02.03.01.004 - 13° SALARIO",            None),
+    (["rescisão","rescisao"],
+     "02.03.01.005 - RESCISAO",               None),
+    (["comissão","comissao"],
+     "02.03.01.007 - COMISSÃO",               None),
+    (["vale transporte"," vt "],
+     "02.03.02.001 - VT",                     None),
+    (["vale refeição","vale refeicao"," vr "],
+     "02.03.02.003 - VR",                     None),
+    (["assistência médica","assistencia medica","plano de saúde"],
+     "02.03.02.005 - ASSISTENCIA MEDICA",     None),
+    (["inss"],
+     "02.03.03.001 - INSS",                   None),
+    (["fgts"],
+     "02.03.03.002 - FGTS",                   None),
+    (["distribuição de lucro","distribuicao de lucro"],
+     "02.03.04.002 - DISTRIBUIÇÃO DE LUCROS MENSAL", None),
+    (["simples nacional"],
+     "02.01.01.005 - SIMPLES NACIONAL",       None),
+    (["pis ","cofins"],
+     "02.01.01.001 - PIS",                    None),
+    (["aluguel de imóvel","aluguel de imovel","aluguel do imovel"],
+     "02.04.02.001 - ALUGUEL DE IMOVEIS",     None),
+    (["marketing","publicidade","propaganda"],
+     "02.04.01.001 - MARKETING",              None),
+    (["tarifa bancária","tarifa bancaria","taxa bancária"],
+     "02.04.06.001 - TARIFA BANCARIA",        None),
+    (["juros bancário","juros bancario","multa bancária"],
+     "02.04.06.003 - JUROS E MULTAS BANCÁRIAS PAGOS", None),
+    (["honorários advocatícios","honorarios advocaticios"],
+     "02.04.05.001 - HONORÁRIOS ADVOCATÍCIOS", None),
+    (["serviços contábeis","servicos contabeis","contabilidade"],
+     "02.04.05.007 - SERVIÇOS CONTABEIS",     None),
+    (["softwares","assinatura","sistema"],
+     "02.04.05.003 - SOFTWARES",              None),
+    (["financiamento parcela","pagamento de financiamento","parcela financiamento"],
+     "03.01.03.003 - PAGAMENTO DE FINANCIAMENTO", None),
+    (["consórcio","consorcio"],
+     "03.01.03.005 - CONSÓRCIO PARCELA NÃO CONTEMPLADA", None),
+    (["aporte de capital"],
+     "04.04.01.003 - APORTE DE CAPITAL",      None),
+    (["reembolso"],
+     "04.04.02.02 - SAÍDA DE REEMBOLSO",
+     "04.04.02.01 - ENTRADA DE REEMBOLSO"),
 ]
+
+
+def _dre_correcoes_aceitas():
+    """Carrega correções aceitas do Supabase: {(codigo_atual, descricao): (codigo_novo, natureza_nova)}"""
+    try:
+        sb = _supabase()
+        if not sb:
+            return {}
+        res = sb.table("dre_correcoes").select("codigo_atual,descricao,codigo_novo,natureza_nova").execute()
+        return {(r["codigo_atual"], r["descricao"]): (r["codigo_novo"], r["natureza_nova"])
+                for r in (res.data or [])}
+    except Exception:
+        return {}
+
 
 def _dre_ajustes_natureza(lancamentos):
     """
-    Para cada lançamento, verifica se a descrição sugere uma natureza diferente da atribuída.
-    Retorna lista de itens suspeitos com sugestão.
+    Verifica se a descrição sugere uma natureza diferente da atribuída.
+    Exclui lançamentos já corrigidos via aceite. Sugere código exato.
     """
+    aceitas = _dre_correcoes_aceitas()
     suspeitos = []
+    vistos_desc = set()
+
     for l in lancamentos:
+        chave_corr = (l["codigo"], l["descricao"])
+        if chave_corr in aceitas:
+            continue   # já foi corrigido
+
         desc_lower = l["descricao"].lower()
-        for keywords, prefixo_esperado in _NATUREZA_KEYWORDS:
+        tipo_e = l["tipo"] in ("SAÍDA", "SAIDA")
+
+        for keywords, cod_sug_saida, cod_sug_entrada in _NATUREZA_KEYWORDS:
             if any(kw in desc_lower for kw in keywords):
-                cod = l["codigo"]
-                if not cod.startswith(prefixo_esperado):
-                    suspeitos.append({
-                        "descricao":        l["descricao"],
-                        "natureza_atual":   f"{l['codigo']} - {l['natureza']}",
-                        "prefixo_sugerido": prefixo_esperado,
-                        "dt":               l["dt"].strftime("%d/%m/%Y"),
-                        "valor_s":          _brl(abs(l["valor"])),
-                        "tipo":             l["tipo"],
-                    })
+                cod_sug = cod_sug_saida if tipo_e else (cod_sug_entrada or cod_sug_saida)
+                if cod_sug is None:
+                    break
+                # extrai só o código (antes do " - ")
+                prefixo_sug = cod_sug.split(" - ")[0]
+                if l["codigo"] == prefixo_sug:
+                    break  # já está correto
+
+                # deduplica por (descricao, codigo_atual, sugestão)
+                chave_dup = (l["descricao"], l["codigo"], prefixo_sug)
+                if chave_dup in vistos_desc:
+                    break
+                vistos_desc.add(chave_dup)
+
+                suspeitos.append({
+                    "descricao":      l["descricao"],
+                    "codigo_atual":   l["codigo"],
+                    "natureza_atual": f"{l['codigo']} - {l['natureza']}",
+                    "codigo_novo":    prefixo_sug,
+                    "natureza_nova":  cod_sug,
+                    "dt":             l["dt"].strftime("%d/%m/%Y"),
+                    "valor_s":        _brl(abs(l["valor"])),
+                    "tipo":           l["tipo"],
+                })
                 break
     return suspeitos
 
@@ -3689,6 +3787,38 @@ def pagina_dre():
         ajustes=ajustes,
         sem_dados=len(todos) == 0,
     )
+
+
+@app.route("/dre/api/aceitar-ajuste", methods=["POST"])
+def dre_aceitar_ajuste():
+    dados = request.get_json(force=True, silent=True) or {}
+    codigo_atual  = str(dados.get("codigo_atual", "")).strip()
+    descricao     = str(dados.get("descricao", "")).strip()
+    codigo_novo   = str(dados.get("codigo_novo", "")).strip()
+    natureza_nova = str(dados.get("natureza_nova", "")).strip()
+
+    if not all([codigo_atual, descricao, codigo_novo]):
+        return jsonify({"ok": False, "erro": "Dados incompletos"}), 400
+
+    sb = _supabase()
+    if not sb:
+        return jsonify({"ok": False, "erro": "Supabase indisponível"}), 500
+
+    try:
+        existing = (sb.table("dre_correcoes")
+                      .select("id")
+                      .eq("codigo_atual", codigo_atual)
+                      .eq("descricao", descricao)
+                      .execute())
+        payload = {"codigo_atual": codigo_atual, "descricao": descricao,
+                   "codigo_novo": codigo_novo, "natureza_nova": natureza_nova}
+        if existing.data:
+            sb.table("dre_correcoes").update(payload).eq("id", existing.data[0]["id"]).execute()
+        else:
+            sb.table("dre_correcoes").insert(payload).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
 
 
 @app.route("/dre/api/recalcular", methods=["POST"])
