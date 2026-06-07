@@ -3146,7 +3146,7 @@ const _detalhe = [
     return tr;
   }
 
-  function judExcluirQuitado(id, nome) {
+  window.judExcluirQuitado = function (id, nome) {
     if (!confirm('Excluir "' + nome + '" permanentemente?')) return;
     fetch('/api/carteira-judicializada/' + id, { method: 'DELETE' })
       .then(function (r) { return r.json(); })
@@ -3155,7 +3155,7 @@ const _detalhe = [
         else alert('Erro ao excluir: ' + (j.erro || 'desconhecido'));
       })
       .catch(function (e) { alert('Erro: ' + e); });
-  }
+  };
 
   function _renderizar(dados) {
     _dados = dados;
