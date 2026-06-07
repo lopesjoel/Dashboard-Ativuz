@@ -3785,11 +3785,11 @@ def _dre_montar_estrutura(lancamentos, ano, mes):
             codigos_usados.add(cod)
             val = sum(l["valor"] for l in ls)
             total += val
-            if ls:
-                itens.append({
-                    "codigo": cod, "label": lbl, "valor": val,
-                    "lancamentos": sorted(ls, key=lambda x: x["dt"]),
-                })
+            itens.append({
+                "codigo": cod, "label": lbl, "valor": val,
+                "lancamentos": sorted(ls, key=lambda x: x["dt"]),
+                "tem_dados": bool(ls),
+            })
         buckets[bucket_key] += total
         return total, itens
 
