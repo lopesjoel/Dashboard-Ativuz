@@ -3156,7 +3156,7 @@ const _detalhe = [
       var totalDivida    = quitados.reduce(function (s, r) { return s + (Number(r.valor_atual) || 0); }, 0);
       var totalNegociado = quitados.reduce(function (s, r) { return s + (Number((r.acordo_dados || {}).valor_acordado) || 0); }, 0);
       tfootQ.innerHTML =
-        '<tr style="background:#f1f5f9; font-weight:700;">' +
+        '<tr style="font-weight:700;">' +
           '<td class="jud-td" colspan="2">Total</td>' +
           '<td class="jud-td" style="white-space:nowrap; color:#dc2626;">' + _brl(totalDivida) + '</td>' +
           '<td class="jud-td" style="white-space:nowrap; color:#065f46;">' + _brl(totalNegociado) + '</td>' +
