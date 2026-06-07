@@ -357,46 +357,47 @@
 
 <div class="dash-grid-4">
 
-  <!-- Total Veículos -->
+  <!-- Contratos Motoristas de App -->
   <div class="d-kpi">
     <div class="d-kpi-icon orange" aria-hidden="true">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="5" y="2" width="14" height="20" rx="2"/>
+        <line x1="12" y1="18" x2="12.01" y2="18"/>
+      </svg>
+    </div>
+    <div class="d-kpi-label">Contratos — Motorista App</div>
+    <div class="d-kpi-value">{{ ct_app or 0 }}</div>
+    <div class="d-kpi-sub">Contratos ativos</div>
+  </div>
+
+  <!-- Contratos Terceirização -->
+  <div class="d-kpi">
+    <div class="d-kpi-icon info" aria-hidden="true">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path d="M5 17H3a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h1l2-3h12l2 3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
         <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
       </svg>
     </div>
-    <div class="d-kpi-label">Total na Frota</div>
-    <div class="d-kpi-value">{{ frota_total or 0 }}</div>
-    <div class="d-kpi-sub">Veículos ativos</div>
+    <div class="d-kpi-label">Contratos — Terceirização</div>
+    <div class="d-kpi-value">{{ ct_terceirizacao or 0 }}</div>
+    <div class="d-kpi-sub">Contratos ativos</div>
   </div>
 
-  <!-- Valor FIPE -->
+  <!-- Receita semanal motoristas de app -->
   <div class="d-kpi">
-    <div class="d-kpi-icon info" aria-hidden="true">
+    <div class="d-kpi-icon success" aria-hidden="true">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
-        <polyline points="16 7 22 7 22 13"/>
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
       </svg>
     </div>
-    <div class="d-kpi-label">Valor FIPE (mês atual)</div>
-    {% if frota_valor_fipe %}
-    <div class="d-kpi-value sm">R$ {{ frota_valor_fipe | brl }}</div>
+    <div class="d-kpi-label">Recebido / Semana (App)</div>
+    {% if receita_semanal_app %}
+    <div class="d-kpi-value sm">{{ receita_semanal_app | brl }}</div>
     {% else %}
     <div class="d-kpi-value sm">—</div>
     {% endif %}
-    <div class="d-kpi-sub">Soma da tabela FIPE</div>
-  </div>
-
-  <!-- Docs gerados -->
-  <div class="d-kpi">
-    <div class="d-kpi-icon neutral" aria-hidden="true">
-      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-      </svg>
-    </div>
-    <div class="d-kpi-label">Documentos Gerados</div>
-    <div class="d-kpi-value">{{ total_docs or 0 }}</div>
-    <div class="d-kpi-sub">Total no histórico</div>
+    <div class="d-kpi-sub">Motoristas app, sem TWS/QGO</div>
   </div>
 
   <!-- Checklist pendentes -->

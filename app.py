@@ -841,6 +841,10 @@ def dashboard():
     total_contratos_planilha = 0
     receita_mensal_real = None
     lista_contratos = []
+    ct_app = 0
+    ct_terceirizacao = 0
+    receita_semanal_app = None
+    _PLACAS_EXCLUIR = {"TWS", "QGO"}
     try:
         lista_contratos, _ = _ler_contratos()
         ativos_lst = [c for c in lista_contratos if c['situacao'] == 'EM ANDAMENTO']
@@ -849,6 +853,16 @@ def dashboard():
         s = sum(c['valor_locacao'] for c in ativos_lst)
         if s > 0:
             receita_mensal_real = s
+        ct_app = sum(1 for c in ativos_lst if 'MOTOR' in (c.get('tipo_contrato') or '').upper())
+        ct_terceirizacao = sum(1 for c in ativos_lst if 'TERCEI' in (c.get('tipo_contrato') or '').upper())
+        _rec_sem = sum(
+            c.get('valor_semanal') or 0
+            for c in ativos_lst
+            if 'MOTOR' in (c.get('tipo_contrato') or '').upper()
+            and not any((c.get('placa') or '').upper().startswith(p) for p in _PLACAS_EXCLUIR)
+        )
+        if _rec_sem > 0:
+            receita_semanal_app = _rec_sem
     except Exception:
         pass
 
@@ -913,6 +927,9 @@ def dashboard():
         fin_ativos=fin_ativos,
         jud_processos=jud_processos,
         jud_valor=jud_valor,
+        ct_app=ct_app,
+        ct_terceirizacao=ct_terceirizacao,
+        receita_semanal_app=receita_semanal_app,
     )
 
 
