@@ -856,7 +856,7 @@ def dashboard():
         ct_app = sum(1 for c in ativos_lst if 'MOTOR' in (c.get('tipo_contrato') or '').upper())
         ct_terceirizacao = sum(1 for c in ativos_lst if 'TERCEI' in (c.get('tipo_contrato') or '').upper())
         _rec_sem = sum(
-            c.get('valor_semanal') or 0
+            c.get('valor_locacao') or 0
             for c in ativos_lst
             if 'MOTOR' in (c.get('tipo_contrato') or '').upper()
             and not any((c.get('placa') or '').upper().startswith(p) for p in _PLACAS_EXCLUIR)
