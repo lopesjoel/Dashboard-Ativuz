@@ -2115,14 +2115,18 @@ const _detalhe = [
 <!-- ══════════════ LINHA DO TEMPO ══════════════ -->
 <style>
   .lt-card {
-    background: rgba(99,179,237,0.05);
+    background: rgba(255,255,255,0.04);
     border-radius: 14px;
-    border: 1px solid rgba(99,179,237,0.22);
-    box-shadow: 0 4px 24px rgba(99,179,237,0.08), 0 1px 4px rgba(0,0,0,0.04);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(99,179,237,0.30);
+    box-shadow: 0 4px 32px rgba(99,179,237,0.10), 0 1px 4px rgba(0,0,0,0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 20px 22px;
     margin-top: 28px;
+  }
+  [data-theme="dark"] .lt-card {
+    background: rgba(99,179,237,0.06);
+    border-color: rgba(99,179,237,0.25);
   }
   .lt-header {
     display: flex;

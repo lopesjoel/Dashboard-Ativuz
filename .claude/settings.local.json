@@ -130,7 +130,8 @@
       "Bash(xargs kill -9)",
       "Bash(lsof -ti:5000)",
       "Bash(awk NR>=2540 && NR<=2548 || NR>=3756 && NR<=3780 *)",
-      "Bash(venv/bin/python3 app.py)"
+      "Bash(venv/bin/python3 app.py)",
+      "Bash(pkill -f \"venv/bin/python3 app.py\")"
     ]
   }
 }
