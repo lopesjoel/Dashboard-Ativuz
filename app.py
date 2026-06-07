@@ -3347,10 +3347,11 @@ def _dre_ler_lancamentos(filtro_tipo=None):
 
     def _detectar_tipo(rows):
         filtro = str(rows[1][0] or "").upper() if len(rows) > 1 else ""
-        if "PAGAMENTO" in filtro:
-            return "pagamento"
+        # "REFERÊNCIA" é verificado antes porque seu filtro também contém "PAGAMENTO"
         if "REFER" in filtro:
             return "referencia"
+        if "PAGAMENTO" in filtro:
+            return "pagamento"
         return "desconhecido"
 
     def _ler_arquivo(path):
