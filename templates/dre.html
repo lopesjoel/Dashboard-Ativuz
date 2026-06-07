@@ -148,6 +148,12 @@
 }
 .btn-aceitar:hover { background:#15803d; }
 .btn-aceitar:disabled { background:#6b7280; cursor:default; }
+.btn-manter {
+  font-size:12px; font-weight:700; padding:5px 14px;
+  background:none; color:var(--ink-3); border:1px solid var(--line);
+  border-radius:6px; cursor:pointer; transition:all .15s;
+}
+.btn-manter:hover { border-color:#94a3b8; color:var(--ink); }
 
 .dre-empty { text-align:center; padding:60px 20px; color:var(--ink-3); font-size:14px; }
 .dre-empty strong { display:block; font-size:16px; color:var(--ink-2); margin-bottom:8px; }
@@ -310,14 +316,19 @@
     <span style="color:var(--ink-3);">→</span>
     <span class="ajuste-nat-sug">{{ a.natureza_nova }}</span>
   </div>
-  <button class="btn-aceitar"
-    onclick="aceitarAjuste(this,
-      {{ a.codigo_atual | tojson }},
-      {{ a.descricao | tojson }},
-      {{ a.codigo_novo | tojson }},
-      {{ a.natureza_nova | tojson }})">
-    Aceitar
-  </button>
+  <div style="display:flex;gap:8px;margin-top:6px;">
+    <button class="btn-aceitar"
+      data-atual="{{ a.codigo_atual | e }}"
+      data-descricao="{{ a.descricao | e }}"
+      data-novo="{{ a.codigo_novo | e }}"
+      data-nat="{{ a.natureza_nova | e }}"
+      onclick="aceitarAjuste(this)">
+      Aceitar
+    </button>
+    <button class="btn-manter" onclick="this.closest('.ajuste-card').style.display='none'">
+      Manter atual
+    </button>
+  </div>
 </div>
 {% endfor %}
 {% else %}
@@ -356,7 +367,11 @@ document.querySelectorAll('.dre-mes-sel').forEach(function(sel) {
   });
 });
 
-async function aceitarAjuste(btn, codigoAtual, descricao, codigoNovo, naturezaNova) {
+async function aceitarAjuste(btn) {
+  const codigoAtual  = btn.dataset.atual;
+  const descricao    = btn.dataset.descricao;
+  const codigoNovo   = btn.dataset.novo;
+  const naturezaNova = btn.dataset.nat;
   btn.disabled = true;
   btn.textContent = 'Salvando…';
   try {
