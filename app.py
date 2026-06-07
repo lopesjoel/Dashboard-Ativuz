@@ -3333,8 +3333,9 @@ def _dre_ler_lancamentos(filtro_tipo=None):
     import openpyxl
 
     pasta = Path(__file__).resolve().parent / "planilhas" / "dre"
+    # macOS usa NFD nos nomes de arquivo; "natureza" não tem acento e funciona em ambos
     arquivos = [p for p in sorted(pasta.glob("*.xlsx"))
-                if "lancamento" in p.name.lower() or "lançamento" in p.name.lower()]
+                if "natureza" in p.name.lower()]
     if not arquivos:
         return []
 
