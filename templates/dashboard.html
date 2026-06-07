@@ -503,65 +503,40 @@
 
 </div>
 
-<!-- Gráfico + Tabela -->
-<div class="inad-2col">
-
-  <div class="card" style="padding:0;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);">
-      <h3 style="font-size:14px;font-weight:600;">Últimos Inadimplentes</h3>
-      <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm">Ver todos</a>
-    </div>
-    {% if inad.recentes %}
-    <div style="overflow-x:auto;">
-      <table class="dash-table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Placa / Doc</th>
-            <th>Dias</th>
-            <th>Valor total</th>
-            <th>Etapa</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in inad.recentes %}
-          <tr>
-            <td style="font-weight:600;">{{ r.nome }}</td>
-            <td><span class="badge-placa">{{ r.placa }}</span></td>
-            <td style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--danger);">{{ r.dias }}d</td>
-            <td style="font-variant-numeric:tabular-nums;font-weight:600;">R$ {{ r.total_s }}</td>
-            <td>
-              {% set e = r.etapa %}
-              {% if e == 'D+0' %}<span class="badge-etapa badge-etapa-d0">{{ e }}</span>
-              {% elif e == 'D+1' %}<span class="badge-etapa badge-etapa-d1">{{ e }}</span>
-              {% elif e == 'D+2' %}<span class="badge-etapa badge-etapa-d2">{{ e }}</span>
-              {% elif e == 'D+3' %}<span class="badge-etapa badge-etapa-d3">{{ e }}</span>
-              {% elif e == 'D+4' %}<span class="badge-etapa badge-etapa-d4">{{ e }}</span>
-              {% elif e == 'D+5' %}<span class="badge-etapa badge-etapa-d5">{{ e }}</span>
-              {% elif e == 'D+7' %}<span class="badge-etapa badge-etapa-d7">{{ e }}</span>
-              {% elif e == 'D+10' %}<span class="badge-etapa badge-etapa-d10">{{ e }}</span>
-              {% else %}<span class="badge-etapa badge-etapa-d15">{{ e }}</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty-state" style="padding:28px;">
-      <p>Nenhum inadimplente no momento.</p>
-    </div>
-    {% endif %}
+<!-- Top Devedores consolidado -->
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);">
+    <h3 style="font-size:14px;font-weight:600;">Maiores Devedores</h3>
+    <a href="{{ url_for('pagina_inadimplencia') }}" class="btn btn-ghost btn-sm">Ver todos</a>
   </div>
-
-  <div class="card">
-    <div class="card-head"><h3>Casos por Etapa</h3></div>
-    <div class="dash-chart-wrap">
-      <canvas id="etapaChart" aria-label="Casos por etapa de cobrança" role="img"></canvas>
-    </div>
+  {% if inad.top_devedores %}
+  <div style="overflow-x:auto;">
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th style="width:3ch;">#</th>
+          <th>Cliente</th>
+          <th style="text-align:center;">Casos</th>
+          <th style="text-align:right;">Total em Aberto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in inad.top_devedores %}
+        <tr>
+          <td style="color:var(--ink-3);font-size:12px;">{{ loop.index }}</td>
+          <td style="font-weight:600;">{{ d.nome }}</td>
+          <td style="text-align:center;color:var(--ink-2);">{{ d.casos }}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--danger);">{{ d.total_s }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-
+  {% else %}
+  <div class="empty-state" style="padding:28px;">
+    <p>Nenhum inadimplente no momento.</p>
+  </div>
+  {% endif %}
 </div>
 
 {% else %}
@@ -670,15 +645,7 @@
 </div>
 {% endif %}
 
-<!-- ══════════════════════════════════════════════════
-     SEÇÃO 6 — AÇÕES RÁPIDAS
-══════════════════════════════════════════════════ -->
-<div class="dash-section">
-  <span class="dash-section-label">Ações Rápidas</span>
-  <div class="dash-section-line"></div>
-</div>
-
-<div class="dash-acoes">
+<div class="dash-acoes" style="display:none;">
 
   <a href="{{ url_for('pagina_contrato_locacao') }}" class="dash-acao">
     <div class="dash-acao-icon orange">
@@ -780,69 +747,5 @@
 
 </div>
 
-<script>
-(function () {
-  {% if inad %}
-  var etapaLabels = ['D+0','D+1','D+2','D+3','D+4','D+5','D+7','D+10','D+15'];
-  var etapaData   = [
-    {{ inad.por_etapa.get('D+0',  0) }},
-    {{ inad.por_etapa.get('D+1',  0) }},
-    {{ inad.por_etapa.get('D+2',  0) }},
-    {{ inad.por_etapa.get('D+3',  0) }},
-    {{ inad.por_etapa.get('D+4',  0) }},
-    {{ inad.por_etapa.get('D+5',  0) }},
-    {{ inad.por_etapa.get('D+7',  0) }},
-    {{ inad.por_etapa.get('D+10', 0) }},
-    {{ inad.por_etapa.get('D+15', 0) }},
-  ];
-  var etapaColors = [
-    '#FFD166','#FFC233','#FFAE00','#FF9A00','#FF7A1A',
-    '#FF5C00','#E8400A','#C42800','#8B1A00'
-  ];
-
-  var ctxB = document.getElementById('etapaChart');
-  if (ctxB) {
-    new Chart(ctxB.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: etapaLabels,
-        datasets: [{
-          label: 'Casos',
-          data: etapaData,
-          backgroundColor: etapaColors,
-          borderRadius: 5,
-          borderSkipped: false,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: (function(){
-            var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-            return {
-              backgroundColor: dark ? '#1B1F2F' : '#fff',
-              titleColor:      dark ? '#E8EAF2' : '#15192A',
-              bodyColor:       dark ? '#B0B7CF' : '#6C7388',
-              borderColor:     dark ? '#252A3E' : '#E7E9EF',
-              borderWidth: 1, padding: 10,
-            };
-          })(),
-        },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#9BA1B3' } },
-          y: {
-            grid: { color: '#F0F2F6' },
-            ticks: { font: { size: 11 }, color: '#9BA1B3', stepSize: 1 },
-            min: 0,
-          },
-        },
-      },
-    });
-  }
-  {% endif %}
-})();
-</script>
 
 {% endblock %}

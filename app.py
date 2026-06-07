@@ -2463,13 +2463,26 @@ def _inad_summary():
         for r in recentes
     ]
 
+    # Consolidado por cliente (top 8 maiores devedores)
+    _dev: dict = {}
+    for r in registros_vencidos:
+        n = r["nome"]
+        if n not in _dev:
+            _dev[n] = {"nome": n, "casos": 0, "total": 0.0}
+        _dev[n]["casos"] += 1
+        _dev[n]["total"] += r["_total"]
+    top_devedores = sorted(_dev.values(), key=lambda x: x["total"], reverse=True)[:8]
+    for d in top_devedores:
+        d["total_s"] = _brl(d["total"])
+
     return {
-        "total_s":   _brl(total_raw),
-        "total_raw": total_raw,
-        "casos":     len(nomes_unicos),
-        "hoje":      hoje_count,
-        "por_etapa": por_etapa,
-        "recentes":  recentes_slim,
+        "total_s":      _brl(total_raw),
+        "total_raw":    total_raw,
+        "casos":        len(nomes_unicos),
+        "hoje":         hoje_count,
+        "por_etapa":    por_etapa,
+        "recentes":     recentes_slim,
+        "top_devedores": top_devedores,
     }
 
 
