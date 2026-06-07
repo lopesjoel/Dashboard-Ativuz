@@ -3347,8 +3347,9 @@ def _dre_ler_lancamentos(filtro_tipo=None):
 
     def _detectar_tipo(rows):
         filtro = str(rows[1][0] or "").upper() if len(rows) > 1 else ""
-        # "REFERÊNCIA" é verificado antes porque seu filtro também contém "PAGAMENTO"
-        if "REFER" in filtro:
+        # "REFERÊNCIA" e "VENCIMENTO" são verificados antes porque o filtro
+        # de referência pode conter "PAGAMENTO" na descrição
+        if "REFER" in filtro or "VENCIMENTO" in filtro:
             return "referencia"
         if "PAGAMENTO" in filtro:
             return "pagamento"
