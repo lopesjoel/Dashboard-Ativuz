@@ -3492,6 +3492,10 @@ _NATUREZA_KEYWORDS = [
      "02.04.05.003 - SOFTWARES",              None),
     (["financiamento parcela","pagamento de financiamento","parcela financiamento"],
      "03.01.03.003 - PAGAMENTO DE FINANCIAMENTO", None),
+    # Consórcio contemplado — deve vir ANTES da regra genérica
+    (["consorcio contemplado","consórcio contemplado"],
+     "03.01.03.001 - CONSORCIO CONTEMPLADO", None),
+    # Consórcio genérico — só sinaliza se a natureza atual não for nenhum código de consórcio
     (["consórcio","consorcio"],
      "03.01.03.005 - CONSÓRCIO PARCELA NÃO CONTEMPLADA", None),
     (["aporte de capital"],
@@ -3541,6 +3545,12 @@ def _dre_ajustes_natureza(lancamentos):
                 prefixo_sug = cod_sug.split(" - ")[0]
                 if l["codigo"] == prefixo_sug:
                     break  # já está correto
+
+                # Códigos irmãos válidos — mesma subcategoria, não sinalizar
+                def _prefixo(c, n=3):
+                    return ".".join(c.split(".")[:n])
+                if _prefixo(l["codigo"]) == _prefixo(prefixo_sug):
+                    break  # mesmo grupo (ex: 03.01.03.001 vs 03.01.03.005)
 
                 # deduplica por (descricao, codigo_atual, sugestão)
                 chave_dup = (l["descricao"], l["codigo"], prefixo_sug)
