@@ -1151,6 +1151,12 @@
                  cursor:pointer; border-bottom:3px solid transparent; color:#6b7280; margin-bottom:-2px;">
     Carteira Judicializada
   </button>
+  <button id="tab-btn-timeline"
+          onclick="inadSwitch('timeline')"
+          style="padding:8px 20px; font-size:0.875rem; font-weight:600; border:none; background:none;
+                 cursor:pointer; border-bottom:3px solid transparent; color:#6b7280; margin-bottom:-2px;">
+    Linha do Tempo
+  </button>
 </div>
 
 <!-- ══════════════ ABA: CONTROLE DIÁRIO ══════════════ -->
@@ -2216,6 +2222,11 @@ const _detalhe = [
   .lt-msg.err { color: #dc2626; }
 </style>
 
+</div><!-- /inad-tab-controle -->
+
+<!-- ══════════════ ABA: LINHA DO TEMPO ══════════════ -->
+<div id="inad-tab-timeline" style="display:none;">
+
 <div class="lt-card">
   <div class="lt-header">
     <div class="lt-title">
@@ -2539,7 +2550,7 @@ const _detalhe = [
 })();
 </script>
 
-</div><!-- /inad-tab-controle -->
+</div><!-- /inad-tab-timeline -->
 
 <!-- ══════════════ ABA: CARTEIRA JUDICIALIZADA ══════════════ -->
 <div id="inad-tab-judicializada" style="display:none;">
@@ -3760,7 +3771,7 @@ const _detalhe = [
 
 <script>
 function inadSwitch(aba) {
-  var abas = ['controle', 'judicializada'];
+  var abas = ['controle', 'judicializada', 'timeline'];
   abas.forEach(function(a) {
     document.getElementById('inad-tab-' + a).style.display = (a === aba ? '' : 'none');
     var btn = document.getElementById('tab-btn-' + a);
