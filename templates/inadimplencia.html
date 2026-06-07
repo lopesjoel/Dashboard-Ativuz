@@ -6,7 +6,7 @@
   /* ── Summary cards ── */
   .inad-cards {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     margin-bottom: 20px;
   }
@@ -1426,12 +1426,6 @@
         </span>
       </div>
 
-      {% if r.dias_atraso >= 5 %}
-      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;
-                  padding:8px 12px;font-size:0.76rem;color:#9a3412;line-height:1.45;">
-        ⚠️ Recolhimento do veículo pode ser acionado em caso de não resposta ou ausência de contato.
-      </div>
-      {% endif %}
 
       <!-- Próxima ação accordion (open by default at D+7+) -->
       <details class="inad-acao-wrap" {% if r.dias_atraso >= 7 %}open{% endif %}>
