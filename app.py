@@ -3538,6 +3538,302 @@ def _dre_ajustes_natureza(lancamentos):
     return suspeitos
 
 
+# ─── Plano de exibição do DRE (hierarquia visual) ────────────────────────────
+# Tipos de bloco:
+#   "section"  → cabeçalho de seção
+#   "group"    → grupo expansível com lista de contas
+#   "account"  → conta avulsa (sem grupo pai)
+#   "subtotal" → linha calculada; "buckets" = lista de chaves a somar
+#   "info"     → linha de texto sem valor numérico
+#   "pct"      → linha percentual; valor = sum(buckets) / b[ref] * 100
+_DRE_DISPLAY_PLAN = [
+    # ── RECEITA OPERACIONAL ───────────────────────────────────────────
+    {"t":"section", "label":"(+) RECEITA OPERACIONAL", "bucket":"rob"},
+    {"t":"group", "bucket":"rob", "cod":"01.01.01", "label":"LOCAÇÃO", "contas":[
+        ("01.01.01.001","LOCAÇÃO"),("01.01.01.002","KM EXCEDENTE"),
+        ("01.01.01.003","MULTA ATRASO PAGAMENTO"),("01.01.01.004","MULTA QUEBRA DE CONTRATO"),
+        ("01.01.01.005","ACORDO/RENEGOCIAÇÃO"),("01.01.01.006","TAXA DE ADMINISTRAÇÃO DE VEÍCULOS"),
+    ]},
+    {"t":"group", "bucket":"rob", "cod":"01.01.02", "label":"REEMBOLSOS", "contas":[
+        ("01.01.02.001","MANUTENÇÃO REEMBOLSÁVEL"),("01.01.02.002","ENTRADA DE MULTA DE TRÂNSITO"),
+        ("01.01.02.004","MULTA DEV. ANTECIPADA"),("01.01.02.005","REEMBOLSO DE SINISTRO"),
+        ("01.01.02.006","OUTROS REEMBOLSOS"),
+        ("01.01.02.009","REEMBOLSO DE MANUTENÇÕES — FROTA DE INVESTIDORES"),
+        ("01.01.02.010","REEMBOLSO DE MULTAS — FROTA DE INVESTIDORES"),
+        ("01.01.02.011","REEMBOLSO DE OUTRAS DESPESAS — FROTA DE INVESTIDORES"),
+    ]},
+    {"t":"subtotal","label":"RECEITA OPERACIONAL BRUTA","buckets":["rob"]},
+
+    # ── DEDUÇÕES ──────────────────────────────────────────────────────
+    {"t":"section","label":"(-) DEDUÇÕES","bucket":"ded"},
+    {"t":"group","bucket":"ded","cod":"02.01.01","label":"IMPOSTOS","contas":[
+        ("02.01.01.001","PIS"),("02.01.01.005","SIMPLES NACIONAL"),("02.01.01.006","OUTROS IMPOSTOS"),
+    ]},
+    {"t":"account","bucket":"ded","cod":"01.01.02.008","label":"(-) DESCONTO CONCEDIDO A CLIENTES"},
+    {"t":"subtotal","label":"RECEITA OPERACIONAL LÍQUIDA","buckets":["rob","ded"]},
+
+    # ── CUSTOS ────────────────────────────────────────────────────────
+    {"t":"section","label":"(-) CUSTOS (CUSTO DIRETO DA OPERAÇÃO/FROTA)","bucket":"cst"},
+    {"t":"group","bucket":"cst","cod":"02.02.01","label":"LICENCIAMENTO","contas":[
+        ("02.02.01.001","EMPLACAMENTO"),("02.02.01.002","TRANSFERÊNCIA VEICULAR"),
+        ("02.02.01.003","IPVA"),("02.02.01.005","TAXA DE LICENCIAMENTO"),
+        ("02.02.01.006","DESPESAS COM CARTÓRIO"),("02.02.01.008","TAXA BOMBEIROS"),
+        ("02.02.01.009","VISTORIA"),
+    ]},
+    {"t":"group","bucket":"cst","cod":"02.02.02","label":"HONORÁRIOS DESPACHANTE","contas":[
+        ("02.02.02.001","HONORÁRIOS DESPACHANTE"),
+    ]},
+    {"t":"group","bucket":"cst","cod":"02.02.03","label":"SEGURO/ASSISTÊNCIA 24H","contas":[
+        ("02.02.03.001","SEGURO TOTAL"),("02.02.03.003","RESERVA OPERACIONAL PARA SINISTROS"),
+        ("02.02.03.004","GUINCHO"),("02.02.03.005","RASTREADOR VEICULAR"),
+    ]},
+    {"t":"group","bucket":"cst","cod":"02.02.04","label":"SUBLOCAÇÃO/TRANSPORTE","contas":[
+        ("02.02.04.003","MULTAS NÃO REEMBOLSÁVEIS"),("02.02.04.004","TAXA DE FRETE"),
+        ("02.02.04.005","GASOLINA"),("02.02.04.006","UBER OU APP DE TRANSPORTE"),
+    ]},
+    {"t":"group","bucket":"cst","cod":"02.02.05","label":"MANUTENÇÃO","contas":[
+        ("02.02.05.001","MANUTENÇÃO PREVENTIVA"),("02.02.05.002","MANUTENÇÃO CORRETIVA"),
+        ("02.02.05.006","COMPRA EQUIPAMENTO GNV"),("02.02.05.007","EQUIPAMENTOS (SENSOR, SIM, ETC)"),
+        ("02.02.05.008","LAVAGEM VEICULAR NÃO REEMBOLSÁVEL"),("02.02.05.009","COMPRA DE PEÇAS"),
+        ("02.02.05.010","COMPRA DE PNEUS"),
+    ]},
+    {"t":"group","bucket":"cst","cod":"02.02.06","label":"DESPESAS REEMBOLSÁVEIS","contas":[
+        ("02.02.06.001","SAÍDA DE MULTA DE TRÂNSITO"),("02.02.06.002","SAÍDA DE SINISTRO"),
+        ("02.02.06.006","COMBUSTÍVEL REEMBOLSÁVEL"),("02.02.06.010","REEMBOLSO DE CLIENTES"),
+    ]},
+    {"t":"group","bucket":"cst","cod":"02.02.07","label":"DESPESAS COM FROTA DE INVESTIDORES","contas":[
+        ("02.02.07.01","MANUTENÇÕES — FROTA DE INVESTIDORES"),
+        ("02.02.07.02","SINISTROS — FROTA DE INVESTIDORES"),
+        ("02.02.07.03","DESPESAS OPERACIONAIS — FROTA DE INVESTIDORES"),
+    ]},
+    {"t":"subtotal","label":"MARGEM DE CONTRIBUIÇÃO","buckets":["rob","ded","cst"]},
+
+    # ── SG&A ──────────────────────────────────────────────────────────
+    {"t":"section","label":"(-) SG&A (DESPESAS GERAIS E ADMINISTRATIVAS)","bucket":"sga"},
+    {"t":"group","bucket":"sga","cod":"02.03.01","label":"SALÁRIOS","contas":[
+        ("02.03.01.001","SALÁRIO"),("02.03.01.002","ADTO SALARIAL"),
+        ("02.03.01.003","FÉRIAS"),("02.03.01.004","13° SALÁRIO"),
+        ("02.03.01.005","RESCISÃO"),("02.03.01.006","PRÊMIOS"),("02.03.01.007","COMISSÃO"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.03.02","label":"BENEFÍCIOS","contas":[
+        ("02.03.02.001","VT"),("02.03.02.003","VR"),("02.03.02.005","ASSISTÊNCIA MÉDICA"),
+        ("02.03.02.006","P.C.M.S.O"),("02.03.02.007","TREINAMENTO"),("02.03.02.008","OUTROS BENEFÍCIOS"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.03.03","label":"IMPOSTOS FOLHA","contas":[
+        ("02.03.03.001","INSS"),("02.03.03.002","FGTS"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.03.04","label":"PRÓ-LABORE","contas":[
+        ("02.03.04.001","PRÓ-LABORE FOLHA"),("02.03.04.002","DISTRIBUIÇÃO DE LUCROS MENSAL"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.04.01","label":"DESPESAS COMERCIAIS","contas":[
+        ("02.04.01.001","MARKETING"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.04.02","label":"OCUPAÇÃO","contas":[
+        ("02.04.02.001","ALUGUEL DE IMÓVEIS"),("02.04.02.003","IPTU"),
+        ("02.04.02.004","ÁGUA"),("02.04.02.005","LUZ"),("02.04.02.006","MANUTENÇÃO PREDIAL"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.04.03","label":"SUPRIMENTOS","contas":[
+        ("02.04.03.001","TELEFONE"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.04.04","label":"DESPESAS ADMINISTRATIVAS","contas":[
+        ("02.04.04.001","DESPESAS ADMINISTRATIVAS E DE ESCRITÓRIO"),
+        ("02.04.04.004","TAXAS E DESPESAS LEGAIS"),
+        ("02.04.04.005","OUTRAS DESPESAS"),("02.04.04.007","DESPESAS JURÍDICAS"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.04.05","label":"SERVIÇOS PRESTADOS","contas":[
+        ("02.04.05.001","HONORÁRIOS ADVOCATÍCIOS"),("02.04.05.003","SOFTWARES"),
+        ("02.04.05.004","ÓRGÃOS DE PROTEÇÃO AO CRÉDITO"),("02.04.05.006","HONORÁRIOS DE CONSULTORIA"),
+        ("02.04.05.007","SERVIÇOS CONTÁBEIS"),("02.04.05.008","SERVIÇOS DE LIMPEZA"),
+        ("02.04.05.009","SERVIÇOS DE MANUTENÇÃO DE MÁQUINAS E EQUIPAMENTOS"),
+    ]},
+    {"t":"group","bucket":"sga","cod":"02.04.07","label":"OUTRAS SAÍDAS","contas":[
+        ("02.04.07.002","OUTRAS SAÍDAS"),
+    ]},
+    {"t":"subtotal","label":"EBITDA","buckets":["rob","ded","cst","sga"]},
+    {"t":"info",    "label":"DEPRECIAÇÃO"},
+    {"t":"subtotal","label":"RESULTADO OPERACIONAL (EBIT)","buckets":["rob","ded","cst","sga"]},
+    {"t":"pct",     "label":"MARGEM EBIT","buckets":["rob","ded","cst","sga"],"ref":"rob"},
+
+    # ── RESULTADO FINANCEIRO ──────────────────────────────────────────
+    {"t":"section","label":"(-) RESULTADO FINANCEIRO","bucket":"rfi"},
+    {"t":"group","bucket":"rfi","cod":"02.04.06","label":"DESPESAS BANCÁRIAS","contas":[
+        ("02.04.06.001","TARIFA BANCÁRIA"),("02.04.06.003","JUROS E MULTAS BANCÁRIAS PAGOS"),
+        ("02.04.06.004","(-) DESCONTO PGTO BOLETOS"),("02.04.06.005","TAXA MAQUINETA"),
+    ]},
+    {"t":"group","bucket":"rfi","cod":"03.03.01_fin","label":"APLICAÇÃO FINANCEIRA","contas":[
+        ("03.03.01.003","RENDIMENTO DE APLICAÇÕES"),
+    ]},
+    {"t":"group","bucket":"rfi","cod":"04.01.02_fin","label":"SAÍDAS DE MÚTUOS","contas":[
+        ("04.01.02.002","PGTO JUROS SOBRE MÚTUOS"),
+    ]},
+    {"t":"group","bucket":"rfi","cod":"enc_fin","label":"ENCARGOS FINANCEIROS","contas":[
+        ("03.01.03.002","CONSÓRCIO CONTEMPLADO JUROS"),("03.01.03.004","FINANCIAMENTO JUROS"),
+    ]},
+
+    # ── RESULTADOS NÃO OPERACIONAIS ────────────────────────────────────
+    {"t":"section","label":"(-) RESULTADOS NÃO OPERACIONAIS","bucket":"rno"},
+    {"t":"group","bucket":"rno","cod":"01.02.01","label":"OUTRAS ENTRADAS","contas":[
+        ("01.02.01.002","DEPÓSITOS NÃO IDENTIFICADOS"),("01.02.01.003","OUTRAS ENTRADAS"),
+        ("01.02.01.005","RECEBIMENTOS — FROTA INVESTIDORES"),
+    ]},
+    {"t":"group","bucket":"rno","cod":"03.03.02","label":"OUTROS INVESTIMENTOS","contas":[
+        ("03.03.02.001","OUTROS INVESTIMENTOS"),
+    ]},
+    {"t":"subtotal","label":"LUCRO LÍQUIDO","buckets":["rob","ded","cst","sga","rfi","rno"]},
+
+    # ── INVESTIMENTOS ─────────────────────────────────────────────────
+    {"t":"section","label":"(-) INVESTIMENTOS","bucket":"inv"},
+    {"t":"group","bucket":"inv","cod":"03.01.01","label":"VENDA DE VEÍCULOS","contas":[
+        ("01.02.01.004","VENDA DE VEÍCULO"),
+    ]},
+    {"t":"group","bucket":"inv","cod":"03.01.02","label":"COMPRA DE VEÍCULOS","contas":[
+        ("03.01.02.001","COMPRA DE VEÍCULOS À VISTA"),("03.01.02.002","ENTRADA COMPRA VEÍCULO"),
+        ("03.01.02.003","ADIANTAMENTO DE CONSÓRCIO"),("03.01.03.005","CONSÓRCIO PARCELA NÃO CONTEMPLADA"),
+    ]},
+    {"t":"group","bucket":"inv","cod":"03.01.03_inv","label":"FINANCIAMENTOS VEICULARES","contas":[
+        ("03.01.03.001","CONSÓRCIO CONTEMPLADO"),("03.01.03.003","PAGAMENTO DE FINANCIAMENTO"),
+    ]},
+    {"t":"group","bucket":"inv","cod":"03.02.01","label":"OUTROS IMOBILIZADOS","contas":[
+        ("03.02.01.001","INSTALAÇÕES"),("03.02.01.002","COMPUTADORES E PERIFÉRICOS"),
+        ("03.02.01.003","MÓVEIS E UTENSÍLIOS"),("03.02.01.004","SISTEMAS E SOFTWARES"),
+        ("03.02.01.005","OUTRAS IMOBILIZAÇÕES"),
+    ]},
+    {"t":"group","bucket":"inv","cod":"02.04.08","label":"CONSTRUÇÃO DA OFICINA","contas":[
+        ("02.04.08.01","COMPRA DE MATERIAL PARA OFICINA"),("02.04.08.02","PAGAMENTO DA MÃO DE OBRA"),
+        ("02.04.08.03","ALUGUEL DE EQUIPAMENTOS"),
+    ]},
+    {"t":"group","bucket":"inv","cod":"03.03.01_inv","label":"APLICAÇÃO FINANCEIRA","contas":[
+        ("03.03.01.001","APLICAÇÕES FINANCEIRAS"),("03.03.01.002","RESGATE DE APLICAÇÃO FINANCEIRA"),
+    ]},
+
+    # ── FINANCIAMENTOS ────────────────────────────────────────────────
+    {"t":"section","label":"(-) FINANCIAMENTOS","bucket":"fin"},
+    {"t":"group","bucket":"fin","cod":"04.01.01","label":"ENTRADAS DE MÚTUOS","contas":[
+        ("04.01.01.001","ENTRADA DE MÚTUOS"),("04.01.01.002","ENTRADA CAUÇÃO"),
+    ]},
+    {"t":"group","bucket":"fin","cod":"04.01.02_fin2","label":"PGTO DE MÚTUOS","contas":[
+        ("04.01.02.001","SAÍDA DE MÚTUOS"),("04.01.02.003","SAÍDA CAUÇÃO"),
+    ]},
+    {"t":"group","bucket":"fin","cod":"04.04.02","label":"REEMBOLSOS","contas":[
+        ("04.04.02.01","ENTRADA DE REEMBOLSO"),("04.04.02.02","SAÍDA DE REEMBOLSO"),
+    ]},
+
+    # ── APORTE DE CAPITAL ─────────────────────────────────────────────
+    {"t":"section","label":"(+) APORTE DE CAPITAL","bucket":"apt"},
+    {"t":"account","bucket":"apt","cod":"04.04.01.003","label":"APORTE DE CAPITAL"},
+    {"t":"subtotal","label":"FLUXO DE CAIXA ACIONISTA",
+     "buckets":["rob","ded","cst","sga","rfi","rno","inv","fin","apt"]},
+
+    # ── DISTRIBUIÇÃO ──────────────────────────────────────────────────
+    {"t":"account","bucket":"dis","cod":"04.04.01.002","label":"DISTRIB RESULTADO"},
+    {"t":"subtotal","label":"FLUXO DE CAIXA LIVRE",
+     "buckets":["rob","ded","cst","sga","rfi","rno","inv","fin","apt","dis"]},
+]
+
+
+def _dre_montar_estrutura(lancamentos, ano, mes):
+    """Retorna lista de 'rows' para renderizar o DRE na hierarquia do plano de contas."""
+    from calendar import monthrange
+    from collections import defaultdict
+
+    d_ini = datetime(ano, mes, 1)
+    d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
+
+    # Aplica correções aceitas
+    aceitas = _dre_correcoes_aceitas()
+    corrigidos = []
+    for l in lancamentos:
+        chave = (l["codigo"], l["descricao"])
+        if chave in aceitas:
+            cod_novo, nat_nova = aceitas[chave]
+            l = dict(l)
+            l["codigo"] = cod_novo.split(" - ")[0].strip() if " - " in cod_novo else cod_novo
+            l["natureza"] = nat_nova.split(" - ", 1)[1] if " - " in nat_nova else nat_nova
+        corrigidos.append(l)
+
+    filtrados = [l for l in corrigidos if d_ini <= l["dt"] <= d_fim]
+
+    por_codigo = defaultdict(list)
+    for l in filtrados:
+        por_codigo[l["codigo"]].append(l)
+
+    buckets = defaultdict(float)   # chave → soma líquida
+    codigos_usados = set()
+
+    def _somar_contas(contas_def, bucket_key):
+        itens = []
+        total = 0.0
+        for cod, lbl in contas_def:
+            ls = por_codigo.get(cod, [])
+            codigos_usados.add(cod)
+            val = sum(l["valor"] for l in ls)
+            total += val
+            if ls:
+                itens.append({
+                    "codigo": cod, "label": lbl, "valor": val,
+                    "lancamentos": sorted(ls, key=lambda x: x["dt"]),
+                })
+        buckets[bucket_key] += total
+        return total, itens
+
+    rows = []
+    for bloco in _DRE_DISPLAY_PLAN:
+        t = bloco["t"]
+
+        if t == "section":
+            rows.append({"tipo": "section", "label": bloco["label"]})
+
+        elif t == "group":
+            net, itens = _somar_contas(bloco["contas"], bloco["bucket"])
+            rows.append({
+                "tipo": "group", "cod": bloco["cod"], "label": bloco["label"],
+                "net": net, "itens": itens,
+            })
+
+        elif t == "account":
+            cod = bloco["cod"]
+            ls  = por_codigo.get(cod, [])
+            codigos_usados.add(cod)
+            val = sum(l["valor"] for l in ls)
+            buckets[bloco["bucket"]] += val
+            rows.append({
+                "tipo": "account", "cod": cod, "label": bloco["label"],
+                "valor": val,
+                "lancamentos": sorted(ls, key=lambda x: x["dt"]),
+            })
+
+        elif t == "subtotal":
+            valor = sum(buckets[k] for k in bloco["buckets"])
+            rows.append({"tipo": "subtotal", "label": bloco["label"], "valor": valor})
+
+        elif t == "info":
+            rows.append({"tipo": "info", "label": bloco["label"]})
+
+        elif t == "pct":
+            ref = buckets.get(bloco.get("ref", "rob"), 0.0)
+            num = sum(buckets[k] for k in bloco["buckets"])
+            pct = num / ref * 100 if ref else 0.0
+            rows.append({"tipo": "pct", "label": bloco["label"], "valor": pct})
+
+    # Lançamentos não classificados em nenhuma conta do plano
+    nao_class = {cod: ls for cod, ls in por_codigo.items()
+                 if cod not in codigos_usados and any(l["valor"] != 0 for l in ls)}
+    if nao_class:
+        rows.append({"tipo": "section", "label": "⚠ NÃO CLASSIFICADOS"})
+        for cod, ls in sorted(nao_class.items()):
+            net = sum(l["valor"] for l in ls)
+            rows.append({
+                "tipo": "group", "cod": cod,
+                "label": f"{cod} — {ls[0]['natureza'] or cod}",
+                "net": net, "itens": [{
+                    "codigo": cod, "label": ls[0]["natureza"] or cod, "valor": net,
+                    "lancamentos": sorted(ls, key=lambda x: x["dt"]),
+                }],
+            })
+
+    return rows
+
+
 def _dre_calcular(lancamentos):
     from collections import defaultdict
     code_val = defaultdict(float)
@@ -3730,8 +4026,6 @@ def _calcular_indicadores_ativuz():
 
 @app.route("/dre")
 def pagina_dre():
-    from calendar import monthrange
-    from collections import defaultdict
     hoje = datetime.now(_BRT)
     aba  = request.args.get("aba", "pagamento")  # "pagamento" | "referencia" | "ajustes"
 
@@ -3743,36 +4037,18 @@ def pagina_dre():
     except (ValueError, TypeError):
         mes, ano = hoje.month, hoje.year
 
-    pag  = _dre_ler_lancamentos("pagamento")
-    ref  = _dre_ler_lancamentos("referencia")
+    pag   = _dre_ler_lancamentos("pagamento")
+    ref   = _dre_ler_lancamentos("referencia")
     todos = pag + ref
 
     meses_pag = sorted({(l["dt"].year, l["dt"].month) for l in pag})
     meses_ref = sorted({(l["dt"].year, l["dt"].month) for l in ref})
     meses_disponiveis = sorted(set(meses_pag) | set(meses_ref))
+    if not meses_disponiveis:
+        meses_disponiveis = [(ano, mes)]
 
-    def _resumo_periodo(lancamentos, ano, mes):
-        d_ini = datetime(ano, mes, 1)
-        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
-        filtrados = [l for l in lancamentos if d_ini <= l["dt"] <= d_fim]
-        entradas = [l for l in filtrados if l["tipo"] == "ENTRADA"]
-        saidas   = [l for l in filtrados if l["tipo"] in ("SAÍDA", "SAIDA")]
-        grupos = defaultdict(lambda: {"natureza": "", "valor": 0.0, "itens": []})
-        for l in filtrados:
-            k = l["codigo"]
-            grupos[k]["natureza"] = l["natureza"] or l["codigo"]
-            grupos[k]["valor"]   += abs(l["valor"])
-            grupos[k]["itens"].append(l)
-        return {
-            "grupos_entrada": sorted((g for g in grupos.values() if any(i["tipo"]=="ENTRADA" for i in g["itens"])), key=lambda g: -g["valor"]),
-            "grupos_saida":   sorted((g for g in grupos.values() if any(i["tipo"] in ("SAÍDA","SAIDA") for i in g["itens"])), key=lambda g: -g["valor"]),
-            "total_entrada":  sum(abs(l["valor"]) for l in entradas),
-            "total_saida":    sum(abs(l["valor"]) for l in saidas),
-            "resultado":      sum(abs(l["valor"]) for l in entradas) - sum(abs(l["valor"]) for l in saidas),
-        }
-
-    resumo_pag = _resumo_periodo(pag, ano, mes)
-    resumo_ref = _resumo_periodo(ref, ano, mes)
+    rows_pag = _dre_montar_estrutura(pag, ano, mes)
+    rows_ref = _dre_montar_estrutura(ref, ano, mes)
 
     # Ajustes usam todos os lançamentos (sem filtro de período)
     ajustes = _dre_ajustes_natureza(todos)
@@ -3782,8 +4058,8 @@ def pagina_dre():
         aba=aba,
         mes=mes, ano=ano,
         meses_disponiveis=meses_disponiveis,
-        resumo_pag=resumo_pag,
-        resumo_ref=resumo_ref,
+        rows_pag=rows_pag,
+        rows_ref=rows_ref,
         ajustes=ajustes,
         sem_dados=len(todos) == 0,
     )

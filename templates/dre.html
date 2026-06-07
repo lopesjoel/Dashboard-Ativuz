@@ -4,105 +4,159 @@
 {% block head %}
 <style>
 /* ── Abas ── */
-.dre-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+.dre-tabs { display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--line); }
 .dre-tab {
-  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
-  border: none; background: none; color: var(--ink-3);
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-  text-decoration: none; display: inline-block;
+  padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;
+  border:none; background:none; color:var(--ink-3);
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+  text-decoration:none; display:inline-block;
 }
-.dre-tab.active { color: var(--ink); border-bottom-color: var(--accent, #2563eb); }
-.dre-tab:hover:not(.active) { color: var(--ink-2); }
+.dre-tab.active { color:var(--ink); border-bottom-color:var(--accent,#2563eb); }
+.dre-tab:hover:not(.active) { color:var(--ink-2); }
 
-/* ── Seletor de período ── */
-.dre-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+/* ── Barra de período ── */
+.dre-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
 .dre-bar select {
-  padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
-  background: var(--surface); font-size: 13px; color: var(--ink); cursor: pointer;
+  padding:6px 10px; border:1px solid var(--line); border-radius:8px;
+  background:var(--surface); font-size:13px; color:var(--ink); cursor:pointer;
 }
 
-/* ── Cards de totais ── */
-.dre-totais { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
-@media (max-width: 700px) { .dre-totais { grid-template-columns: 1fr; } }
-.dre-total-card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 16px 20px;
-}
-.dre-total-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--ink-3); margin-bottom: 8px; }
-.dre-total-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.dre-total-val.green  { color: #16a34a; }
-.dre-total-val.red    { color: #dc2626; }
-.dre-total-val.neutral{ color: var(--ink); }
+/* ── Estrutura DRE ── */
+.dre-plano { display:flex; flex-direction:column; gap:2px; }
 
-/* ── Tabela de lançamentos ── */
-.dre-section { margin-bottom: 24px; }
-.dre-section-title {
-  font-size: 12px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px;
-  display: flex; align-items: center; gap: 8px;
+/* Cabeçalho de seção */
+.dre-section {
+  margin-top:22px; margin-bottom:6px;
+  padding:8px 14px;
+  background:var(--bg); border:1px solid var(--line); border-radius:8px;
+  font-size:11px; font-weight:800; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-2);
 }
-.dre-section-title .badge {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+
+/* Grupo expansível */
+.dre-group { background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.dre-group-header {
+  display:grid; grid-template-columns:20px 1fr auto;
+  align-items:center; gap:8px; padding:9px 14px;
+  cursor:pointer; user-select:none;
 }
-.dre-grupo {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 10px; overflow: hidden; margin-bottom: 10px;
-}
-.dre-grupo-header {
-  display: grid; grid-template-columns: 1fr auto;
-  padding: 10px 16px; cursor: pointer;
-  border-bottom: 1px solid var(--line);
-}
-.dre-grupo-header:hover { background: var(--bg); }
-.dre-grupo-nome { font-size: 13px; font-weight: 600; color: var(--ink); }
-.dre-grupo-val  { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.dre-grupo-val.green { color: #16a34a; }
-.dre-grupo-val.red   { color: #dc2626; }
-.dre-itens { display: none; }
-.dre-itens.open { display: block; }
+.dre-group-header:hover { background:var(--bg); }
+.dre-group-chevron { font-size:10px; color:var(--ink-3); transition:transform .18s; }
+.dre-group-chevron.open { transform:rotate(90deg); }
+.dre-group-label { font-size:12px; font-weight:600; color:var(--ink); }
+.dre-group-cod   { font-size:10px; color:var(--ink-3); font-family:monospace; }
+.dre-group-total { font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+.dre-group-total.pos { color:#16a34a; }
+.dre-group-total.neg { color:#dc2626; }
+.dre-group-total.zer { color:var(--ink-3); }
+
+/* Itens dentro do grupo */
+.dre-items { display:none; border-top:1px solid var(--line); }
+.dre-items.open { display:block; }
 .dre-item {
-  display: grid; grid-template-columns: auto 1fr auto auto;
-  gap: 12px; padding: 7px 16px; border-bottom: 1px solid var(--line);
-  font-size: 12px; align-items: center;
+  display:grid; grid-template-columns:110px 1fr auto auto;
+  gap:10px; padding:6px 14px 6px 42px;
+  border-bottom:1px solid var(--line);
+  font-size:12px; align-items:start;
 }
-.dre-item:last-child { border-bottom: none; }
-.dre-item-data  { color: var(--ink-3); white-space: nowrap; }
-.dre-item-desc  { color: var(--ink-2); }
-.dre-item-tipo  { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-.dre-item-tipo.entrada { background: #dcfce7; color: #15803d; }
-.dre-item-tipo.saida   { background: #fee2e2; color: #b91c1c; }
-.dre-item-val   { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dre-item:last-child { border-bottom:none; }
 
-/* ── Ajustes de Natureza ── */
+/* Expandir lançamentos individuais */
+.dre-item-header {
+  display:grid; grid-template-columns:110px 1fr auto auto;
+  gap:10px; padding:6px 14px 6px 42px;
+  border-bottom:1px solid var(--line);
+  font-size:12px; align-items:center;
+  cursor:pointer;
+}
+.dre-item-header:hover { background:var(--bg); }
+.dre-item-header:last-child { border-bottom:none; }
+.dre-item-cod  { font-family:monospace; font-size:10px; color:var(--ink-3); white-space:nowrap; }
+.dre-item-desc { color:var(--ink-2); }
+.dre-item-tipo { font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+.dre-item-tipo.ent { background:#dcfce7; color:#15803d; }
+.dre-item-tipo.sai { background:#fee2e2; color:#b91c1c; }
+.dre-item-val  { font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; }
+.dre-item-val.pos { color:#16a34a; }
+.dre-item-val.neg { color:#dc2626; }
+
+/* Lançamentos detalhados */
+.dre-lancamentos { display:none; background:color-mix(in srgb,var(--bg) 60%,transparent); }
+.dre-lancamentos.open { display:block; }
+.dre-lanc-row {
+  display:grid; grid-template-columns:90px 1fr auto;
+  gap:8px; padding:4px 14px 4px 60px;
+  border-bottom:1px solid var(--line);
+  font-size:11px; color:var(--ink-3);
+}
+.dre-lanc-row:last-child { border-bottom:none; }
+
+/* Conta avulsa */
+.dre-account {
+  display:grid; grid-template-columns:1fr auto;
+  gap:10px; padding:8px 14px;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  font-size:12px; align-items:center;
+}
+.dre-account-label { font-size:12px; font-weight:600; color:var(--ink); }
+
+/* Subtotal */
+.dre-subtotal {
+  display:grid; grid-template-columns:1fr auto;
+  gap:10px; padding:10px 14px;
+  background:color-mix(in srgb,var(--surface) 80%,var(--bg));
+  border:1px solid var(--line); border-top:2px solid var(--line);
+  border-radius:8px;
+  font-size:13px; font-weight:800; font-variant-numeric:tabular-nums;
+  margin-top:6px;
+}
+.dre-subtotal .label { color:var(--ink); text-transform:uppercase; letter-spacing:.04em; }
+.dre-subtotal .val   { }
+.dre-subtotal .val.pos { color:#16a34a; }
+.dre-subtotal .val.neg { color:#dc2626; }
+.dre-subtotal .val.zer { color:var(--ink-3); }
+
+/* Info / Pct */
+.dre-info {
+  padding:7px 14px; font-size:11px; color:var(--ink-3);
+  font-weight:600; text-transform:uppercase; letter-spacing:.05em;
+  border:1px dashed var(--line); border-radius:6px;
+}
+.dre-pct {
+  display:grid; grid-template-columns:1fr auto;
+  gap:10px; padding:7px 14px;
+  background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  font-size:12px; font-weight:700; color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+
+/* Avulsos não classificados */
+.dre-section.warn { border-color:#f59e0b; color:#92400e; background:#fffbeb; }
+
+/* Ajustes de natureza */
 .ajuste-card {
-  background: var(--surface); border: 1px solid #f59e0b44;
-  border-left: 3px solid #f59e0b;
-  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
-  transition: opacity .3s;
+  background:var(--surface); border:1px solid #f59e0b44;
+  border-left:3px solid #f59e0b; border-radius:10px;
+  padding:14px 16px; margin-bottom:10px; transition:opacity .3s;
 }
-.ajuste-card.aceito { opacity: .4; pointer-events: none; }
-.ajuste-desc { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
-.ajuste-meta { font-size: 12px; color: var(--ink-3); display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
-.ajuste-arrow {
-  font-size: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
-}
-.ajuste-nat-atual { background: #fee2e2; color: #b91c1c; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
-.ajuste-nat-sug   { background: #dcfce7; color: #15803d; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+.ajuste-card.aceito { opacity:.4; pointer-events:none; }
+.ajuste-desc { font-size:13px; font-weight:600; color:var(--ink); margin-bottom:4px; }
+.ajuste-meta { font-size:12px; color:var(--ink-3); display:flex; gap:16px; flex-wrap:wrap; margin-bottom:6px; }
+.ajuste-arrow { font-size:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.ajuste-nat-atual { background:#fee2e2; color:#b91c1c; border-radius:5px; padding:2px 8px; font-size:11px; font-weight:600; }
+.ajuste-nat-sug   { background:#dcfce7; color:#15803d; border-radius:5px; padding:2px 8px; font-size:11px; font-weight:600; }
 .btn-aceitar {
-  font-size: 12px; font-weight: 700; padding: 5px 14px;
-  background: #16a34a; color: #fff; border: none; border-radius: 6px;
-  cursor: pointer; transition: background .15s;
+  font-size:12px; font-weight:700; padding:5px 14px;
+  background:#16a34a; color:#fff; border:none; border-radius:6px;
+  cursor:pointer; transition:background .15s;
 }
-.btn-aceitar:hover { background: #15803d; }
-.btn-aceitar:disabled { background: #6b7280; cursor: default; }
+.btn-aceitar:hover  { background:#15803d; }
+.btn-aceitar:disabled { background:#6b7280; cursor:default; }
 
 .dre-empty {
-  text-align: center; padding: 60px 20px; color: var(--ink-3);
-  font-size: 14px;
+  text-align:center; padding:60px 20px; color:var(--ink-3); font-size:14px;
 }
-.dre-empty strong { display: block; font-size: 16px; color: var(--ink-2); margin-bottom: 8px; }
+.dre-empty strong { display:block; font-size:16px; color:var(--ink-2); margin-bottom:8px; }
 </style>
 {% endblock %}
 
@@ -133,115 +187,122 @@
 </div>
 {% else %}
 
-{# ══ MACRO: conteúdo de lançamentos (reutilizado nas duas abas) ══ #}
-{% macro render_lancamentos(resumo, aba_id) %}
+{# ═══════════════ MACRO: renderiza uma lista de rows do _dre_montar_estrutura ═══════════════ #}
+{% macro render_dre(rows, aba_id) %}
 <div class="dre-bar">
   <form method="get" style="display:flex;gap:10px;align-items:center;">
     <input type="hidden" name="aba" value="{{ aba_id }}">
-    <select name="mes" onchange="this.form.submit()">
-      {% for (a, m) in meses_disponiveis %}
-      <option value="{{ m }}" {% if m == mes and a == ano %}selected{% endif %}>
+    <select name="mes" class="dre-mes-sel">
+      {% for (a,m) in meses_disponiveis %}
+      <option value="{{ m }}" data-ano="{{ a }}"
+        {% if m == mes and a == ano %}selected{% endif %}>
         {{ meses_nomes[m-1] }}/{{ a }}
       </option>
       {% endfor %}
     </select>
+    <input type="hidden" name="ano" id="ano-{{ aba_id }}" value="{{ ano }}">
   </form>
 </div>
 
-<div class="dre-totais">
-  <div class="dre-total-card">
-    <div class="dre-total-label">Total Entradas</div>
-    <div class="dre-total-val green">{{ resumo.total_entrada | brl }}</div>
-  </div>
-  <div class="dre-total-card">
-    <div class="dre-total-label">Total Saídas</div>
-    <div class="dre-total-val red">{{ resumo.total_saida | brl }}</div>
-  </div>
-  <div class="dre-total-card">
-    <div class="dre-total-label">Resultado</div>
-    <div class="dre-total-val {% if resumo.resultado >= 0 %}green{% else %}red{% endif %}">
-      {{ resumo.resultado | brl }}
-    </div>
-  </div>
-</div>
+<div class="dre-plano">
+{% for row in rows %}
+  {% set rt = row.tipo %}
 
-{% if resumo.grupos_entrada %}
-<div class="dre-section">
-  <div class="dre-section-title">
-    Entradas
-    <span class="badge" style="background:#dcfce7;color:#15803d;">{{ resumo.grupos_entrada|length }} natureza{{ 's' if resumo.grupos_entrada|length != 1 }}</span>
-  </div>
-  {% for g in resumo.grupos_entrada %}
-  <div class="dre-grupo">
-    <div class="dre-grupo-header" onclick="toggleGrupo(this)">
-      <span class="dre-grupo-nome">{{ g.natureza }}</span>
-      <span class="dre-grupo-val green">{{ g.valor | brl }}</span>
+  {# ── Seção ── #}
+  {% if rt == 'section' %}
+  <div class="dre-section {% if '⚠' in row.label %}warn{% endif %}">{{ row.label }}</div>
+
+  {# ── Grupo ── #}
+  {% elif rt == 'group' %}
+  {% set net = row.net %}
+  {% set cls = 'pos' if net > 0 else ('neg' if net < 0 else 'zer') %}
+  <div class="dre-group">
+    <div class="dre-group-header" onclick="toggleGroup(this)">
+      <span class="dre-group-chevron">▶</span>
+      <span>
+        <span class="dre-group-label">{{ row.label }}</span>
+        <span class="dre-group-cod"> · {{ row.cod }}</span>
+      </span>
+      <span class="dre-group-total {{ cls }}">{{ row.net | abs | brl }}</span>
     </div>
-    <div class="dre-itens">
-      {% for l in g.itens | sort(attribute='dt') %}
-      <div class="dre-item">
-        <span class="dre-item-data">{{ l.dt.strftime('%d/%m') }}</span>
-        <span class="dre-item-desc">{{ l.descricao }}</span>
-        <span class="dre-item-tipo entrada">ENTRADA</span>
-        <span class="dre-item-val">{{ l.valor | abs | brl }}</span>
+    <div class="dre-items">
+      {% for item in row.itens %}
+      {% set iv = item.valor %}
+      {% set icls = 'pos' if iv > 0 else ('neg' if iv < 0 else 'zer') %}
+      {% set has_multi = item.lancamentos | length > 1 %}
+      <div class="dre-item-header {% if has_multi %}has-multi{% endif %}"
+           {% if has_multi %}onclick="toggleLanc(this)"{% endif %}>
+        <span class="dre-item-cod">{{ item.codigo }}</span>
+        <span class="dre-item-desc">{{ item.label }}</span>
+        <span class="dre-item-tipo {% if iv >= 0 %}ent{% else %}sai{% endif %}">
+          {{ 'ENTRADA' if iv >= 0 else 'SAÍDA' }}
+        </span>
+        <span class="dre-item-val {{ icls }}">{{ iv | abs | brl }}</span>
       </div>
+      {% if has_multi %}
+      <div class="dre-lancamentos">
+        {% for l in item.lancamentos %}
+        <div class="dre-lanc-row">
+          <span>{{ l.dt.strftime('%d/%m/%Y') }}</span>
+          <span>{{ l.descricao }}</span>
+          <span style="font-weight:600;{% if l.valor >= 0 %}color:#16a34a{% else %}color:#dc2626{% endif %}">
+            {{ l.valor | abs | brl }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
       {% endfor %}
     </div>
   </div>
-  {% endfor %}
-</div>
-{% endif %}
 
-{% if resumo.grupos_saida %}
-<div class="dre-section">
-  <div class="dre-section-title">
-    Saídas
-    <span class="badge" style="background:#fee2e2;color:#b91c1c;">{{ resumo.grupos_saida|length }} natureza{{ 's' if resumo.grupos_saida|length != 1 }}</span>
+  {# ── Conta avulsa ── #}
+  {% elif rt == 'account' %}
+  {% set v = row.valor %}
+  {% set cls = 'pos' if v > 0 else ('neg' if v < 0 else 'zer') %}
+  <div class="dre-account">
+    <span class="dre-account-label">{{ row.label }}<span class="dre-group-cod"> · {{ row.cod }}</span></span>
+    <span class="dre-group-total {{ cls }}">{{ v | abs | brl }}</span>
   </div>
-  {% for g in resumo.grupos_saida %}
-  <div class="dre-grupo">
-    <div class="dre-grupo-header" onclick="toggleGrupo(this)">
-      <span class="dre-grupo-nome">{{ g.natureza }}</span>
-      <span class="dre-grupo-val red">{{ g.valor | brl }}</span>
-    </div>
-    <div class="dre-itens">
-      {% for l in g.itens | sort(attribute='dt') %}
-      <div class="dre-item">
-        <span class="dre-item-data">{{ l.dt.strftime('%d/%m') }}</span>
-        <span class="dre-item-desc">{{ l.descricao }}</span>
-        <span class="dre-item-tipo saida">SAÍDA</span>
-        <span class="dre-item-val">{{ l.valor | abs | brl }}</span>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
 
-{% if not resumo.grupos_entrada and not resumo.grupos_saida %}
-<div class="dre-empty">
-  <strong>Sem lançamentos neste período</strong>
-  Selecione outro mês ou importe um novo arquivo.
+  {# ── Subtotal ── #}
+  {% elif rt == 'subtotal' %}
+  {% set v = row.valor %}
+  {% set cls = 'pos' if v > 0 else ('neg' if v < 0 else 'zer') %}
+  <div class="dre-subtotal">
+    <span class="label">{{ row.label }}</span>
+    <span class="val {{ cls }}">{{ v | brl }}</span>
+  </div>
+
+  {# ── Info ── #}
+  {% elif rt == 'info' %}
+  <div class="dre-info">{{ row.label }}</div>
+
+  {# ── Percentual ── #}
+  {% elif rt == 'pct' %}
+  <div class="dre-pct">
+    <span>{{ row.label }}</span>
+    <span>{{ "%.1f"|format(row.valor) | replace(".",",") }}%</span>
+  </div>
+
+  {% endif %}
+{% endfor %}
 </div>
-{% endif %}
 {% endmacro %}
 
-{# ══════════════════ ABA: POR DATA DE PAGAMENTO ══════════════════ #}
+{# ══ ABA: POR DATA DE PAGAMENTO ══ #}
 {% if aba == 'pagamento' %}
-{{ render_lancamentos(resumo_pag, 'pagamento') }}
+{{ render_dre(rows_pag, 'pagamento') }}
 
-{# ══════════════════ ABA: REFERÊNCIA ══════════════════ #}
+{# ══ ABA: REFERÊNCIA ══ #}
 {% elif aba == 'referencia' %}
-{{ render_lancamentos(resumo_ref, 'referencia') }}
+{{ render_dre(rows_ref, 'referencia') }}
 
-{# ══════════════════ ABA: AJUSTES DE NATUREZA ══════════════════ #}
+{# ══ ABA: AJUSTES DE NATUREZA ══ #}
 {% elif aba == 'ajustes' %}
-
 {% if ajustes %}
 <p style="font-size:13px;color:var(--ink-3);margin-bottom:16px;">
-  {{ ajustes|length }} lançamento{{ 's' if ajustes|length != 1 }} com natureza possivelmente incorreta, identificados pela descrição.
-  Corrija no sistema e reimporte a planilha.
+  {{ ajustes|length }} lançamento{{ 's' if ajustes|length != 1 }} com natureza possivelmente incorreta.
 </p>
 {% for a in ajustes %}
 <div class="ajuste-card" id="ajuste-{{ loop.index }}">
@@ -269,18 +330,37 @@
 {% else %}
 <div class="dre-empty">
   <strong>Nenhum ajuste necessário</strong>
-  Todas as naturezas parecem consistentes com as descrições dos lançamentos.
+  Todas as naturezas parecem consistentes com as descrições.
 </div>
 {% endif %}
 
-{% endif %} {# fim aba #}
-{% endif %} {# fim sem_dados #}
+{% endif %}{# fim aba #}
+{% endif %}{# fim sem_dados #}
 
 <script>
-function toggleGrupo(header) {
-  var itens = header.nextElementSibling;
-  itens.classList.toggle('open');
+function toggleGroup(header) {
+  var chevron = header.querySelector('.dre-group-chevron');
+  var items   = header.nextElementSibling;
+  chevron.classList.toggle('open');
+  items.classList.toggle('open');
 }
+
+function toggleLanc(itemHeader) {
+  var lancs = itemHeader.nextElementSibling;
+  if (lancs && lancs.classList.contains('dre-lancamentos')) {
+    lancs.classList.toggle('open');
+  }
+}
+
+/* Sync ano hidden input, then submit */
+document.querySelectorAll('.dre-mes-sel').forEach(function(sel) {
+  sel.addEventListener('change', function() {
+    var opt = this.options[this.selectedIndex];
+    var anoInput = this.closest('form').querySelector('input[name="ano"]');
+    if (anoInput && opt.dataset.ano) anoInput.value = opt.dataset.ano;
+    this.form.submit();
+  });
+});
 
 async function aceitarAjuste(btn, codigoAtual, descricao, codigoNovo, naturezaNova) {
   btn.disabled = true;
@@ -290,10 +370,8 @@ async function aceitarAjuste(btn, codigoAtual, descricao, codigoNovo, naturezaNo
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        codigo_atual: codigoAtual,
-        descricao: descricao,
-        codigo_novo: codigoNovo,
-        natureza_nova: naturezaNova
+        codigo_atual: codigoAtual, descricao: descricao,
+        codigo_novo: codigoNovo, natureza_nova: naturezaNova
       })
     });
     const data = await resp.json();
