@@ -3,648 +3,260 @@
 
 {% block head %}
 <style>
-/* ── Period selector ── */
-.dre-bar {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
+/* ── Abas ── */
+.dre-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+.dre-tab {
+  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; background: none; color: var(--ink-3);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  text-decoration: none; display: inline-block;
 }
+.dre-tab.active { color: var(--ink); border-bottom-color: var(--accent, #2563eb); }
+.dre-tab:hover:not(.active) { color: var(--ink-2); }
+
+/* ── Seletor de período ── */
+.dre-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
 .dre-bar select {
   padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--surface); font-size: 13px; color: var(--ink); cursor: pointer;
 }
-.dre-bar label.acu-label {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 13px; color: var(--ink-2); cursor: pointer; user-select: none;
-}
-.dre-period-label { font-size: 13px; font-weight: 600; color: var(--ink); margin-left: auto; }
 
-/* ── KPIs ── */
-.dre-kpis {
-  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px;
-}
-@media (max-width:900px) { .dre-kpis { grid-template-columns: repeat(2,1fr); } }
-@media (max-width:540px) { .dre-kpis { grid-template-columns: 1fr; } }
-.dre-kpi {
+/* ── Cards de totais ── */
+.dre-totais { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+@media (max-width: 700px) { .dre-totais { grid-template-columns: 1fr; } }
+.dre-total-card {
   background: var(--surface); border: 1px solid var(--line);
-  border-radius: 12px; padding: 18px 20px;
+  border-radius: 12px; padding: 16px 20px;
 }
-.dre-kpi-label {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--ink-3); margin-bottom: 8px;
-}
-.dre-kpi-value {
-  font-size: 22px; font-weight: 700; color: var(--ink);
-  line-height: 1; margin-bottom: 8px; font-variant-numeric: tabular-nums;
-}
-.dre-kpi-value.neg { color: var(--danger,#e53e3e); }
-.dre-kpi-compare { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
-.dre-kpi-delta { font-weight: 600; font-size: 12px; }
-.dre-kpi-delta.up   { color: #22a06b; }
-.dre-kpi-delta.down { color: var(--danger,#e53e3e); }
+.dre-total-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ink-3); margin-bottom: 8px; }
+.dre-total-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dre-total-val.green  { color: #16a34a; }
+.dre-total-val.red    { color: #dc2626; }
+.dre-total-val.neutral{ color: var(--ink); }
 
-/* ── DRE table ──
-   c1: descrição  c2: val atual  c3: %RL atual  c4: val ant  c5: %RL ant  c6: Δ  */
-.dre-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-
-.dre-row {
-  display: grid;
-  grid-template-columns: 1fr 130px 50px 130px 50px 72px;
-  align-items: center;
+/* ── Tabela de lançamentos ── */
+.dre-section { margin-bottom: 24px; }
+.dre-section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.dre-section-title .badge {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+}
+.dre-grupo {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+}
+.dre-grupo-header {
+  display: grid; grid-template-columns: 1fr auto;
+  padding: 10px 16px; cursor: pointer;
   border-bottom: 1px solid var(--line);
-  min-height: 36px;
 }
-.dre-row:last-child { border-bottom: none; }
-.dre-row .c1 { padding: 7px 16px; }
-.dre-row .c2, .dre-row .c3, .dre-row .c4, .dre-row .c5, .dre-row .c6 {
-  padding: 7px 12px; text-align: right; font-variant-numeric: tabular-nums;
+.dre-grupo-header:hover { background: var(--bg); }
+.dre-grupo-nome { font-size: 13px; font-weight: 600; color: var(--ink); }
+.dre-grupo-val  { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dre-grupo-val.green { color: #16a34a; }
+.dre-grupo-val.red   { color: #dc2626; }
+.dre-itens { display: none; }
+.dre-itens.open { display: block; }
+.dre-item {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 12px; padding: 7px 16px; border-bottom: 1px solid var(--line);
+  font-size: 12px; align-items: center;
 }
+.dre-item:last-child { border-bottom: none; }
+.dre-item-data  { color: var(--ink-3); white-space: nowrap; }
+.dre-item-desc  { color: var(--ink-2); }
+.dre-item-tipo  { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.dre-item-tipo.entrada { background: #dcfce7; color: #15803d; }
+.dre-item-tipo.saida   { background: #fee2e2; color: #b91c1c; }
+.dre-item-val   { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* Header */
-.dre-head { background: var(--bg); border-bottom: 1px solid var(--line); }
-.dre-head .c1, .dre-head .c2, .dre-head .c3,
-.dre-head .c4, .dre-head .c5, .dre-head .c6 {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--ink-3);
+/* ── Ajustes de Natureza ── */
+.ajuste-card {
+  background: var(--surface); border: 1px solid #f59e0b44;
+  border-left: 3px solid #f59e0b;
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
 }
-
-/* L1 — section */
-.dre-l1 { cursor: pointer; background: var(--bg); }
-.dre-l1:hover { background: #eef0f5; }
-.dre-l1 .c1 { font-weight: 700; font-size: 13px; color: var(--ink); }
-.dre-l1 .c2, .dre-l1 .c4 { font-weight: 700; color: var(--ink); }
-.dre-l1 .c3, .dre-l1 .c5 { font-size: 11px; font-weight: 500; color: var(--ink-3); }
-
-/* L2 — grupo */
-.dre-l2 { cursor: pointer; }
-.dre-l2:hover { background: #f9f9fb; }
-.dre-l2 .c1 { padding-left: 34px; font-weight: 600; font-size: 13px; color: var(--ink-2); }
-.dre-l2 .c2, .dre-l2 .c4 { font-weight: 600; color: var(--ink-2); }
-.dre-l2 .c3, .dre-l2 .c5 { font-size: 11px; color: var(--ink-3); }
-
-/* L2 highlighted (Pró-labore / remuneração dos sócios) */
-.dre-l2-hi {
-  border-left: 3px solid var(--brand-orange, #FF4713);
-  background: #fff8f5 !important;
+.ajuste-desc { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.ajuste-meta { font-size: 12px; color: var(--ink-3); display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+.ajuste-arrow {
+  font-size: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.dre-l2-hi .c1 { padding-left: 31px !important; }
-.grp-note {
-  display: inline-block; margin-left: 8px;
-  font-size: 10px; font-weight: 500; color: var(--brand-orange, #FF4713);
-  background: #fff0ea; border: 1px solid #ffd4c2;
-  border-radius: 4px; padding: 1px 5px; vertical-align: middle;
+.ajuste-nat-atual { background: #fee2e2; color: #b91c1c; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+.ajuste-nat-sug   { background: #dcfce7; color: #15803d; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+
+.dre-empty {
+  text-align: center; padding: 60px 20px; color: var(--ink-3);
+  font-size: 14px;
 }
-.grp-info {
-  display: inline-block; margin-left: 8px;
-  font-size: 10px; font-weight: 400; color: #4a6fa5;
-  background: #eef3fb; border: 1px solid #c8d8ef;
-  border-radius: 4px; padding: 1px 5px; vertical-align: middle;
-}
-
-/* L3 — item */
-.dre-l3 { background: #fafafa; }
-.dre-l3 .c1 { padding-left: 54px; font-size: 12px; color: var(--ink-3); }
-.dre-l3 .c2, .dre-l3 .c4 { font-size: 12px; color: var(--ink-3); }
-.dre-l3 .c3, .dre-l3 .c5, .dre-l3 .c6 { font-size: 12px; color: var(--ink-3); }
-
-/* Subtotals */
-.dre-sub .c1 { font-weight: 700; font-size: 13px; }
-.dre-sub .c2, .dre-sub .c4 { font-weight: 700; }
-.dre-sub .c3, .dre-sub .c5 { font-size: 11px; font-weight: 600; color: var(--ink-3); }
-
-/* Highlight rows (EBITDA, Lucro Líquido, Fluxo Livre) */
-.dre-hi { background: var(--brand-ink,#15192A) !important; }
-.dre-hi .c1, .dre-hi .c2, .dre-hi .c3,
-.dre-hi .c4, .dre-hi .c5, .dre-hi .c6 { color: #fff !important; font-weight: 700 !important; }
-
-/* Separator */
-.dre-sep { min-height: 6px; background: var(--bg); }
-
-/* Section title divider (cash-flow section) */
-.dre-section-title .c1 {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--ink-3); padding: 10px 16px 4px;
-}
-
-/* Toggle arrow */
-.tog {
-  display: inline-block; width: 14px; margin-right: 5px;
-  transition: transform .15s; color: var(--ink-3);
-  font-style: normal; font-size: 10px;
-}
-[data-open="true"] > .dre-row .tog  { transform: rotate(0deg); }
-[data-open="false"] > .dre-row .tog { transform: rotate(-90deg); }
-.dre-l1 .tog { color: var(--ink-2); }
-
-/* Value colors */
-.neg { color: var(--danger,#e53e3e); }
-.delta { font-size: 11px; font-weight: 600; }
-.delta.up   { color: #22a06b; }
-.delta.down { color: var(--danger,#e53e3e); }
-.delta.neu  { color: var(--ink-3); }
+.dre-empty strong { display: block; font-size: 16px; color: var(--ink-2); margin-bottom: 8px; }
 </style>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 {% endblock %}
 
 {% block content %}
-
-{# ── Period selector ──────────────────────────────────────────────────────── #}
-<form class="dre-bar" method="get" action="{{ url_for('pagina_dre') }}" id="dre-form">
-  <select name="mes" id="sel-mes">
-    {% for (a, m) in meses_disponiveis %}
-    <option value="{{ m }}" data-ano="{{ a }}"
-      {% if m == mes and a == ano %}selected{% endif %}>
-      {{ ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1] }}/{{ a }}
-    </option>
-    {% endfor %}
-  </select>
-  <input type="hidden" name="ano" id="inp-ano" value="{{ ano }}">
-  <label class="acu-label">
-    <input type="checkbox" name="acumulado" value="1"
-      {% if acumulado %}checked{% endif %} onchange="this.form.submit()">
-    Acumulado
-  </label>
-  <button type="button" class="btn btn-ghost btn-sm" id="btn-importar-dre"
-          onclick="document.getElementById('dre-import-file').click()">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
-         viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/>
-      <line x1="12" y1="3" x2="12" y2="15"/>
-    </svg>
-    Importar Planilha
-  </button>
-  <input type="file" id="dre-import-file" accept=".xlsx,.csv" hidden>
-  <span class="dre-period-label">{{ label_atual }}</span>
-</form>
-
-{# ── KPI cards ────────────────────────────────────────────────────────────── #}
-<div class="dre-kpis">
-{% macro kpi(label, val, pval, is_pct=false, kid='') %}
-{% set pv = pval | float %}
-{% set vv = val | float %}
-{% set delta = (vv - pv) / pv if pv else none %}
-<div class="dre-kpi"{% if kid %} id="{{ kid }}"{% endif %}>
-  <div class="dre-kpi-label">{{ label }}</div>
-  <div class="dre-kpi-value {% if vv < 0 %}neg{% endif %}">
-    {% if is_pct %}{{ vv | pct_fmt }}{% else %}{{ vv | brl }}{% endif %}
-  </div>
-  <div class="dre-kpi-compare">
-    {% if delta is not none %}
-      <span class="dre-kpi-delta {% if delta >= 0 %}up{% else %}down{% endif %}">
-        {% if delta >= 0 %}↑{% else %}↓{% endif %}&nbsp;{{ (delta * 100 | abs) | round(1) }}%
-      </span>
-      <span>vs {{ label_prev }}</span>
-    {% else %}<span>sem dado anterior</span>{% endif %}
-  </div>
-</div>
-{% endmacro %}
-{{ kpi("Receita Bruta",  dre.receita_bruta, dre_prev.receita_bruta, kid='kpi-rb') }}
-{{ kpi("Margem Bruta %", dre.pct_margem,    dre_prev.pct_margem, is_pct=true, kid='kpi-margem') }}
-{{ kpi("EBITDA",         dre.ebitda,        dre_prev.ebitda, kid='kpi-ebitda') }}
-{{ kpi("Lucro Líquido",  dre.lucro_liquido, dre_prev.lucro_liquido, kid='kpi-ll') }}
+<div class="page-header">
+  <h1 class="page-title">DRE</h1>
 </div>
 
-{# ── DRE table ────────────────────────────────────────────────────────────── #}
-<div class="dre-card">
+<!-- Abas -->
+<div class="dre-tabs">
+  <a href="{{ url_for('pagina_dre', aba='caixa', mes=mes, ano=ano) }}"
+     class="dre-tab {% if aba == 'caixa' %}active{% endif %}">Regime de Caixa</a>
+  <a href="{{ url_for('pagina_dre', aba='ajustes', mes=mes, ano=ano) }}"
+     class="dre-tab {% if aba == 'ajustes' %}active{% endif %}">
+    Ajustes de Natureza
+    {% if ajustes %}<span style="background:#f59e0b;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:4px;">{{ ajustes|length }}</span>{% endif %}
+  </a>
+</div>
 
-  {# Header #}
-  <div class="dre-row dre-head">
-    <div class="c1">Descrição</div>
-    <div class="c2">{{ label_atual }}</div>
-    <div class="c3">%RL</div>
-    <div class="c4">{{ label_prev }}</div>
-    <div class="c5">%RL</div>
-    <div class="c6">Δ</div>
+{% if sem_dados %}
+<div class="dre-empty">
+  <strong>Nenhum lançamento importado</strong>
+  Importe um arquivo "Lançamentos por natureza" exportado do sistema.
+</div>
+{% else %}
+
+{# ══════════════════ ABA: REGIME DE CAIXA ══════════════════ #}
+{% if aba == 'caixa' %}
+
+<!-- Seletor de período -->
+<div class="dre-bar">
+  <form method="get" style="display:flex;gap:10px;align-items:center;">
+    <input type="hidden" name="aba" value="caixa">
+    <select name="mes" onchange="this.form.submit()">
+      {% set meses_nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'] %}
+      {% for (a, m) in meses_disponiveis %}
+      <option value="{{ m }}" {% if m == mes and a == ano %}selected{% endif %}>
+        {{ meses_nomes[m-1] }}/{{ a }}
+      </option>
+      {% endfor %}
+    </select>
+    <select name="ano" onchange="this.form.submit()" style="display:none;"></select>
+  </form>
+</div>
+
+<!-- KPIs -->
+<div class="dre-totais">
+  <div class="dre-total-card">
+    <div class="dre-total-label">Total Entradas</div>
+    <div class="dre-total-val green">{{ total_entrada | brl }}</div>
   </div>
-
-  {# ── Inline macros ─────────────────────────────────────────────────────── #}
-
-  {# Subtotal row — vpct/ppct show %RL in c3/c5 when provided #}
-  {% macro sub(label, val, pval, hi=false, vpct=none, ppct=none, key='') %}
-  {% set d = (val - pval) / pval if pval else none %}
-  <div class="dre-row dre-sub {% if hi %}dre-hi{% endif %}"{% if key %} data-sub="{{ key }}"{% endif %}>
-    <div class="c1">{{ label }}</div>
-    <div class="c2 {% if val < 0 and not hi %}neg{% endif %}">{{ val | brl }}</div>
-    <div class="c3">{% if vpct is not none %}{{ vpct | pct_fmt }}{% endif %}</div>
-    <div class="c4 {% if pval < 0 and not hi %}neg{% endif %}">{{ pval | brl }}</div>
-    <div class="c5">{% if ppct is not none %}{{ ppct | pct_fmt }}{% endif %}</div>
-    <div class="c6">
-      {% if d is not none %}<span class="delta {% if hi %}neu{% elif d >= 0 %}up{% else %}down{% endif %}">
-        {% if d >= 0 %}+{% endif %}{{ (d * 100) | round(1) }}%</span>
-      {% else %}<span class="delta neu">—</span>{% endif %}
+  <div class="dre-total-card">
+    <div class="dre-total-label">Total Saídas</div>
+    <div class="dre-total-val red">{{ total_saida | brl }}</div>
+  </div>
+  <div class="dre-total-card">
+    <div class="dre-total-label">Resultado</div>
+    <div class="dre-total-val {% if resultado >= 0 %}green{% else %}red{% endif %}">
+      {{ resultado | brl }}
     </div>
   </div>
-  {% endmacro %}
+</div>
 
-  {# Spacer #}
-  {% macro sep() %}<div class="dre-row dre-sep"></div>{% endmacro %}
-
-  {# ── Sections loop ─────────────────────────────────────────────────────── #}
-  {% for sec in dre.sections %}
-  {% set sec_p = dre_prev.sections[loop.index0] %}
-  {% set sd = (sec.total - sec_p.total) / sec_p.total if sec_p.total else none %}
-
-  {# Cash-flow section header divider #}
-  {% if sec.id == 'inv' %}
-  <div class="dre-row dre-sep"></div>
-  <div class="dre-row dre-section-title">
-    <div class="c1">Fluxo de Caixa</div>
-    <div class="c2"></div><div class="c3"></div>
-    <div class="c4"></div><div class="c5"></div><div class="c6"></div>
+<!-- Entradas -->
+{% if grupos_entrada %}
+<div class="dre-section">
+  <div class="dre-section-title">
+    Entradas
+    <span class="badge green" style="background:#dcfce7;color:#15803d;">{{ grupos_entrada|length }} natureza{{ 's' if grupos_entrada|length != 1 }}</span>
   </div>
-  {% endif %}
-
-  {# L1: section row #}
-  <div class="dre-row dre-l1" data-id="{{ sec.id }}" data-open="false"
-       onclick="dreTog('{{ sec.id }}')">
-    <div class="c1"><i class="tog">▶</i>{{ sec.label }}</div>
-    <div class="c2 {% if sec.total < 0 %}neg{% endif %}">{{ sec.total | brl }}</div>
-    <div class="c3">{{ sec.pct | pct_fmt }}</div>
-    <div class="c4 {% if sec_p.total < 0 %}neg{% endif %}">{{ sec_p.total | brl }}</div>
-    <div class="c5">{{ sec_p.pct | pct_fmt }}</div>
-    <div class="c6">
-      {% if sd is not none %}<span class="delta {% if sd >= 0 %}up{% else %}down{% endif %}">
-        {% if sd >= 0 %}+{% endif %}{{ (sd * 100) | round(1) }}%</span>
-      {% else %}<span class="delta neu">—</span>{% endif %}
+  {% for g in grupos_entrada %}
+  <div class="dre-grupo">
+    <div class="dre-grupo-header" onclick="toggleGrupo(this)">
+      <span class="dre-grupo-nome">{{ g.natureza }}</span>
+      <span class="dre-grupo-val green">{{ g.valor | brl }}</span>
+    </div>
+    <div class="dre-itens">
+      {% for l in g.itens | sort(attribute='dt') %}
+      <div class="dre-item">
+        <span class="dre-item-data">{{ l.dt.strftime('%d/%m') }}</span>
+        <span class="dre-item-desc">{{ l.descricao }}</span>
+        <span class="dre-item-tipo entrada">ENTRADA</span>
+        <span class="dre-item-val">{{ l.valor | abs | brl }}</span>
+      </div>
+      {% endfor %}
     </div>
   </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-  {# L2: grupos #}
-  {% for grp in sec.grupos %}
-  {% set grp_p = sec_p.grupos[loop.index0] %}
-  <div class="dre-row dre-l2 {% if grp.highlight %}dre-l2-hi{% endif %}"
-       data-parent="{{ sec.id }}" data-id="{{ grp.id }}"
-       data-open="false" onclick="dreTog('{{ grp.id }}')">
-    <div class="c1">
-      <i class="tog">▶</i>{{ grp.label }}
-      {% if grp.highlight and grp.note %}<span class="grp-note">{{ grp.note }}</span>
-      {% elif grp.note %}<span class="grp-info">{{ grp.note }}</span>{% endif %}
+<!-- Saídas -->
+{% if grupos_saida %}
+<div class="dre-section">
+  <div class="dre-section-title">
+    Saídas
+    <span class="badge" style="background:#fee2e2;color:#b91c1c;">{{ grupos_saida|length }} natureza{{ 's' if grupos_saida|length != 1 }}</span>
+  </div>
+  {% for g in grupos_saida %}
+  <div class="dre-grupo">
+    <div class="dre-grupo-header" onclick="toggleGrupo(this)">
+      <span class="dre-grupo-nome">{{ g.natureza }}</span>
+      <span class="dre-grupo-val red">{{ g.valor | brl }}</span>
     </div>
-    <div class="c2 {% if grp.total < 0 %}neg{% endif %}">{{ grp.total | brl }}</div>
-    <div class="c3"></div>
-    <div class="c4 {% if grp_p.total < 0 %}neg{% endif %}">{{ grp_p.total | brl }}</div>
-    <div class="c5"></div>
-    <div class="c6"></div>
-  </div>
-
-  {# L3: itens #}
-  {% for item in grp.itens %}
-  {% set item_p = grp_p.itens[loop.index0] %}
-  <div class="dre-row dre-l3" data-parent="{{ grp.id }}" data-item="{{ item.codigo }}">
-    <div class="c1">{{ item.codigo }} – {{ item.label }}</div>
-    <div class="c2 {% if item.val < 0 %}neg{% endif %}">{{ item.val | brl }}</div>
-    <div class="c3"></div>
-    <div class="c4 {% if item_p.val < 0 %}neg{% endif %}">{{ item_p.val | brl }}</div>
-    <div class="c5"></div>
-    <div class="c6"></div>
+    <div class="dre-itens">
+      {% for l in g.itens | sort(attribute='dt') %}
+      <div class="dre-item">
+        <span class="dre-item-data">{{ l.dt.strftime('%d/%m') }}</span>
+        <span class="dre-item-desc">{{ l.descricao }}</span>
+        <span class="dre-item-tipo saida">SAÍDA</span>
+        <span class="dre-item-val">{{ l.valor | abs | brl }}</span>
+      </div>
+      {% endfor %}
+    </div>
   </div>
   {% endfor %}
-  {% endfor %}
+</div>
+{% endif %}
 
-  {# ── Subtotals after specific sections ─────────────────────────────────── #}
-  {% if sec.id == 'ded' %}
-    {{ sub("= Receita Operacional Líquida", dre.receita_liquida, dre_prev.receita_liquida, key='receita_liquida') }}
-    {{ sep() }}
-  {% elif sec.id == 'custos' %}
-    {{ sub("= Lucro Bruto / Margem de Contribuição", dre.margem, dre_prev.margem,
-           vpct=dre.pct_margem, ppct=dre_prev.pct_margem, key='margem') }}
-    {{ sep() }}
-  {% elif sec.id == 'sga' %}
-    {{ sub("= EBITDA", dre.ebitda, dre_prev.ebitda, hi=true,
-           vpct=dre.pct_ebitda, ppct=dre_prev.pct_ebitda, key='ebitda') }}
-    {{ sep() }}
-    {{ sub("(-) Depreciação/Amortização", dre.depreciacao, dre_prev.depreciacao, key='depreciacao') }}
-    {{ sub("= EBIT (Resultado Operacional)", dre.ebit, dre_prev.ebit,
-           vpct=dre.pct_ebit, ppct=dre_prev.pct_ebit, key='ebit') }}
-    {{ sep() }}
-  {% elif sec.id == 'rnop' %}
-    {{ sub("= Lucro Antes do IR", dre.lucro_antes_ir, dre_prev.lucro_antes_ir,
-           vpct=dre.pct_lajir, ppct=dre_prev.pct_lajir, key='lucro_antes_ir') }}
-    {{ sub("(-) IR / CSLL — Simples Nacional", -dre.ir_csll, -dre_prev.ir_csll, key='ir_csll') }}
-    {{ sub("= Lucro Líquido", dre.lucro_liquido, dre_prev.lucro_liquido, hi=true,
-           vpct=dre.pct_ll, ppct=dre_prev.pct_ll, key='lucro_liquido') }}
-  {% elif sec.id == 'aporte' %}
-    {{ sub("= Fluxo de Caixa do Acionista", dre.fluxo_acionista, dre_prev.fluxo_acionista, key='fluxo_acionista') }}
-  {% elif sec.id == 'distrib' %}
-    {{ sub("= Fluxo de Caixa Livre", dre.fluxo_livre, dre_prev.fluxo_livre, hi=true, key='fluxo_livre') }}
-  {% endif %}
+{% if not grupos_entrada and not grupos_saida %}
+<div class="dre-empty">
+  <strong>Sem lançamentos neste período</strong>
+  Selecione outro mês ou importe um novo arquivo.
+</div>
+{% endif %}
 
-  {% endfor %}
+{# ══════════════════ ABA: AJUSTES DE NATUREZA ══════════════════ #}
+{% elif aba == 'ajustes' %}
 
-</div><!-- .dre-card -->
+{% if ajustes %}
+<p style="font-size:13px;color:var(--ink-3);margin-bottom:16px;">
+  {{ ajustes|length }} lançamento{{ 's' if ajustes|length != 1 }} com natureza possivelmente incorreta, identificados pela descrição.
+  Corrija no sistema e reimporte a planilha.
+</p>
+{% for a in ajustes %}
+<div class="ajuste-card">
+  <div class="ajuste-desc">{{ a.descricao }}</div>
+  <div class="ajuste-meta">
+    <span>{{ a.dt }}</span>
+    <span>{{ a.valor_s }}</span>
+    <span style="text-transform:uppercase;font-weight:600;{% if a.tipo in ('SAÍDA','SAIDA') %}color:#b91c1c{% else %}color:#15803d{% endif %}">{{ a.tipo }}</span>
+  </div>
+  <div class="ajuste-arrow">
+    <span class="ajuste-nat-atual">{{ a.natureza_atual }}</span>
+    <span style="color:var(--ink-3);">→ prefixo sugerido:</span>
+    <span class="ajuste-nat-sug">{{ a.prefixo_sugerido }}</span>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="dre-empty">
+  <strong>Nenhum ajuste necessário</strong>
+  Todas as naturezas parecem consistentes com as descrições dos lançamentos.
+</div>
+{% endif %}
+
+{% endif %} {# fim aba #}
+{% endif %} {# fim sem_dados #}
 
 <script>
-(function () {
-  // ── Toggle expand/collapse ────────────────────────────────────────────────
-  function dreTog(id) {
-    var row = document.querySelector('[data-id="' + id + '"]');
-    if (!row) return;
-    var open = row.dataset.open !== 'true';
-    row.dataset.open = String(open);
-    document.querySelectorAll('[data-parent="' + id + '"]').forEach(function (child) {
-      child.style.display = open ? '' : 'none';
-      if (!open && child.dataset.id) {
-        child.dataset.open = 'false';
-        document.querySelectorAll('[data-parent="' + child.dataset.id + '"]').forEach(function (gc) {
-          gc.style.display = 'none';
-        });
-      }
-    });
-  }
-  window.dreTog = dreTog;
-  document.querySelectorAll('[data-parent]').forEach(function (el) { el.style.display = 'none'; });
-
-  var selMes = document.getElementById('sel-mes');
-  var inpAno = document.getElementById('inp-ano');
-  if (selMes && inpAno) {
-    selMes.addEventListener('change', function () {
-      var opt = selMes.options[selMes.selectedIndex];
-      if (opt.dataset.ano) inpAno.value = opt.dataset.ano;
-      selMes.form.submit();
-    });
-  }
-
-  // ── Import ────────────────────────────────────────────────────────────────
-  function normStr(s) {
-    return String(s || '').toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-  }
-
-  var HEADER_KEYS = {
-    codigo: ['natureza', 'cod. nat', 'codigo de nat', 'codigo', 'plano de contas'],
-    data:   ['data de competencia', 'data competencia', 'data', 'dt'],
-    valor:  ['valor', 'montante'],
-    num:    ['lancamento', 'numero', 'n°', 'nro', 'nº']
-  };
-
-  function detectarColunas(rows) {
-    for (var i = 0; i < Math.min(10, rows.length); i++) {
-      var row = rows[i];
-      var found = {};
-      for (var j = 0; j < row.length; j++) {
-        var cell = normStr(row[j]);
-        if (!cell) continue;
-        for (var field in HEADER_KEYS) {
-          if (found[field] !== undefined) continue;
-          var kws = HEADER_KEYS[field];
-          for (var k = 0; k < kws.length; k++) {
-            if (cell.indexOf(kws[k]) !== -1) { found[field] = j; break; }
-          }
-        }
-      }
-      if (found.codigo !== undefined && found.valor !== undefined) {
-        var avisos = [];
-        if (found.data === undefined) avisos.push('Data');
-        if (found.num  === undefined) avisos.push('Número do lançamento');
-        return { dataStart: i + 1, iCodigo: found.codigo, iData: found.data,
-                 iNum: found.num, iValor: found.valor,
-                 aviso: avisos.length ? avisos.join(', ') : null };
-      }
-    }
-    // Fallback: posicional (formato padrão do DRE exportado)
-    return { dataStart: 5, iCodigo: 2, iData: 3, iNum: 6, iValor: 9, aviso: null };
-  }
-
-  function parseData(raw) {
-    if (!raw) return null;
-    if (raw instanceof Date) return raw;
-    var s = String(raw).trim();
-    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
-    m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-    var n = parseFloat(s);
-    if (!isNaN(n) && n > 1000) {
-      var d = new Date(Math.round((n - 25569) * 86400000));
-      return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
-    }
-    return null;
-  }
-
-  function brl(v) {
-    if (v == null) return '—';
-    var neg = v < 0;
-    var parts = Math.abs(v).toFixed(2).split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    var s = parts[0] + ',' + parts[1];
-    return neg ? '(' + s + ')' : s;
-  }
-
-  function pctFmt(v) {
-    if (v == null) return '—';
-    return (v * 100).toFixed(1) + '%';
-  }
-
-  function deltaHtml(cur, prev, isHi) {
-    if (!prev) return '<span class="delta neu">—</span>';
-    var d = (cur - prev) / prev;
-    var cls = isHi ? 'neu' : (d >= 0 ? 'up' : 'down');
-    return '<span class="delta ' + cls + '">' + (d >= 0 ? '+' : '') + (d * 100).toFixed(1) + '%</span>';
-  }
-
-  function setCell(el, baseCls, text, isNeg) {
-    if (!el) return;
-    el.textContent = text;
-    el.className = baseCls + (isNeg ? ' neg' : '');
-  }
-
-  function mostrarToast(msg, tipo) {
-    document.querySelectorAll('.dre-import-toast').forEach(function(el) { el.remove(); });
-    var div = document.createElement('div');
-    div.className = 'alert alert-' + tipo + ' dre-import-toast';
-    div.setAttribute('role', 'alert');
-    div.innerHTML = msg + ' <button class="alert-close" onclick="this.parentElement.remove()" aria-label="Fechar">&#10005;</button>';
-    var bar = document.querySelector('.dre-bar');
-    bar.parentNode.insertBefore(div, bar);
-  }
-
-  function atualizarKpi(id, val, valPrev, isPct) {
-    var card = document.getElementById(id);
-    if (!card) return;
-    var valEl  = card.querySelector('.dre-kpi-value');
-    var deltaEl = card.querySelector('.dre-kpi-delta');
-    if (valEl) {
-      valEl.textContent = isPct ? pctFmt(val) : brl(val);
-      valEl.className = 'dre-kpi-value' + (val < 0 ? ' neg' : '');
-    }
-    if (deltaEl && valPrev) {
-      var d = (val - valPrev) / valPrev;
-      deltaEl.textContent = (d >= 0 ? '↑' : '↓') + ' ' + Math.abs(d * 100).toFixed(1) + '%';
-      deltaEl.className = 'dre-kpi-delta ' + (d >= 0 ? 'up' : 'down');
-    }
-  }
-
-  function atualizarL1(secId, total, totalPrev, pct, pctPrev) {
-    var el = document.querySelector('.dre-l1[data-id="' + secId + '"]');
-    if (!el) return;
-    setCell(el.querySelector('.c2'), 'c2', brl(total), total < 0);
-    setCell(el.querySelector('.c3'), 'c3', pctFmt(pct), false);
-    setCell(el.querySelector('.c4'), 'c4', brl(totalPrev), totalPrev < 0);
-    setCell(el.querySelector('.c5'), 'c5', pctFmt(pctPrev), false);
-    var c6 = el.querySelector('.c6');
-    if (c6) c6.innerHTML = deltaHtml(total, totalPrev, false);
-  }
-
-  function atualizarL2(grpId, total, totalPrev) {
-    var el = document.querySelector('.dre-l2[data-id="' + grpId + '"]');
-    if (!el) return;
-    setCell(el.querySelector('.c2'), 'c2', brl(total), total < 0);
-    setCell(el.querySelector('.c4'), 'c4', brl(totalPrev), totalPrev < 0);
-  }
-
-  function atualizarL3(codigo, val, valPrev) {
-    var el = document.querySelector('.dre-l3[data-item="' + codigo + '"]');
-    if (!el) return;
-    setCell(el.querySelector('.c2'), 'c2', brl(val), val < 0);
-    setCell(el.querySelector('.c4'), 'c4', brl(valPrev), valPrev < 0);
-  }
-
-  function atualizarSub(key, val, valPrev, vpct, ppct, isHi) {
-    var el = document.querySelector('[data-sub="' + key + '"]');
-    if (!el) return;
-    setCell(el.querySelector('.c2'), 'c2', brl(val), !isHi && val < 0);
-    if (vpct !== undefined) setCell(el.querySelector('.c3'), 'c3', pctFmt(vpct), false);
-    setCell(el.querySelector('.c4'), 'c4', brl(valPrev), !isHi && valPrev < 0);
-    if (ppct !== undefined) setCell(el.querySelector('.c5'), 'c5', pctFmt(ppct), false);
-    var c6 = el.querySelector('.c6');
-    if (c6) c6.innerHTML = deltaHtml(val, valPrev, isHi);
-  }
-
-  function aplicarDRE(dre, drePrev, nLinhas) {
-    atualizarKpi('kpi-rb',     dre.receita_bruta,   drePrev.receita_bruta,   false);
-    atualizarKpi('kpi-margem', dre.pct_margem,      drePrev.pct_margem,      true);
-    atualizarKpi('kpi-ebitda', dre.ebitda,          drePrev.ebitda,          false);
-    atualizarKpi('kpi-ll',     dre.lucro_liquido,   drePrev.lucro_liquido,   false);
-
-    dre.sections.forEach(function(sec, i) {
-      var secP = drePrev.sections[i];
-      atualizarL1(sec.id, sec.total, secP.total, sec.pct, secP.pct);
-      sec.grupos.forEach(function(grp, j) {
-        var grpP = secP.grupos[j];
-        atualizarL2(grp.id, grp.total, grpP.total);
-        grp.itens.forEach(function(item, k) {
-          atualizarL3(item.codigo, item.val, grpP.itens[k].val);
-        });
-      });
-    });
-
-    atualizarSub('receita_liquida', dre.receita_liquida,  drePrev.receita_liquida);
-    atualizarSub('margem',          dre.margem,            drePrev.margem,           dre.pct_margem,  drePrev.pct_margem);
-    atualizarSub('ebitda',          dre.ebitda,            drePrev.ebitda,           dre.pct_ebitda,  drePrev.pct_ebitda,  true);
-    atualizarSub('depreciacao',    -dre.depreciacao,       -drePrev.depreciacao);
-    atualizarSub('ebit',            dre.ebit,              drePrev.ebit,             dre.pct_ebit,    drePrev.pct_ebit);
-    atualizarSub('lucro_antes_ir',  dre.lucro_antes_ir,    drePrev.lucro_antes_ir,   dre.pct_lajir,   drePrev.pct_lajir);
-    atualizarSub('ir_csll',        -dre.ir_csll,          -drePrev.ir_csll);
-    atualizarSub('lucro_liquido',   dre.lucro_liquido,     drePrev.lucro_liquido,    dre.pct_ll,      drePrev.pct_ll,      true);
-    atualizarSub('fluxo_acionista', dre.fluxo_acionista,   drePrev.fluxo_acionista);
-    atualizarSub('fluxo_livre',     dre.fluxo_livre,       drePrev.fluxo_livre,      undefined,       undefined,           true);
-
-    mostrarToast('Dados do DRE atualizados — ' + nLinhas + ' linhas importadas', 'ok');
-  }
-
-  function processarArquivo(file) {
-    if (typeof XLSX === 'undefined') {
-      mostrarToast('Biblioteca de leitura não carregada. Recarregue a página e tente novamente.', 'erro');
-      return;
-    }
-    var mesEl = document.querySelector('[name="mes"]');
-    var mes   = mesEl ? parseInt(mesEl.value, 10) : new Date().getMonth() + 1;
-    var anoEl = document.getElementById('inp-ano');
-    var ano   = anoEl ? parseInt(anoEl.value, 10) : new Date().getFullYear();
-    var acuEl = document.querySelector('[name="acumulado"]');
-    var acumulado = acuEl && acuEl.checked ? 1 : 0;
-
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        var data = new Uint8Array(e.target.result);
-        var wb   = XLSX.read(data, { type: 'array', cellDates: true });
-        var ws   = wb.Sheets[wb.SheetNames[0]];
-        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-
-        var cols = detectarColunas(rows);
-
-        if (cols.aviso) {
-          mostrarToast('Campo não encontrado na planilha: ' + cols.aviso + '. Verifique os cabeçalhos.', 'erro');
-          if (cols.iCodigo === undefined || cols.iValor === undefined) return;
-        }
-
-        var lancamentos = [];
-        var vistos = {};
-        for (var i = cols.dataStart; i < rows.length; i++) {
-          var row = rows[i];
-          if (!row || row[0] == null) continue;
-
-          var codRaw = String(row[cols.iCodigo] || '').trim();
-          var cod = codRaw.indexOf(' - ') !== -1 ? codRaw.split(' - ')[0].trim() : codRaw;
-          if (!cod) continue;
-
-          var dt = cols.iData !== undefined ? parseData(row[cols.iData]) : null;
-          if (!dt) continue;
-
-          var valorRaw = row[cols.iValor];
-          var valor = typeof valorRaw === 'number'
-            ? valorRaw
-            : parseFloat(String(valorRaw || '0').replace(/\./g, '').replace(',', '.'));
-          if (isNaN(valor)) continue;
-
-          var num = (cols.iNum !== undefined && row[cols.iNum]) ? String(row[cols.iNum]).trim() : '';
-          var chave = num + '|' + cod;
-          if (num && vistos[chave]) continue;
-          if (num) vistos[chave] = true;
-
-          lancamentos.push({
-            codigo: cod,
-            dt: dt.getFullYear() + '-' +
-                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
-                String(dt.getDate()).padStart(2, '0'),
-            num: num,
-            valor: valor
-          });
-        }
-
-        if (!lancamentos.length) {
-          mostrarToast('Nenhum lançamento válido encontrado no arquivo.', 'erro');
-          return;
-        }
-
-        var btn = document.getElementById('btn-importar-dre');
-        if (btn) { btn.disabled = true; btn.textContent = 'Calculando…'; }
-
-        fetch('/dre/api/recalcular', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lancamentos: lancamentos, mes: mes, ano: ano, acumulado: acumulado })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(resp) {
-          if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importar Planilha'; }
-          if (resp.ok) {
-            aplicarDRE(resp.dre, resp.dre_prev, lancamentos.length);
-          } else {
-            mostrarToast('Erro ao calcular DRE: ' + (resp.erro || 'erro desconhecido'), 'erro');
-          }
-        })
-        .catch(function(err) {
-          if (btn) { btn.disabled = false; btn.textContent = 'Importar Planilha'; }
-          mostrarToast('Erro de comunicação: ' + err.message, 'erro');
-        });
-
-      } catch(err) {
-        mostrarToast('Erro ao ler arquivo: ' + err.message, 'erro');
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  var importInput = document.getElementById('dre-import-file');
-  if (importInput) {
-    importInput.addEventListener('change', function() {
-      if (this.files && this.files[0]) {
-        processarArquivo(this.files[0]);
-        this.value = '';
-      }
-    });
-  }
-})();
+function toggleGrupo(header) {
+  var itens = header.nextElementSibling;
+  itens.classList.toggle('open');
+}
 </script>
 {% endblock %}

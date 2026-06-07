@@ -3304,20 +3304,26 @@ _DRE_LAYOUT = [
 
 
 def _dre_ler_lancamentos():
+    """
+    Lê arquivos 'Lançamentos por natureza*.xlsx' da pasta planilhas/dre/.
+    Formato esperado (exportação do sistema):
+      row 1-4: cabeçalho/filtros
+      row 5:   Tipo | Descrição | Data de Vencimento | Natureza | Valor alocado | Confirmado por
+      row 6+:  dados
+    """
     import openpyxl
 
-    base = Path(__file__).resolve().parent
-    pasta = base / "planilhas" / "dre"
-
-    arquivos = sorted(pasta.glob("*.xlsx")) if pasta.is_dir() else []
+    pasta = Path(__file__).resolve().parent / "planilhas" / "dre"
+    arquivos = [p for p in sorted(pasta.glob("*.xlsx")) if "lancamento" in p.name.lower() or "lançamento" in p.name.lower()]
     if not arquivos:
         return []
 
-    def _split(s):
-        if ' - ' in s:
-            a, b = s.split(' - ', 1)
-            return a.strip(), b.strip()
-        return s.strip(), s.strip()
+    def _parse_natureza(raw):
+        s = str(raw or "").strip()
+        if " - " in s:
+            cod, label = s.split(" - ", 1)
+            return cod.strip(), label.strip()
+        return s, s
 
     def _ler_arquivo(path):
         registros = []
@@ -3326,31 +3332,99 @@ def _dre_ler_lancamentos():
             ws = wb.active
             rows = list(ws.iter_rows(values_only=True))
             wb.close()
-            for row in rows[5:]:
-                if not row[0]:
+            for row in rows[5:]:           # pula 5 linhas de cabeçalho
+                tipo = str(row[0] or "").strip().upper()
+                if tipo not in ("ENTRADA", "SAÍDA", "SAIDA"):
                     continue
-                dt    = row[3]
-                valor = row[9]
-                if not isinstance(dt, datetime) or not isinstance(valor, (int, float)):
+                descricao = str(row[1] or "").strip()
+                dt_raw    = row[2]
+                nat_raw   = row[3]
+                val_raw   = row[4]
+
+                # data
+                if isinstance(dt_raw, datetime):
+                    dt = dt_raw
+                elif isinstance(dt_raw, str):
+                    try:
+                        dt = datetime.fromisoformat(dt_raw[:10])
+                    except Exception:
+                        continue
+                else:
                     continue
-                cod, _ = _split(str(row[2]) if row[2] else "")
-                num = str(row[6]).strip() if row[6] else ""
-                registros.append({"num": num, "codigo": cod, "dt": dt, "valor": float(valor)})
+
+                # valor
+                try:
+                    valor = float(str(val_raw).replace(",", ".").replace(" ", ""))
+                except Exception:
+                    continue
+
+                cod, nat_label = _parse_natureza(nat_raw)
+                registros.append({
+                    "tipo":      tipo,
+                    "descricao": descricao,
+                    "dt":        dt,
+                    "codigo":    cod,
+                    "natureza":  nat_label,
+                    "valor":     abs(valor) * (-1 if tipo in ("SAÍDA", "SAIDA") else 1),
+                })
         except Exception:
-            pass
+            import traceback; traceback.print_exc()
         return registros
 
-    # Combina todos os arquivos e deduplica por (número do lançamento, código de natureza)
     vistos = set()
     result = []
     for arq in sorted(arquivos, key=lambda p: p.stat().st_mtime):
         for reg in _ler_arquivo(arq):
-            chave = (reg["num"], reg["codigo"])
+            chave = (reg["descricao"], reg["dt"].date(), reg["codigo"])
             if chave in vistos:
                 continue
             vistos.add(chave)
             result.append(reg)
     return result
+
+
+# Regras para AJUSTES DE NATUREZA:
+# keywords na descrição → prefixo de natureza esperado
+_NATUREZA_KEYWORDS = [
+    (["combustível","gasolina","etanol","abastec","posto"],          "02.02.03"),
+    (["manutenção","revisão","mecânic","borracharia","lanternagem",
+      "funilaria","compra de peç","troca de óleo","filtro","pneu"], "02.02.05"),
+    (["seguro","seguradora","apólice"],                              "02.02.04"),
+    (["multa","infração","infracao","detran","autuação"],            "02.02.06"),
+    (["ipva","licenciamento","dpvat","crlv"],                        "02.02.07"),
+    (["salário","salario","folha","holerite","férias","fgts",
+      "inss","rescisão"],                                            "02.01"),
+    (["aluguel","locação de veículo","locacao de veiculo"],          "01.01"),
+    (["das","simples nacional","imposto","iss","pis","cofins"],      "03.01"),
+    (["financiamento","parcela","banco","bradesco","itaú","itau",
+      "sicredi","santander","caixa econômica","bndes"],              "02.03"),
+    (["distribuição de lucro","distribui","pro-labore","pró-labore"],"04.04.01"),
+    (["aporte","capital social"],                                    "04.04.01.003"),
+    (["reembolso"],                                                  "04.04.02"),
+]
+
+def _dre_ajustes_natureza(lancamentos):
+    """
+    Para cada lançamento, verifica se a descrição sugere uma natureza diferente da atribuída.
+    Retorna lista de itens suspeitos com sugestão.
+    """
+    suspeitos = []
+    for l in lancamentos:
+        desc_lower = l["descricao"].lower()
+        for keywords, prefixo_esperado in _NATUREZA_KEYWORDS:
+            if any(kw in desc_lower for kw in keywords):
+                cod = l["codigo"]
+                if not cod.startswith(prefixo_esperado):
+                    suspeitos.append({
+                        "descricao":        l["descricao"],
+                        "natureza_atual":   f"{l['codigo']} - {l['natureza']}",
+                        "prefixo_sugerido": prefixo_esperado,
+                        "dt":               l["dt"].strftime("%d/%m/%Y"),
+                        "valor_s":          _brl(abs(l["valor"])),
+                        "tipo":             l["tipo"],
+                    })
+                break
+    return suspeitos
 
 
 def _dre_calcular(lancamentos):
@@ -3546,7 +3620,10 @@ def _calcular_indicadores_ativuz():
 @app.route("/dre")
 def pagina_dre():
     from calendar import monthrange
+    from collections import defaultdict
     hoje = datetime.now(_BRT)
+    aba  = request.args.get("aba", "caixa")  # "caixa" | "ajustes"
+
     try:
         mes = int(request.args.get("mes", hoje.month))
         ano = int(request.args.get("ano", hoje.year))
@@ -3555,45 +3632,47 @@ def pagina_dre():
     except (ValueError, TypeError):
         mes, ano = hoje.month, hoje.year
 
-    acumulado = request.args.get("acumulado", "0") == "1"
-
-    # Build current period date range
-    if acumulado:
-        d_ini = datetime(ano, 1, 1)
-        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
-    else:
-        d_ini = datetime(ano, mes, 1)
-        d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
-
-    # Build previous period date range (previous month, or same period -1 year for acumulado)
-    if acumulado:
-        d_ini_prev = datetime(ano - 1, 1, 1)
-        d_fim_prev = datetime(ano - 1, mes, monthrange(ano - 1, mes)[1], 23, 59, 59)
-    else:
-        prev_mes = mes - 1 if mes > 1 else 12
-        prev_ano = ano if mes > 1 else ano - 1
-        d_ini_prev = datetime(prev_ano, prev_mes, 1)
-        d_fim_prev = datetime(prev_ano, prev_mes, monthrange(prev_ano, prev_mes)[1], 23, 59, 59)
-
     todos = _dre_ler_lancamentos()
-
-    def _filtrar(d0, d1):
-        return [l for l in todos if d0 <= l["dt"] <= d1]
-
-    dre_atual = _dre_calcular(_filtrar(d_ini, d_fim))
-    dre_prev  = _dre_calcular(_filtrar(d_ini_prev, d_fim_prev))
-
     meses_disponiveis = sorted({(l["dt"].year, l["dt"].month) for l in todos})
+
+    # ── REGIME DE CAIXA ──────────────────────────────────────────────
+    d_ini = datetime(ano, mes, 1)
+    d_fim = datetime(ano, mes, monthrange(ano, mes)[1], 23, 59, 59)
+    filtrados = [l for l in todos if d_ini <= l["dt"] <= d_fim]
+
+    entradas = [l for l in filtrados if l["tipo"] == "ENTRADA"]
+    saidas   = [l for l in filtrados if l["tipo"] in ("SAÍDA", "SAIDA")]
+
+    def _agrupar(lancamentos):
+        grupos = defaultdict(lambda: {"natureza": "", "valor": 0.0, "itens": []})
+        for l in lancamentos:
+            chave = l["codigo"]
+            grupos[chave]["natureza"] = l["natureza"] or l["codigo"]
+            grupos[chave]["valor"]   += abs(l["valor"])
+            grupos[chave]["itens"].append(l)
+        return sorted(grupos.values(), key=lambda g: -g["valor"])
+
+    grupos_entrada = _agrupar(entradas)
+    grupos_saida   = _agrupar(saidas)
+    total_entrada  = sum(abs(l["valor"]) for l in entradas)
+    total_saida    = sum(abs(l["valor"]) for l in saidas)
+    resultado      = total_entrada - total_saida
+
+    # ── AJUSTES DE NATUREZA ──────────────────────────────────────────
+    ajustes = _dre_ajustes_natureza(todos)
 
     return render_template("dre.html",
         active="dre",
-        dre=dre_atual,
-        dre_prev=dre_prev,
+        aba=aba,
         mes=mes, ano=ano,
-        acumulado=acumulado,
         meses_disponiveis=meses_disponiveis,
-        label_atual=_nome_mes_label(mes, ano, acumulado),
-        label_prev=_nome_mes_label(d_ini_prev.month, d_ini_prev.year, acumulado),
+        grupos_entrada=grupos_entrada,
+        grupos_saida=grupos_saida,
+        total_entrada=total_entrada,
+        total_saida=total_saida,
+        resultado=resultado,
+        ajustes=ajustes,
+        sem_dados=len(todos) == 0,
     )
 
 
