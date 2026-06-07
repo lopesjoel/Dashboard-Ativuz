@@ -3606,7 +3606,7 @@ _DRE_DISPLAY_PLAN = [
     {"t":"group","bucket":"ded","cod":"02.01.01","label":"IMPOSTOS","contas":[
         ("02.01.01.001","PIS"),("02.01.01.005","SIMPLES NACIONAL"),("02.01.01.006","OUTROS IMPOSTOS"),
     ]},
-    {"t":"account","bucket":"ded","cod":"01.01.02.008","label":"(-) DESCONTO CONCEDIDO A CLIENTES"},
+    {"t":"account","bucket":"ded","cod":"01.01.02.008","label":"(-) DESCONTO CONCEDIDO A CLIENTES","invert":True},
     {"t":"subtotal","label":"RECEITA OPERACIONAL LÍQUIDA","buckets":["rob","ded"]},
 
     # ── CUSTOS ────────────────────────────────────────────────────────
@@ -3832,6 +3832,8 @@ def _dre_montar_estrutura(lancamentos, ano, mes):
             ls  = por_codigo.get(cod, [])
             codigos_usados.add(cod)
             val = sum(l["valor"] for l in ls)
+            if bloco.get("invert"):
+                val = -val
             buckets[bloco["bucket"]] += val
             rows.append({
                 "tipo": "account", "cod": cod, "label": bloco["label"],
