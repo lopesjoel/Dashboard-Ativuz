@@ -854,9 +854,10 @@ def dashboard():
     try:
         lista_contratos, _ = _ler_contratos()
         ativos_lst = [c for c in lista_contratos if c['situacao'] == 'EM ANDAMENTO']
-        contratos_ativos = len(ativos_lst)
+        ativos_filtrados = [c for c in ativos_lst if not _excluir_app(c)]
+        contratos_ativos = len(ativos_filtrados)
         total_contratos_planilha = len(lista_contratos)
-        s = sum(c['valor_locacao'] for c in ativos_lst)
+        s = sum(c['valor_locacao'] for c in ativos_filtrados)
         if s > 0:
             receita_mensal_real = s
         ct_app = sum(
