@@ -844,7 +844,13 @@ def dashboard():
     ct_app = 0
     ct_terceirizacao = 0
     receita_semanal_app = None
-    _PLACAS_EXCLUIR = {"TWS", "QGO"}
+    _MODELOS_EXCLUIR = {"DOLPHIN", "POLO"}
+    _PLACA_EXCLUIR   = "QGO-2H58"
+    def _excluir_app(c):
+        modelo = (c.get('modelo') or '').upper()
+        placa  = (c.get('placa')  or '').upper().replace(' ', '')
+        return (any(m in modelo for m in _MODELOS_EXCLUIR)
+                or placa == _PLACA_EXCLUIR.upper().replace(' ', ''))
     try:
         lista_contratos, _ = _ler_contratos()
         ativos_lst = [c for c in lista_contratos if c['situacao'] == 'EM ANDAMENTO']
@@ -853,13 +859,17 @@ def dashboard():
         s = sum(c['valor_locacao'] for c in ativos_lst)
         if s > 0:
             receita_mensal_real = s
-        ct_app = sum(1 for c in ativos_lst if 'MOTOR' in (c.get('tipo_contrato') or '').upper())
+        ct_app = sum(
+            1 for c in ativos_lst
+            if 'MOTOR' in (c.get('tipo_contrato') or '').upper()
+            and not _excluir_app(c)
+        )
         ct_terceirizacao = sum(1 for c in ativos_lst if 'TERCEI' in (c.get('tipo_contrato') or '').upper())
         _rec_sem = sum(
             c.get('valor_locacao') or 0
             for c in ativos_lst
             if 'MOTOR' in (c.get('tipo_contrato') or '').upper()
-            and not any((c.get('placa') or '').upper().startswith(p) for p in _PLACAS_EXCLUIR)
+            and not _excluir_app(c)
         )
         if _rec_sem > 0:
             receita_semanal_app = _rec_sem
