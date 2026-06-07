@@ -3919,6 +3919,25 @@ def _dre_montar_estrutura(lancamentos, ano, mes):
                 }],
             })
 
+    # Calcula % sobre ROB para cada linha com valor
+    rob = next(
+        (r["valor"] for r in rows
+         if r["tipo"] == "subtotal" and "OPERACIONAL BRUTA" in r.get("label", "")),
+        0.0
+    )
+    for r in rows:
+        v = None
+        if r["tipo"] == "subtotal":
+            v = r.get("valor")
+        elif r["tipo"] == "group":
+            v = r.get("net")
+        elif r["tipo"] in ("account",):
+            v = r.get("valor")
+        if v is not None and rob:
+            r["pct_rob"] = v / rob * 100
+        else:
+            r["pct_rob"] = None
+
     return rows
 
 

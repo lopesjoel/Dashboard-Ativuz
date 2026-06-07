@@ -78,6 +78,11 @@
 .dre-nat-val.pos { color:#16a34a; }
 .dre-nat-val.neg { color:#dc2626; }
 .dre-nat-val.zer { color:var(--ink-3); opacity:.5; }
+.dre-pct-rob {
+  font-size:10px; font-weight:600; color:var(--ink-3);
+  white-space:nowrap; min-width:48px; text-align:right;
+  font-variant-numeric:tabular-nums;
+}
 
 /* Lançamentos individuais */
 .dre-lancs { display:none; }
@@ -187,6 +192,7 @@
 {% else %}
 
 {# ════════════════════ MACRO ════════════════════ #}
+{% macro pct_badge(row) %}{% if row.pct_rob is not none %}<span class="dre-pct-rob">{{ "%.1f"|format(row.pct_rob)|replace(".",",") }}%</span>{% else %}<span class="dre-pct-rob"></span>{% endif %}{% endmacro %}
 {% macro render_dre(rows, aba_id) %}
 <div class="dre-bar">
   <form method="get" style="display:flex;gap:10px;align-items:center;">
@@ -222,6 +228,7 @@
   <div class="dre-group-hdr" onclick="toggleGrupo('{{ gid }}')">
     <span class="dre-chevron" id="chev-{{ gid }}">▶</span>
     <span class="dre-group-nome">{{ row.label }}<span class="dre-group-cod">{{ row.cod }}</span></span>
+    {{ pct_badge(row) }}
     <span class="dre-group-val {{ cls }}">{{ net | abs | brl }}</span>
   </div>
   <div class="dre-nats" id="{{ gid }}">
@@ -261,6 +268,7 @@
 <div class="dre-account">
   <span class="dre-account-nome">{{ row.label }}</span>
   <span class="dre-account-cod">{{ row.cod }}</span>
+  {{ pct_badge(row) }}
   <span class="dre-group-val {{ cls }}" style="margin-left:auto;">{{ v | abs | brl }}</span>
 </div>
 
@@ -270,6 +278,7 @@
 {% set cls = 'pos' if v > 0 else ('neg' if v < 0 else 'zer') %}
 <div class="dre-subtotal">
   <span class="dre-subtotal-nome">{{ row.label }}</span>
+  {{ pct_badge(row) }}
   <span class="dre-subtotal-val {{ cls }}">{{ v | brl }}</span>
 </div>
 
