@@ -2233,18 +2233,30 @@ const _detalhe = [
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
       </svg>
-      Linha do Tempo — Inadimplência Diária
+      Evolução Semanal — Quartas-feiras
     </div>
-    <div class="lt-actions">
-      <button class="btn btn-secondary btn-sm" onclick="ltOpenModal()">
-        + Adicionar dia anterior
-      </button>
-      <button class="btn btn-secondary btn-sm" id="lt-labels-btn" onclick="ltToggleLabels()">
-        Mostrar Valores
-      </button>
-      <button class="btn btn-primary btn-sm" id="lt-snap-btn" onclick="ltSaveSnapshot()">
-        Salvar hoje
-      </button>
+    <div class="lt-actions" style="gap:10px;">
+      <button class="btn btn-secondary btn-sm" onclick="ltOpenModal()">+ Adicionar dia anterior</button>
+      <button class="btn btn-secondary btn-sm" id="lt-labels-btn" onclick="ltToggleLabels()">Mostrar Valores</button>
+      <button class="btn btn-primary btn-sm" id="lt-snap-btn" onclick="ltSaveSnapshot()">Salvar hoje</button>
+    </div>
+  </div>
+
+  <!-- Resumo rápido da última quarta -->
+  <div id="lt-resumo" style="display:none; margin:14px 0 4px;
+       background:var(--surface-2); border:1px solid var(--line); border-radius:10px;
+       padding:12px 18px; align-items:center; gap:24px; flex-wrap:wrap;">
+    <div>
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);margin-bottom:3px;">Última Quarta</div>
+      <div id="lt-resumo-data" style="font-size:0.85rem;font-weight:600;color:var(--ink);">—</div>
+    </div>
+    <div>
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);margin-bottom:3px;">Valor</div>
+      <div id="lt-resumo-valor" style="font-size:1.1rem;font-weight:700;color:#dc2626;">—</div>
+    </div>
+    <div>
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);margin-bottom:3px;">Variação vs. quarta anterior</div>
+      <div id="lt-resumo-var" style="font-size:1rem;font-weight:700;">—</div>
     </div>
   </div>
 
@@ -2262,6 +2274,7 @@ const _detalhe = [
           <th>Data</th>
           <th>Casos</th>
           <th>Valor Total</th>
+          <th>Variação</th>
           <th></th>
         </tr>
       </thead>
@@ -2294,91 +2307,82 @@ const _detalhe = [
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
 (function () {
-  var _chart        = null;
-  var _snapshots    = [];
-  var _labelsOn     = false;
+  var _chart    = null;
+  var _labelsOn = false;
 
   function _brl(v) {
-    return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   }
 
-  var WEEK_COLORS = ['#FF4713', '#1d4ed8', '#16a34a', '#9333ea'];
-  var DIAS_LABEL  = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  function _isQuarta(isoDate) {
+    var p = isoDate.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]).getDay() === 3;
+  }
 
-  function mondayOf(isoDate) {
-    var parts = isoDate.split('-');
-    var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-    d.setDate(d.getDate() - (d.getDay() + 6) % 7); // recua à segunda
-    return d.toISOString().slice(0, 10);
+  function _fmtCurta(isoDate) {
+    var p = isoDate.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+
+  function _varHtml(cur, prev) {
+    if (prev == null) return '<span style="color:#94a3b8;">—</span>';
+    var diff = cur - prev;
+    var pct  = prev !== 0 ? Math.abs(diff / prev * 100).toFixed(1) : '∞';
+    if (diff > 0) return '<span style="color:#dc2626;">↑ ' + _brl(diff) + ' (' + pct + '%)</span>';
+    if (diff < 0) return '<span style="color:#16a34a;">↓ ' + _brl(Math.abs(diff)) + ' (' + pct + '%)</span>';
+    return '<span style="color:#94a3b8;">= sem variação</span>';
   }
 
   function renderChart(rows) {
-    // Agrupa por semana (chave = segunda), mapeia valor por dia — Seg=0 … Dom=6
-    var weekMap = {};
-    rows.forEach(function(r) {
-      var wk    = mondayOf(r.semana);
-      var parts = r.semana.split('-');
-      var d     = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-      var idx   = (d.getDay() + 6) % 7; // Seg=0, Ter=1 … Dom=6
-      if (!weekMap[wk]) weekMap[wk] = new Array(7).fill(null);
-      weekMap[wk][idx] = parseFloat(r.total_valor);
-    });
-
-    var weekKeys = Object.keys(weekMap).sort();
-    var datasets = weekKeys.map(function(wk, i) {
-      var parts = wk.split('-');
-      var d  = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-      var dd = String(d.getDate()).padStart(2, '0');
-      var mm = String(d.getMonth() + 1).padStart(2, '0');
-      var c  = WEEK_COLORS[i % WEEK_COLORS.length];
-      return {
-        label:           'Sem. ' + dd + '/' + mm,
-        data:            weekMap[wk],
-        backgroundColor: c + 'bb',
-        borderColor:     c,
-        borderWidth:     1.5,
-        borderRadius:    5,
-        borderSkipped:   false,
-      };
-    });
+    var quartas = rows.filter(function(r) { return _isQuarta(r.semana); })
+                      .sort(function(a, b) { return a.semana.localeCompare(b.semana); });
+    var labels  = quartas.map(function(r) { return _fmtCurta(r.semana); });
+    var valores = quartas.map(function(r) { return parseFloat(r.total_valor); });
 
     var ctx = document.getElementById('lt-chart').getContext('2d');
     if (_chart) { _chart.destroy(); }
     _chart = new Chart(ctx, {
-      type: 'bar',
-      data: { labels: DIAS_LABEL, datasets: datasets },
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Inadimplência (Qua)',
+          data: valores,
+          borderColor: '#FF4713',
+          backgroundColor: 'rgba(255,71,19,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#FF4713',
+          tension: 0.3,
+          fill: true,
+        }]
+      },
       plugins: [ChartDataLabels],
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 14 } },
+          legend: { display: false },
           tooltip: {
             callbacks: {
-              label: function(ctx) {
-                if (ctx.parsed.y === null) return null;
-                return ' ' + ctx.dataset.label + ': ' + _brl(ctx.parsed.y);
-              }
+              label: function(ctx) { return ' ' + _brl(ctx.parsed.y); }
             }
           },
           datalabels: {
             display: false,
             anchor: 'end',
-            align: 'end',
-            offset: 2,
-            rotation: -90,
-            formatter: function(value) {
-              if (value === null) return null;
-              return value >= 1000 ? 'R$' + (value / 1000).toFixed(1) + 'k' : 'R$' + value.toFixed(0);
+            align: 'top',
+            formatter: function(v) {
+              return v >= 1000 ? 'R$' + (v / 1000).toFixed(1) + 'k' : _brl(v);
             },
-            font: { size: 8, weight: '700' },
-            color: function(ctx) { return ctx.dataset.borderColor; },
-            clip: false,
+            font: { size: 9, weight: '700' },
+            color: '#FF4713',
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 45 } },
           y: {
             ticks: {
               font: { size: 10 },
@@ -2389,7 +2393,7 @@ const _detalhe = [
             grid: { color: 'rgba(0,0,0,0.05)' }
           }
         },
-        layout: { padding: { top: 20 } }
+        layout: { padding: { top: 16 } }
       }
     });
   }
@@ -2401,98 +2405,104 @@ const _detalhe = [
       _chart.options.plugins.datalabels.display = _labelsOn;
       _chart.update();
     }
-    btn.textContent = _labelsOn ? 'Ocultar Valores' : 'Mostrar Valores';
-    btn.style.background = _labelsOn ? '#FF4713' : '';
-    btn.style.color      = _labelsOn ? '#fff' : '';
+    btn.textContent   = _labelsOn ? 'Ocultar Valores' : 'Mostrar Valores';
+    btn.style.background  = _labelsOn ? '#FF4713' : '';
+    btn.style.color       = _labelsOn ? '#fff' : '';
     btn.style.borderColor = _labelsOn ? '#FF4713' : '';
   };
 
   function renderTable(rows) {
-    var tbody = document.getElementById('lt-table-body');
+    var tbody  = document.getElementById('lt-table-body');
     tbody.innerHTML = '';
-    rows.slice().reverse().forEach(function(r) {
-      var tr = document.createElement('tr');
+    var sorted = rows.slice().sort(function(a, b) { return b.semana.localeCompare(a.semana); });
+    sorted.forEach(function(r, i) {
+      var prev  = sorted[i + 1] ? parseFloat(sorted[i + 1].total_valor) : null;
+      var cur   = parseFloat(r.total_valor);
+      var isQua = _isQuarta(r.semana);
+      var tr    = document.createElement('tr');
+      if (isQua) tr.style.background = 'rgba(255,71,19,0.06)';
       tr.innerHTML =
-        '<td>' + r.semana_fmt + '</td>' +
+        '<td style="font-weight:' + (isQua ? '700' : '400') + ';">' +
+          r.semana_fmt + (isQua ? ' <span style="font-size:0.65rem;color:#FF4713;font-weight:700;">QUA</span>' : '') +
+        '</td>' +
         '<td class="td-val">' + r.total_casos + '</td>' +
-        '<td class="td-val">' + _brl(r.total_valor) + '</td>' +
+        '<td class="td-val">' + _brl(cur) + '</td>' +
+        '<td class="td-val">' + _varHtml(cur, prev) + '</td>' +
         '<td><button class="lt-del-btn" title="Remover" onclick="ltDelete(\'' + r.semana + '\',this)">&#10005;</button></td>';
       tbody.appendChild(tr);
     });
+  }
+
+  function renderResumo(rows) {
+    var quartas = rows.filter(function(r) { return _isQuarta(r.semana); })
+                      .sort(function(a, b) { return b.semana.localeCompare(a.semana); });
+    var el = document.getElementById('lt-resumo');
+    if (!quartas.length) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    var ult = quartas[0];
+    var ant = quartas[1] || null;
+    document.getElementById('lt-resumo-data').textContent  = ult.semana_fmt;
+    document.getElementById('lt-resumo-valor').textContent = _brl(parseFloat(ult.total_valor));
+    document.getElementById('lt-resumo-var').innerHTML = ant
+      ? _varHtml(parseFloat(ult.total_valor), parseFloat(ant.total_valor))
+      : '<span style="color:#94a3b8;">Primeira quarta registrada</span>';
   }
 
   function loadHistorico() {
     fetch('/inadimplencia/historico')
       .then(function(r){ return r.json(); })
       .then(function(rows) {
-        _snapshots = rows;
         var emptyEl = document.getElementById('lt-empty-msg');
         var wrapEl  = document.getElementById('lt-chart-wrap');
         var tableEl = document.getElementById('lt-table-wrap');
         if (!rows || rows.length === 0) {
-          emptyEl.textContent = 'Nenhum snapshot salvo ainda. Clique em "Salvar hoje" para começar.';
+          emptyEl.textContent   = 'Nenhum snapshot salvo ainda. Clique em "Salvar hoje" para começar.';
           emptyEl.style.display = '';
           wrapEl.style.display  = 'none';
           tableEl.style.display = 'none';
+          document.getElementById('lt-resumo').style.display = 'none';
         } else {
           emptyEl.style.display = 'none';
           wrapEl.style.display  = '';
           tableEl.style.display = '';
-          // requestAnimationFrame garante que o canvas já tem dimensões antes do Chart.js inicializar
           requestAnimationFrame(function() {
-            try {
-              renderChart(rows);
-              renderTable(rows);
-            } catch(e) {
-              emptyEl.textContent    = 'Erro ao renderizar gráfico: ' + e.message;
-              emptyEl.style.display  = '';
-              wrapEl.style.display   = 'none';
+            try { renderChart(rows); renderTable(rows); renderResumo(rows); }
+            catch(e) {
+              emptyEl.textContent   = 'Erro ao renderizar: ' + e.message;
+              emptyEl.style.display = '';
+              wrapEl.style.display  = 'none';
             }
           });
         }
       })
-      .catch(function(e) {
-        var el = document.getElementById('lt-empty-msg');
-        el.textContent    = 'Erro ao carregar histórico.';
-        el.style.display  = '';
+      .catch(function() {
+        document.getElementById('lt-empty-msg').textContent = 'Erro ao carregar histórico.';
       });
   }
 
   window.ltSaveSnapshot = function() {
     var btn = document.getElementById('lt-snap-btn');
     var msg = document.getElementById('lt-snap-msg');
-    btn.disabled = true;
-    btn.textContent = 'Salvando...';
-    msg.className   = 'lt-msg';
-    msg.textContent = '';
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    msg.className = 'lt-msg'; msg.textContent = '';
     fetch('/inadimplencia/snapshot', { method: 'POST' })
       .then(function(r){ return r.json(); })
       .then(function(d) {
-        btn.disabled = false;
-        btn.textContent = 'Salvar hoje';
-        if (d.ok) {
-          msg.className = 'lt-msg';
-          msg.textContent = d.msg;
-          loadHistorico();
-        } else {
-          msg.className = 'lt-msg err';
-          msg.textContent = d.erro || 'Erro ao salvar.';
-        }
+        btn.disabled = false; btn.textContent = 'Salvar hoje';
+        if (d.ok) { msg.className = 'lt-msg'; msg.textContent = d.msg; loadHistorico(); }
+        else { msg.className = 'lt-msg err'; msg.textContent = d.erro || 'Erro ao salvar.'; }
       })
       .catch(function() {
-        btn.disabled = false;
-        btn.textContent = 'Salvar hoje';
-        msg.className = 'lt-msg err';
-        msg.textContent = 'Erro de conexão.';
+        btn.disabled = false; btn.textContent = 'Salvar hoje';
+        msg.className = 'lt-msg err'; msg.textContent = 'Erro de conexão.';
       });
   };
 
   window.ltOpenModal = function() {
     document.getElementById('lt-modal-overlay').classList.add('open');
     document.getElementById('lt-m-msg').textContent = '';
-    document.getElementById('lt-m-msg').className = 'lt-msg';
+    document.getElementById('lt-m-msg').className   = 'lt-msg';
   };
-
   window.ltCloseModal = function() {
     document.getElementById('lt-modal-overlay').classList.remove('open');
   };
@@ -2502,13 +2512,9 @@ const _detalhe = [
     var casos  = document.getElementById('lt-m-casos').value;
     var valor  = document.getElementById('lt-m-valor').value;
     var msg    = document.getElementById('lt-m-msg');
-
     if (!semana || casos === '' || valor === '') {
-      msg.className = 'lt-msg err';
-      msg.textContent = 'Preencha data, casos e valor.';
-      return;
+      msg.className = 'lt-msg err'; msg.textContent = 'Preencha data, casos e valor.'; return;
     }
-
     fetch('/inadimplencia/historico/manual', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2516,24 +2522,14 @@ const _detalhe = [
     })
     .then(function(r){ return r.json(); })
     .then(function(d) {
-      if (d.ok) {
-        msg.className = 'lt-msg';
-        msg.textContent = 'Semana ' + d.semana_fmt + ' salva!';
-        loadHistorico();
-        setTimeout(ltCloseModal, 900);
-      } else {
-        msg.className = 'lt-msg err';
-        msg.textContent = d.erro || 'Erro ao salvar.';
-      }
+      if (d.ok) { msg.className = 'lt-msg'; msg.textContent = 'Salvo: ' + d.semana_fmt; loadHistorico(); setTimeout(ltCloseModal, 900); }
+      else { msg.className = 'lt-msg err'; msg.textContent = d.erro || 'Erro.'; }
     })
-    .catch(function() {
-      msg.className = 'lt-msg err';
-      msg.textContent = 'Erro de conexão.';
-    });
+    .catch(function() { msg.className = 'lt-msg err'; msg.textContent = 'Erro de conexão.'; });
   };
 
   window.ltDelete = function(semana, btn) {
-    if (!confirm('Remover snapshot da semana ' + semana + '?')) return;
+    if (!confirm('Remover snapshot de ' + semana + '?')) return;
     fetch('/inadimplencia/historico/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2541,14 +2537,13 @@ const _detalhe = [
     })
     .then(function(r){ return r.json(); })
     .then(function(d) {
-      if (d.ok) { loadHistorico(); }
-      else { alert('Erro: ' + (d.erro || 'não foi possível remover.')); }
+      if (d.ok) loadHistorico();
+      else alert('Erro: ' + (d.erro || 'não foi possível remover.'));
     });
   };
 
   loadHistorico();
 })();
-</script>
 
 </div><!-- /inad-tab-timeline -->
 
