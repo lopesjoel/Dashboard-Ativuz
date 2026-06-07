@@ -286,7 +286,7 @@
     </div>
     <div class="d-kpi-label">Inadimplência</div>
     {% if inad %}
-    <div class="d-kpi-value sm danger">R$ {{ inad.total_s }}</div>
+    <div class="d-kpi-value sm danger">{{ inad.total_orig_s }}</div>
     <div class="d-kpi-sub">{{ inad.casos }} caso{{ 's' if inad.casos != 1 else '' }} em aberto</div>
     {% else %}
     <div class="d-kpi-value sm">—</div>
@@ -337,10 +337,10 @@
     <div class="d-kpi-label">Carteira Judicializada</div>
     {% if jud_processos > 0 %}
     <div class="d-kpi-value">{{ jud_processos }}</div>
-    <div class="d-kpi-sub">{% if jud_valor %}R$ {{ jud_valor | brl }} em disputa{% else %}processo{{ 's' if jud_processos != 1 else '' }} ativo{{ 's' if jud_processos != 1 else '' }}{% endif %}</div>
+    <div class="d-kpi-sub">{% if jud_valor %}{{ jud_valor | brl }} ajuizado{{ 's' if jud_processos != 1 else '' }}{% else %}caso{{ 's' if jud_processos != 1 else '' }} ajuizado{{ 's' if jud_processos != 1 else '' }}{% endif %}</div>
     {% else %}
     <div class="d-kpi-value">0</div>
-    <div class="d-kpi-sub">Nenhum processo ativo</div>
+    <div class="d-kpi-sub">Nenhum processo ajuizado</div>
     {% endif %}
   </div>
 

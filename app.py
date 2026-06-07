@@ -884,7 +884,7 @@ def dashboard():
         rows_jud = (sb.table("carteira_judicializada").select(
             "status,valor_atual"
         ).execute().data or []) if sb else []
-        ativos_jud = [r for r in rows_jud if (r.get("status") or "").lower() != "perdido"]
+        ativos_jud = [r for r in rows_jud if (r.get("status") or "") == "Ajuizado"]
         jud_processos = len(ativos_jud)
         v = sum(float(r.get("valor_atual") or 0) for r in ativos_jud)
         if v > 0:
@@ -2440,6 +2440,7 @@ def _inad_summary():
                 "por_etapa": {}, "recentes": [], "total_raw": 0}
 
     total_raw    = sum(r["_total"] for r in registros_vencidos)
+    total_orig   = sum(r["_valor"] for r in registros_vencidos)
     nomes_unicos = {r["nome"] for r in registros_vencidos}
     hoje_count   = sum(1 for r in registros_vencidos if r["dias_atraso"] == 0)
 
@@ -2477,6 +2478,7 @@ def _inad_summary():
 
     return {
         "total_s":      _brl(total_raw),
+        "total_orig_s": _brl(total_orig),
         "total_raw":    total_raw,
         "casos":        len(nomes_unicos),
         "hoje":         hoje_count,
