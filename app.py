@@ -3386,6 +3386,13 @@ def _dre_ler_lancamentos(filtro_tipo=None):
                     continue
 
                 cod, nat_label = _parse_natureza(nat_raw)
+
+                # Placas de investidores (TWS / TSW / QGO): excluir locação e caução
+                desc_up = descricao.upper()
+                if any(p in desc_up for p in ("TWS", "TSW", "QGO")):
+                    if cod.startswith("01.01.01") or cod.startswith("01.01.02.008"):
+                        continue
+
                 registros.append({
                     "tipo_arquivo": tipo_arquivo,
                     "tipo":         tipo,
