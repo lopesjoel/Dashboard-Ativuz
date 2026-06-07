@@ -2561,7 +2561,7 @@ const _detalhe = [
       <div class="inad-card-top">Valor Total em Disputa</div>
       <div>
         <div class="inad-card-val" style="font-size:1.05rem;" id="jud-card-valor">—</div>
-        <div class="inad-card-sub">soma de todos os processos</div>
+        <div class="inad-card-sub">apenas processos ajuizados</div>
       </div>
     </div>
     <div class="inad-card c-blue">
@@ -2974,7 +2974,7 @@ const _detalhe = [
     function _set(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
     _set('jud-card-total-n',   ativos.length);
     _set('jud-card-total-v',   _brl(soma));
-    _set('jud-card-valor',     _brl(soma));
+    _set('jud-card-valor',     _brl(ajuiz.reduce(function (s,r) { return s + Number(r.valor_atual); }, 0)));
     _set('jud-card-ajuiz-n',   ajuiz.length);
     _set('jud-card-ajuiz-v',   _brl(ajuiz.reduce(function (s,r)   { return s + Number(r.valor_atual); }, 0)));
     _set('jud-card-acordo-n',  acordo.length);
