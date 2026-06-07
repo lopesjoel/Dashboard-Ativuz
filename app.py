@@ -2226,6 +2226,18 @@ def _ler_inad_dados():
 
         _NOMES_EXCLUIDOS = {"MARCELO BENTO DE ARAUJO"}
 
+        # Placas de veículos de investidores: só entram manutenção,
+        # lançamento avulso e taxa de administração — locação e caução ficam de fora.
+        _PLACAS_INVESTIDOR = {"TWS", "QGO"}
+        _TIPOS_PERMITIDOS_INV = ("manutencao", "avulso", "taxa")
+
+        def _excluir_placa_investidor(unidade, tipo_fatura):
+            unid_up = str(unidade or "").upper()
+            if not any(p in unid_up for p in _PLACAS_INVESTIDOR):
+                return False          # placa normal → incluir sempre
+            tipo_norm = _nh(str(tipo_fatura or ""))
+            return not any(t in tipo_norm for t in _TIPOS_PERMITIDOS_INV)
+
         name_counts = Counter()
         for row in data_rows:
             if i_nome is not None and i_nome < len(row) and row[i_nome]:
@@ -2285,6 +2297,8 @@ def _ler_inad_dados():
 
             # ── A VENCER ──────────────────────────────────────────────────────
             if "a vencer" in situacao and venc_date > hoje:
+                if _excluir_placa_investidor(unidade, tipo_fatura):
+                    continue
                 dias_ate = (venc_date - hoje).days
                 registros_a_vencer.append({
                     "nome":            nome,
@@ -2326,6 +2340,9 @@ def _ler_inad_dados():
             elif dias <= 9:  proxima = "Encaminhar para cobrança jurídica extrajudicial"
             elif dias <= 14: proxima = "Negativação no SPC/Serasa + encaminhamento jurídico"
             else:            proxima = "Processo judicial iniciado — recolhimento imediato do veículo"
+
+            if _excluir_placa_investidor(unidade, tipo_fatura):
+                continue
 
             tem_fatura = bool(num_doc)
             multa      = valor * 0.10 if (tem_fatura and dias >= 2) else 0.0
