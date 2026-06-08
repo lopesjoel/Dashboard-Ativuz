@@ -43,14 +43,15 @@
   padding:10px 14px; cursor:pointer; user-select:none;
 }
 .dre-group-hdr:hover { background:var(--bg); }
+.dre-group-hdr { display:grid; grid-template-columns:18px 1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur); align-items:center; gap:0 6px; }
 .dre-chevron {
-  font-size:9px; color:var(--ink-3); flex-shrink:0;
-  width:14px; text-align:center; transition:transform .18s;
+  font-size:9px; color:var(--ink-3);
+  text-align:center; transition:transform .18s;
 }
 .dre-chevron.aberto { transform:rotate(90deg); }
-.dre-group-nome { font-size:13px; font-weight:600; color:var(--ink); flex:1; }
+.dre-group-nome { font-size:13px; font-weight:600; color:var(--ink); }
 .dre-group-cod  { font-size:10px; color:var(--ink-3); font-family:monospace; margin-left:5px; }
-.dre-group-val  { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.dre-group-val  { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; }
 .dre-group-val.pos { color:#16a34a; }
 .dre-group-val.neg { color:#dc2626; }
 .dre-group-val.zer { color:var(--ink-3); }
@@ -80,31 +81,41 @@
 .dre-nat-val.zer { color:var(--ink-3); opacity:.5; }
 .dre-pct-rob {
   font-size:10px; font-weight:600; color:var(--ink-3);
-  white-space:nowrap; min-width:48px; text-align:right;
+  white-space:nowrap; text-align:center;
   font-variant-numeric:tabular-nums;
 }
 /* Comparativo mês anterior */
+/* ── Grid compartilhado: label | prev | var | %rob | cur ── */
+:root { --dc-prev:96px; --dc-var:68px; --dc-pct:62px; --dc-cur:110px; }
+.dre-row-cols {
+  display:grid;
+  grid-template-columns: 1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  align-items:center; gap:0 6px;
+}
 .dre-prev-val {
   font-size:12px; font-weight:500; color:var(--ink-3);
   white-space:nowrap; font-variant-numeric:tabular-nums;
-  min-width:90px; text-align:right;
+  text-align:right;
 }
 .dre-var-badge {
   font-size:10px; font-weight:700; white-space:nowrap;
-  min-width:54px; text-align:right; font-variant-numeric:tabular-nums;
+  text-align:center; font-variant-numeric:tabular-nums;
 }
 .dre-var-badge.up   { color:#16a34a; }
 .dre-var-badge.down { color:#dc2626; }
 .dre-var-badge.neu  { color:var(--ink-3); }
 .dre-col-header {
-  display:flex; justify-content:flex-end; gap:8px;
-  padding:4px 14px 8px; font-size:10px; font-weight:700;
+  display:grid;
+  grid-template-columns: 1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  gap:0 6px; padding:4px 14px 8px;
+  font-size:10px; font-weight:700;
   color:var(--ink-3); text-transform:uppercase; letter-spacing:.04em;
 }
-.dre-col-header .ch-ant { min-width:90px; text-align:right; }
-.dre-col-header .ch-var { min-width:54px; text-align:right; }
-.dre-col-header .ch-pct { min-width:48px; text-align:right; }
-.dre-col-header .ch-cur { min-width:90px; text-align:right; }
+.dre-col-header .ch-lbl { }
+.dre-col-header .ch-ant { text-align:right; }
+.dre-col-header .ch-var { text-align:center; }
+.dre-col-header .ch-pct { text-align:center; }
+.dre-col-header .ch-cur { text-align:right; }
 
 /* Lançamentos individuais */
 .dre-lancs { display:none; }
@@ -123,22 +134,25 @@
 
 /* Conta avulsa */
 .dre-account {
-  display:flex; align-items:center; gap:8px; padding:9px 14px;
+  display:grid; grid-template-columns:1fr auto var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  align-items:center; gap:0 6px; padding:9px 14px;
   background:var(--surface); border:1px solid var(--line); border-radius:8px;
   font-size:12px;
 }
-.dre-account-nome { flex:1; font-weight:600; color:var(--ink); }
+.dre-account-nome { font-weight:600; color:var(--ink); }
 .dre-account-cod  { font-size:10px; font-family:monospace; color:var(--ink-3); }
 
 /* Subtotal */
 .dre-subtotal {
-  display:flex; align-items:center; justify-content:space-between;
+  display:grid; grid-template-columns:1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  align-items:center; gap:0 6px;
   padding:10px 14px; margin-top:4px;
   background:color-mix(in srgb,var(--surface) 70%,var(--bg));
   border:1px solid var(--line); border-top:2px solid var(--line); border-radius:8px;
   font-size:13px; font-weight:800; font-variant-numeric:tabular-nums;
 }
 .dre-subtotal-nome { text-transform:uppercase; letter-spacing:.04em; color:var(--ink); }
+.dre-subtotal-val  { text-align:right; }
 .dre-subtotal-val.pos { color:#16a34a; }
 .dre-subtotal-val.neg { color:#dc2626; }
 .dre-subtotal-val.zer { color:var(--ink-3); }
@@ -253,6 +267,7 @@
 </div>
 
 <div class="dre-col-header">
+  <span class="ch-lbl"></span>
   <span class="ch-ant">{{ lbl_ant }}</span>
   <span class="ch-var">Var.</span>
   <span class="ch-pct">% ROB</span>
@@ -324,7 +339,7 @@
   {{ prev_val(pr, 'valor') }}
   {{ var_badge(v, pr, 'valor') }}
   {{ pct_badge(row) }}
-  <span class="dre-group-val {{ cls }}" style="margin-left:auto;">{{ v | abs | brl }}</span>
+  <span class="dre-group-val {{ cls }}">{{ v | abs | brl }}</span>
 </div>
 
 {# ── Subtotal ── #}
