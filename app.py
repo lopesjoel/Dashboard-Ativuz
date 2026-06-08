@@ -239,14 +239,20 @@ def api_asaas_parse():
                 periodo = s
                 break
 
-    # Saldo inicial fixo em zero; saldo final extraído do arquivo
-    saldo_inicial = 0
+    # Saldo inicial e final extraídos do arquivo
+    saldo_inicial = None
     saldo_final   = None
     for r in rows:
         desc = str(r[4] or "").strip()
         val  = r[6]
-        if desc == "Saldo Final" and val is not None:
-            saldo_final = float(val)
+        if desc == "Saldo Inicial" and val is not None:
+            try: saldo_inicial = float(val)
+            except (TypeError, ValueError): pass
+        elif desc == "Saldo Final" and val is not None:
+            try: saldo_final = float(val)
+            except (TypeError, ValueError): pass
+    if saldo_inicial is None:
+        saldo_inicial = 0
 
     transacoes = []
     for r in rows[header_row + 1:]:
@@ -4187,9 +4193,7 @@ def pagina_dre():
 
 @app.route("/dre/api/aceitar-ajuste", methods=["POST"])
 def dre_aceitar_ajuste():
-    import sys
     dados = request.get_json(force=True, silent=True) or {}
-    print("[aceitar-ajuste] recebido:", dados, file=sys.stderr, flush=True)
     codigo_atual  = str(dados.get("codigo_atual", "")).strip()
     descricao     = str(dados.get("descricao", "")).strip()
     codigo_novo   = str(dados.get("codigo_novo", "")).strip()
