@@ -490,10 +490,14 @@ def _supabase():
             _sb = create_client(url, key)
     return _sb
 
-UPLOAD_FOLDER = Path("uploads")
-CONTRATOS_FOLDER = Path("contratos")
-TEMP_FOLDER = Path("temp_preview")
-DOCX_TEMPLATES = Path("docx_templates")
+_BASE = Path(__file__).parent
+# Vercel (e outros runtimes read-only) só permitem escrita em /tmp.
+# No Windows (dev local) usamos paths relativos; em qualquer Unix usamos /tmp.
+_TMP_ROOT = Path(".") if platform.system() == "Windows" else Path("/tmp")
+UPLOAD_FOLDER    = _TMP_ROOT / "uploads"
+CONTRATOS_FOLDER = _TMP_ROOT / "contratos"
+TEMP_FOLDER      = _TMP_ROOT / "temp_preview"
+DOCX_TEMPLATES   = _BASE / "docx_templates"
 
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 CONTRATOS_FOLDER.mkdir(exist_ok=True)
@@ -504,7 +508,7 @@ DOCX_TEMPLATES.mkdir(exist_ok=True)
 # ── helpers ───────────────────────────────────────────────
 
 def _converter_pdf(caminho_docx: str, caminho_pdf: str):
-    """Converte .docx para PDF: Word no Windows, LibreOffice no Linux."""
+    """Converte .docx para PDF: Word no Windows, LibreOffice no Linux/Mac."""
     if platform.system() == "Windows":
         import pythoncom
         from docx2pdf import convert
@@ -514,15 +518,19 @@ def _converter_pdf(caminho_docx: str, caminho_pdf: str):
         finally:
             pythoncom.CoUninitialize()
     else:
-        import tempfile, os, shutil
+        import shutil as _sh, tempfile, os
+        if not _sh.which("libreoffice"):
+            raise RuntimeError(
+                "Conversão para PDF não disponível neste ambiente "
+                "(LibreOffice não instalado). Faça o download no formato DOCX."
+            )
         docx_abs  = str(Path(caminho_docx).resolve())
         pdf_abs   = str(Path(caminho_pdf).resolve())
         if not Path(docx_abs).exists():
             raise FileNotFoundError(f"DOCX não encontrado: {docx_abs!r}")
         with tempfile.TemporaryDirectory() as work_dir:
-            # copia para /tmp isolado — evita problemas de permissão/path no LO
             tmp_docx = Path(work_dir) / Path(docx_abs).name
-            shutil.copy2(docx_abs, tmp_docx)
+            _sh.copy2(docx_abs, tmp_docx)
             env = {**os.environ, "HOME": work_dir}
             result = subprocess.run(
                 [
@@ -543,7 +551,7 @@ def _converter_pdf(caminho_docx: str, caminho_pdf: str):
                     f"LibreOffice (exit {result.returncode}) não gerou PDF. "
                     f"docx={str(tmp_docx)!r} stderr={stderr!r} stdout={stdout!r}"
                 )
-            shutil.copy2(gerado, pdf_abs)
+            _sh.copy2(gerado, pdf_abs)
 
 
 def _slugify(texto: str) -> str:
@@ -1298,9 +1306,8 @@ CONTRATO_LOCACAO_TEMPLATE = DOCX_TEMPLATES / "CONTRATO DE LOCAÇÃO EDITADO.docx
 
 
 def _salvar_contrato_locacao(insert: dict, caminho_docx: str, storage_path: str, edit_id: str = None):
-    """INSERT no Supabase (main thread) + upload do arquivo (background).
-    Retorna None em sucesso ou str com mensagem de erro."""
-    import threading, traceback as _tb
+    """INSERT no Supabase + upload do arquivo. Retorna None em sucesso ou str com erro."""
+    import traceback as _tb
     sb = _supabase()
     if not sb:
         return "Supabase não configurado."
@@ -1310,7 +1317,6 @@ def _salvar_contrato_locacao(insert: dict, caminho_docx: str, storage_path: str,
         _tb.print_exc()
         return str(e)
 
-    # Só remove o registro antigo APÓS o INSERT ter sido bem-sucedido
     _old_path = None
     if edit_id:
         try:
@@ -1321,31 +1327,19 @@ def _salvar_contrato_locacao(insert: dict, caminho_docx: str, storage_path: str,
             _tb.print_exc()
 
     _docx_bytes = Path(caminho_docx).read_bytes()
-    _sp = storage_path
-    _op = _old_path
-
-    def _bg():
+    try:
+        sb.storage.from_("documentos").upload(
+            storage_path, _docx_bytes,
+            {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+             "upsert": "true"},
+        )
+    except Exception:
+        _tb.print_exc()
+    if _old_path and _old_path != storage_path:
         try:
-            sb2 = _supabase()
-            if not sb2:
-                return
-            try:
-                sb2.storage.from_("documentos").upload(
-                    _sp, _docx_bytes,
-                    {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                     "upsert": "true"},
-                )
-            except Exception:
-                _tb.print_exc()
-            if _op and _op != _sp:
-                try:
-                    sb2.storage.from_("documentos").remove([_op])
-                except Exception:
-                    pass
+            sb.storage.from_("documentos").remove([_old_path])
         except Exception:
-            _tb.print_exc()
-
-    threading.Thread(target=_bg, daemon=True).start()
+            pass
     return None
 
 _MESES_PT = ["janeiro","fevereiro","março","abril","maio","junho",
@@ -1564,7 +1558,7 @@ def gerar_vistoria_route():
 
 
 def _gerar_vistoria_impl():
-    import threading, traceback as _tb
+    import traceback as _tb
     agora = datetime.now(_BRT)
     etapa = request.form.get("etapa", "").strip()  # "entrada" | "saida" | "" (legado)
 
@@ -1595,28 +1589,25 @@ def _gerar_vistoria_impl():
         return str(p)
 
     def _upload_bg(storage_path, docx_bytes, old_storage_path=None):
-        _sp, _db, _ost = storage_path, docx_bytes, old_storage_path
-        def _bg():
+        try:
+            sb2 = _supabase()
+            if not sb2:
+                return
             try:
-                sb2 = _supabase()
-                if not sb2:
-                    return
-                try:
-                    sb2.storage.from_("documentos").upload(
-                        _sp, _db,
-                        {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                         "upsert": "true"},
-                    )
-                except Exception:
-                    _tb.print_exc()
-                if _ost and _ost != _sp:
-                    try:
-                        sb2.storage.from_("documentos").remove([_ost])
-                    except Exception:
-                        pass
+                sb2.storage.from_("documentos").upload(
+                    storage_path, docx_bytes,
+                    {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                     "upsert": "true"},
+                )
             except Exception:
                 _tb.print_exc()
-        threading.Thread(target=_bg, daemon=True).start()
+            if old_storage_path and old_storage_path != storage_path:
+                try:
+                    sb2.storage.from_("documentos").remove([old_storage_path])
+                except Exception:
+                    pass
+        except Exception:
+            _tb.print_exc()
 
     dados_fixos = {
         "contrato_id":      request.form.get("contrato_id", "").strip(),
@@ -1723,13 +1714,10 @@ def _gerar_vistoria_impl():
             _upload_bg(_storage_path, Path(caminho_docx).read_bytes())
             # Upload individual das fotos em background
             if foto_s_bytes:
-                _fsb = foto_s_bytes
-                def _upload_fotos_bg():
-                    try:
-                        sb2 = _supabase()
-                        if not sb2:
-                            return
-                        for s_path, data in _fsb.items():
+                try:
+                    sb2 = _supabase()
+                    if sb2:
+                        for s_path, data in foto_s_bytes.items():
                             ext2 = Path(s_path).suffix.lower()
                             ct = "image/png" if ext2 == ".png" else "image/jpeg"
                             try:
@@ -1737,9 +1725,8 @@ def _gerar_vistoria_impl():
                                     s_path, data, {"content-type": ct, "upsert": "true"})
                             except Exception:
                                 _tb.print_exc()
-                    except Exception:
-                        _tb.print_exc()
-                threading.Thread(target=_upload_fotos_bg, daemon=True).start()
+                except Exception:
+                    _tb.print_exc()
 
         try:
             _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
@@ -1889,13 +1876,10 @@ def _gerar_vistoria_impl():
                 _tb.print_exc()
             _upload_bg(_storage_path, Path(caminho_docx).read_bytes())
             if foto_saida_s_bytes:
-                _fsb2 = foto_saida_s_bytes
-                def _upload_fotos_saida_bg():
-                    try:
-                        sb2 = _supabase()
-                        if not sb2:
-                            return
-                        for s_path, data in _fsb2.items():
+                try:
+                    sb2 = _supabase()
+                    if sb2:
+                        for s_path, data in foto_saida_s_bytes.items():
                             ext2 = Path(s_path).suffix.lower()
                             ct = "image/png" if ext2 == ".png" else "image/jpeg"
                             try:
@@ -1903,9 +1887,8 @@ def _gerar_vistoria_impl():
                                     s_path, data, {"content-type": ct, "upsert": "true"})
                             except Exception:
                                 _tb.print_exc()
-                    except Exception:
-                        _tb.print_exc()
-                threading.Thread(target=_upload_fotos_saida_bg, daemon=True).start()
+                except Exception:
+                    _tb.print_exc()
 
         try:
             _historico_append(dados["cliente_nome"], "VISTORIA", nome_docx)
