@@ -83,6 +83,28 @@
   white-space:nowrap; min-width:48px; text-align:right;
   font-variant-numeric:tabular-nums;
 }
+/* Comparativo mês anterior */
+.dre-prev-val {
+  font-size:12px; font-weight:500; color:var(--ink-3);
+  white-space:nowrap; font-variant-numeric:tabular-nums;
+  min-width:90px; text-align:right;
+}
+.dre-var-badge {
+  font-size:10px; font-weight:700; white-space:nowrap;
+  min-width:54px; text-align:right; font-variant-numeric:tabular-nums;
+}
+.dre-var-badge.up   { color:#16a34a; }
+.dre-var-badge.down { color:#dc2626; }
+.dre-var-badge.neu  { color:var(--ink-3); }
+.dre-col-header {
+  display:flex; justify-content:flex-end; gap:8px;
+  padding:4px 14px 8px; font-size:10px; font-weight:700;
+  color:var(--ink-3); text-transform:uppercase; letter-spacing:.04em;
+}
+.dre-col-header .ch-ant { min-width:90px; text-align:right; }
+.dre-col-header .ch-var { min-width:54px; text-align:right; }
+.dre-col-header .ch-pct { min-width:48px; text-align:right; }
+.dre-col-header .ch-cur { min-width:90px; text-align:right; }
 
 /* Lançamentos individuais */
 .dre-lancs { display:none; }
@@ -193,7 +215,28 @@
 
 {# ════════════════════ MACRO ════════════════════ #}
 {% macro pct_badge(row) %}{% if row.pct_rob is not none %}<span class="dre-pct-rob">{{ "%.1f"|format(row.pct_rob)|replace(".",",") }}%</span>{% else %}<span class="dre-pct-rob"></span>{% endif %}{% endmacro %}
-{% macro render_dre(rows, aba_id) %}
+
+{% macro prev_val(prev_row, key) %}
+  {% if prev_row %}
+    {% set v = prev_row.get(key, 0) or 0 %}
+    {% set cls = 'pos' if v > 0 else ('neg' if v < 0 else 'zer') %}
+    <span class="dre-prev-val {{ cls }}">{{ v | abs | brl }}</span>
+  {% else %}<span class="dre-prev-val"></span>{% endif %}
+{% endmacro %}
+
+{% macro var_badge(cur_val, prev_row, key) %}
+  {% if prev_row %}
+    {% set pv = prev_row.get(key, 0) or 0 %}
+    {% if pv != 0 %}
+      {% set diff_pct = (cur_val - pv) / pv * 100 %}
+      {% if diff_pct > 0 %}<span class="dre-var-badge up">↑{{ "%.1f"|format(diff_pct)|replace(".",",") }}%</span>
+      {% elif diff_pct < 0 %}<span class="dre-var-badge down">↓{{ "%.1f"|format(diff_pct|abs)|replace(".",",") }}%</span>
+      {% else %}<span class="dre-var-badge neu">=%</span>{% endif %}
+    {% else %}<span class="dre-var-badge neu">—</span>{% endif %}
+  {% else %}<span class="dre-var-badge"></span>{% endif %}
+{% endmacro %}
+
+{% macro render_dre(rows, aba_id, prev_rows, lbl_ant, lbl_cur) %}
 <div class="dre-bar">
   <form method="get" style="display:flex;gap:10px;align-items:center;">
     <input type="hidden" name="aba" value="{{ aba_id }}">
@@ -209,10 +252,18 @@
   </form>
 </div>
 
+<div class="dre-col-header">
+  <span class="ch-ant">{{ lbl_ant }}</span>
+  <span class="ch-var">Var.</span>
+  <span class="ch-pct">% ROB</span>
+  <span class="ch-cur">{{ lbl_cur }}</span>
+</div>
+
 <div class="dre-plano">
 {% set ns = namespace(grp_id=0, nat_id=0) %}
 {% for row in rows %}
 {% set rt = row.tipo %}
+{% set pr = prev_rows[loop.index0] if prev_rows and loop.index0 < prev_rows|length else none %}
 
 {# ── Seção ── #}
 {% if rt == 'section' %}
@@ -228,6 +279,8 @@
   <div class="dre-group-hdr" onclick="toggleGrupo('{{ gid }}')">
     <span class="dre-chevron" id="chev-{{ gid }}">▶</span>
     <span class="dre-group-nome">{{ row.label }}<span class="dre-group-cod">{{ row.cod }}</span></span>
+    {{ prev_val(pr, 'net') }}
+    {{ var_badge(net, pr, 'net') }}
     {{ pct_badge(row) }}
     <span class="dre-group-val {{ cls }}">{{ net | abs | brl }}</span>
   </div>
@@ -268,6 +321,8 @@
 <div class="dre-account">
   <span class="dre-account-nome">{{ row.label }}</span>
   <span class="dre-account-cod">{{ row.cod }}</span>
+  {{ prev_val(pr, 'valor') }}
+  {{ var_badge(v, pr, 'valor') }}
   {{ pct_badge(row) }}
   <span class="dre-group-val {{ cls }}" style="margin-left:auto;">{{ v | abs | brl }}</span>
 </div>
@@ -278,6 +333,8 @@
 {% set cls = 'pos' if v > 0 else ('neg' if v < 0 else 'zer') %}
 <div class="dre-subtotal">
   <span class="dre-subtotal-nome">{{ row.label }}</span>
+  {{ prev_val(pr, 'valor') }}
+  {{ var_badge(v, pr, 'valor') }}
   {{ pct_badge(row) }}
   <span class="dre-subtotal-val {{ cls }}">{{ v | brl }}</span>
 </div>
@@ -300,11 +357,11 @@
 
 {# ── ABA PAGAMENTO ── #}
 {% if aba == 'pagamento' %}
-{{ render_dre(rows_pag, 'pagamento') }}
+{{ render_dre(rows_pag, 'pagamento', rows_pag_ant, label_ant, label_cur) }}
 
 {# ── ABA REFERÊNCIA ── #}
 {% elif aba == 'referencia' %}
-{{ render_dre(rows_ref, 'referencia') }}
+{{ render_dre(rows_ref, 'referencia', rows_ref_ant, label_ant, label_cur) }}
 
 {# ── ABA AJUSTES ── #}
 {% elif aba == 'ajustes' %}

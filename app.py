@@ -4157,6 +4157,15 @@ def pagina_dre():
     rows_pag = _dre_montar_estrutura(pag, ano, mes)
     rows_ref = _dre_montar_estrutura(ref, ano, mes)
 
+    # Mês anterior (automático)
+    mes_ant = mes - 1 if mes > 1 else 12
+    ano_ant = ano  if mes > 1 else ano - 1
+    rows_pag_ant = _dre_montar_estrutura(pag, ano_ant, mes_ant)
+    rows_ref_ant = _dre_montar_estrutura(ref, ano_ant, mes_ant)
+    _MESES_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+    label_ant = f"{_MESES_PT[mes_ant-1]}/{ano_ant}"
+    label_cur = f"{_MESES_PT[mes-1]}/{ano}"
+
     # Ajustes usam todos os lançamentos (sem filtro de período)
     ajustes = _dre_ajustes_natureza(todos)
 
@@ -4167,6 +4176,10 @@ def pagina_dre():
         meses_disponiveis=meses_disponiveis,
         rows_pag=rows_pag,
         rows_ref=rows_ref,
+        rows_pag_ant=rows_pag_ant,
+        rows_ref_ant=rows_ref_ant,
+        label_ant=label_ant,
+        label_cur=label_cur,
         ajustes=ajustes,
         sem_dados=len(todos) == 0,
     )
