@@ -20,7 +20,7 @@ if not CREDENTIALS_FILE.exists():
     exit(1)
 
 flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_FILE), SCOPES)
-creds = flow.run_local_server(port=0)
+creds = flow.run_local_server(port=8080)
 
 TOKEN_FILE.write_text(creds.to_json())
 print("\nToken salvo em google_token.json")
