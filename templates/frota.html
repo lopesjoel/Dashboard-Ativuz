@@ -653,7 +653,7 @@
               </svg>
               Adicionar extrato
             </label>
-            <button onclick="asaasGerarPdf()" style="display:inline-flex;align-items:center;gap:8px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;">
+            <button onclick="asaasAbrirModalPdf()" style="display:inline-flex;align-items:center;gap:8px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
                 <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
@@ -2371,10 +2371,38 @@ document.addEventListener('click', function(e) {
     }
   }
 
+  /* ── Modal de seleção de PDF ── */
+  window.asaasAbrirModalPdf = function() {
+    if (!_dadosGlobais && !_extratos.length) { alert('Nenhum dado carregado.'); return; }
+    var lista = document.getElementById('asaas-pdf-hist-list');
+    if (_extratos.length) {
+      lista.innerHTML = _extratos.slice().reverse().map(function(e, i) {
+        var per = (e.periodo || ('Extrato ' + (i+1))).replace(/Período a partir de /i,'').replace(/\s*até\s*/i,' → ');
+        return '<button onclick="asaasGerarPdfExtrato(\'' + e.id + '\')" ' +
+          'style="text-align:left;padding:10px 14px;background:var(--surface);border:1px solid var(--line);' +
+          'border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--ink-1);font-family:inherit;width:100%;">' +
+          '<span style="font-weight:700;">📄 </span>' + per + '</button>';
+      }).join('');
+    } else {
+      lista.innerHTML = '<span style="font-size:12px;color:var(--ink-3);">Nenhum extrato salvo ainda.</span>';
+    }
+    var modal = document.getElementById('asaas-pdf-modal');
+    modal.style.display = 'flex';
+  };
+  window.asaasFecharModalPdf = function() {
+    document.getElementById('asaas-pdf-modal').style.display = 'none';
+  };
+  window.asaasGerarPdfExtrato = function(id) {
+    var e = _extratos.find(function(x){ return x.id === id; });
+    if (e) { asaasFecharModalPdf(); asaasGerarPdf(e, null); }
+  };
+
   /* ── Gerador de PDF ── */
-  window.asaasGerarPdf = function () {
-    var d = _dadosGlobais;
+  /* semOffset: 0=atual, -1=anterior, null=sem filtro (usa período do extrato) */
+  window.asaasGerarPdf = function (dadosParam, semOffset) {
+    var d = dadosParam || _dadosGlobais;
     if (!d) { alert('Nenhum dado carregado.'); return; }
+    asaasFecharModalPdf();
     function brl(v) {
       return 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
@@ -2416,12 +2444,6 @@ document.addEventListener('click', function(e) {
       return '<tr><td style="color:' + c.cor + ';font-weight:600">' + c.label + '</td>' +
              '<td style="text-align:right;color:#dc2626;font-weight:700">' + brl(d.totais[c.key]) + '</td></tr>';
     }).join('');
-    /* Calcula semana atual: segunda a domingo */
-    var hoje    = new Date();
-    var diaSem  = hoje.getDay();
-    var diffSeg = (diaSem === 0) ? -6 : 1 - diaSem;
-    var seg     = new Date(hoje); seg.setDate(hoje.getDate() + diffSeg); seg.setHours(0,0,0,0);
-    var dom     = new Date(seg);  dom.setDate(seg.getDate() + 6);        dom.setHours(23,59,59,999);
     function _fmt(dt) {
       return ('0'+dt.getDate()).slice(-2) + '/' + ('0'+(dt.getMonth()+1)).slice(-2) + '/' + dt.getFullYear();
     }
@@ -2429,7 +2451,20 @@ document.addEventListener('click', function(e) {
       var p = s.split('/');
       return p.length === 3 ? new Date(+p[2], +p[1]-1, +p[0]) : null;
     }
-    var semanaRef = 'Semana de ' + _fmt(seg) + ' a ' + _fmt(dom);
+
+    /* Calcula intervalo: semOffset null = período completo do extrato */
+    var seg, dom, semanaRef;
+    if (semOffset !== null && semOffset !== undefined) {
+      var hoje    = new Date();
+      var diaSem  = hoje.getDay();
+      var diffSeg = (diaSem === 0) ? -6 : 1 - diaSem;
+      seg = new Date(hoje); seg.setDate(hoje.getDate() + diffSeg + (semOffset * 7)); seg.setHours(0,0,0,0);
+      dom = new Date(seg);  dom.setDate(seg.getDate() + 6);                          dom.setHours(23,59,59,999);
+      semanaRef = 'Semana de ' + _fmt(seg) + ' a ' + _fmt(dom);
+    } else {
+      seg = null; dom = null;
+      semanaRef = (d.periodo || '').replace(/Período a partir de /i,'').replace(/\s*até\s*/i,' a ') || 'Período completo';
+    }
 
     /* Extrai nome do investidor das transações de repasse */
     var nomeInvestidor = '';
@@ -2456,10 +2491,11 @@ document.addEventListener('click', function(e) {
       return t.descricao.substring(0, 40);
     }
 
-    /* Filtra transações da semana atual */
+    /* Filtra transações do período selecionado */
     var CATS_SEMANA = ['aluguel','adesao','taxa_ativuz','reembolso_manutencao','ipva','taxa_asaas'];
     var txSemana = d.transacoes.filter(function(t) {
       if (CATS_SEMANA.indexOf(t.categoria) < 0) return false;
+      if (!seg) return true;  // sem filtro de data: mostra tudo
       var dt = _parseDataBR(t.data);
       return dt && dt >= seg && dt <= dom;
     }).sort(function(a, b) {
@@ -2517,7 +2553,7 @@ document.addEventListener('click', function(e) {
     (d.totais.ipva?'<div class="card saida"><div class="card-lbl">IPVA</div><div class="card-val neg">'+brl(d.totais.ipva)+'</div></div>':'') +
     '<div class="card neutro"><div class="card-lbl">Taxas ASAAS</div><div class="card-val">' + brl(d.totais.taxa_asaas||0) + '</div></div>' +
     '</div>' +
-    '<h2>Extrato da semana — ' + semanaRef + '</h2>' +
+    '<h2>' + (seg ? 'Extrato da semana' : 'Extrato do período') + ' — ' + semanaRef + '</h2>' +
     '<table><thead><tr><th>Data</th><th>Descrição</th><th style="text-align:right">Valor</th></tr></thead><tbody>' + rowsSemana + '</tbody></table>' +
     '<h2 style="margin-top:24px;page-break-before:always;padding-top:16px;">Acumulado por motorista</h2>' +
     '<table><thead><tr><th>Motorista</th><th>Semanas</th><th style="text-align:right">Aluguéis</th><th style="text-align:right">Caução</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsMotoristas + '</tbody></table>' +
@@ -2534,6 +2570,25 @@ document.addEventListener('click', function(e) {
 
 })();
 </script>
+
+<!-- Modal seleção de semana para PDF -->
+<div id="asaas-pdf-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:16px;padding:28px 28px 22px;width:400px;max-width:92vw;box-shadow:0 12px 40px rgba(0,0,0,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <span style="font-size:15px;font-weight:800;color:var(--ink-1);">Gerar PDF — Prestação de Contas</span>
+      <button onclick="asaasFecharModalPdf()" style="background:none;border:none;cursor:pointer;color:var(--ink-3);font-size:18px;line-height:1;padding:0;">✕</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--ink-2);margin:0 0 14px;">Escolha o período para o relatório:</p>
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <button onclick="asaasGerarPdf(null,0)" style="flex:1;padding:12px 8px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Semana atual</button>
+      <button onclick="asaasGerarPdf(null,-1)" style="flex:1;padding:12px 8px;background:#334155;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Semana anterior</button>
+    </div>
+    <div id="asaas-pdf-hist-wrap">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);margin-bottom:10px;">Histórico de extratos salvos</div>
+      <div id="asaas-pdf-hist-list" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Rentabilidade Líquida Real -->
 <div id="modal-rent-real" role="dialog" aria-modal="true">
