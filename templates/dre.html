@@ -43,7 +43,7 @@
   padding:10px 14px; cursor:pointer; user-select:none;
 }
 .dre-group-hdr:hover { background:var(--bg); }
-.dre-group-hdr { display:grid; grid-template-columns:18px 1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur); align-items:center; gap:0 6px; }
+.dre-group-hdr { display:grid; grid-template-columns:18px 1fr var(--dc-prev) var(--dc-var) var(--dc-cur) var(--dc-pct); align-items:center; gap:0 6px; }
 .dre-chevron {
   font-size:9px; color:var(--ink-3);
   text-align:center; transition:transform .18s;
@@ -86,10 +86,10 @@
 }
 /* Comparativo mês anterior */
 /* ── Grid compartilhado: label | prev | var | %rob | cur ── */
-:root { --dc-prev:96px; --dc-var:68px; --dc-pct:62px; --dc-cur:110px; }
+:root { --dc-prev:96px; --dc-var:68px; --dc-cur:110px; --dc-pct:62px; }
 .dre-row-cols {
   display:grid;
-  grid-template-columns: 1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  grid-template-columns: 1fr var(--dc-prev) var(--dc-var) var(--dc-cur) var(--dc-pct);
   align-items:center; gap:0 6px;
 }
 .dre-prev-val {
@@ -134,7 +134,7 @@
 
 /* Conta avulsa */
 .dre-account {
-  display:grid; grid-template-columns:1fr auto var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  display:grid; grid-template-columns:1fr auto var(--dc-prev) var(--dc-var) var(--dc-cur) var(--dc-pct);
   align-items:center; gap:0 6px; padding:9px 14px;
   background:var(--surface); border:1px solid var(--line); border-radius:8px;
   font-size:12px;
@@ -144,7 +144,7 @@
 
 /* Subtotal */
 .dre-subtotal {
-  display:grid; grid-template-columns:1fr var(--dc-prev) var(--dc-var) var(--dc-pct) var(--dc-cur);
+  display:grid; grid-template-columns:1fr var(--dc-prev) var(--dc-var) var(--dc-cur) var(--dc-pct);
   align-items:center; gap:0 6px;
   padding:10px 14px; margin-top:4px;
   background:color-mix(in srgb,var(--surface) 70%,var(--bg));
@@ -270,8 +270,8 @@
   <span class="ch-lbl"></span>
   <span class="ch-ant">{{ lbl_ant }}</span>
   <span class="ch-var">Var.</span>
-  <span class="ch-pct">% ROB</span>
   <span class="ch-cur">{{ lbl_cur }}</span>
+  <span class="ch-pct">% ROB</span>
 </div>
 
 <div class="dre-plano">
@@ -296,8 +296,8 @@
     <span class="dre-group-nome">{{ row.label }}<span class="dre-group-cod">{{ row.cod }}</span></span>
     {{ prev_val(pr, 'net') }}
     {{ var_badge(net, pr, 'net') }}
-    {{ pct_badge(row) }}
     <span class="dre-group-val {{ cls }}">{{ net | abs | brl }}</span>
+    {{ pct_badge(row) }}
   </div>
   <div class="dre-nats" id="{{ gid }}">
     {% for item in row.itens %}
@@ -338,8 +338,8 @@
   <span class="dre-account-cod">{{ row.cod }}</span>
   {{ prev_val(pr, 'valor') }}
   {{ var_badge(v, pr, 'valor') }}
-  {{ pct_badge(row) }}
   <span class="dre-group-val {{ cls }}">{{ v | abs | brl }}</span>
+  {{ pct_badge(row) }}
 </div>
 
 {# ── Subtotal ── #}
@@ -350,8 +350,8 @@
   <span class="dre-subtotal-nome">{{ row.label }}</span>
   {{ prev_val(pr, 'valor') }}
   {{ var_badge(v, pr, 'valor') }}
-  {{ pct_badge(row) }}
   <span class="dre-subtotal-val {{ cls }}">{{ v | brl }}</span>
+  {{ pct_badge(row) }}
 </div>
 
 {# ── Info ── #}
