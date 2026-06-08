@@ -508,7 +508,11 @@ DOCX_TEMPLATES.mkdir(exist_ok=True)
 # ── helpers ───────────────────────────────────────────────
 
 def _converter_pdf(caminho_docx: str, caminho_pdf: str):
-    """Converte .docx para PDF: Word no Windows, LibreOffice no Linux/Mac."""
+    """Converte .docx para PDF.
+    - Windows: usa Word via docx2pdf
+    - Linux/Mac com LibreOffice: usa LibreOffice headless
+    - Linux/Mac sem LibreOffice (ex: Vercel): usa Google Drive API
+    """
     if platform.system() == "Windows":
         import pythoncom
         from docx2pdf import convert
@@ -519,39 +523,42 @@ def _converter_pdf(caminho_docx: str, caminho_pdf: str):
             pythoncom.CoUninitialize()
     else:
         import shutil as _sh, tempfile, os
-        if not _sh.which("libreoffice"):
-            raise RuntimeError(
-                "Conversão para PDF não disponível neste ambiente "
-                "(LibreOffice não instalado). Faça o download no formato DOCX."
-            )
-        docx_abs  = str(Path(caminho_docx).resolve())
-        pdf_abs   = str(Path(caminho_pdf).resolve())
-        if not Path(docx_abs).exists():
-            raise FileNotFoundError(f"DOCX não encontrado: {docx_abs!r}")
-        with tempfile.TemporaryDirectory() as work_dir:
-            tmp_docx = Path(work_dir) / Path(docx_abs).name
-            _sh.copy2(docx_abs, tmp_docx)
-            env = {**os.environ, "HOME": work_dir}
-            result = subprocess.run(
-                [
-                    "libreoffice",
-                    "--headless", "--norestore", "--nofirststartwizard",
-                    "--convert-to", "pdf",
-                    "--outdir", work_dir,
-                    str(tmp_docx),
-                ],
-                capture_output=True,
-                env=env,
-            )
-            gerado = Path(work_dir) / (tmp_docx.stem + ".pdf")
-            if not gerado.exists():
-                stderr = result.stderr.decode(errors="replace") if result.stderr else ""
-                stdout = result.stdout.decode(errors="replace") if result.stdout else ""
-                raise RuntimeError(
-                    f"LibreOffice (exit {result.returncode}) não gerou PDF. "
-                    f"docx={str(tmp_docx)!r} stderr={stderr!r} stdout={stdout!r}"
+        if _sh.which("libreoffice"):
+            # LibreOffice disponível (Docker, Fly.io, Railway, dev local)
+            docx_abs = str(Path(caminho_docx).resolve())
+            pdf_abs  = str(Path(caminho_pdf).resolve())
+            if not Path(docx_abs).exists():
+                raise FileNotFoundError(f"DOCX não encontrado: {docx_abs!r}")
+            with tempfile.TemporaryDirectory() as work_dir:
+                tmp_docx = Path(work_dir) / Path(docx_abs).name
+                _sh.copy2(docx_abs, tmp_docx)
+                env = {**os.environ, "HOME": work_dir}
+                result = subprocess.run(
+                    [
+                        "libreoffice",
+                        "--headless", "--norestore", "--nofirststartwizard",
+                        "--convert-to", "pdf",
+                        "--outdir", work_dir,
+                        str(tmp_docx),
+                    ],
+                    capture_output=True,
+                    env=env,
                 )
-            _sh.copy2(gerado, pdf_abs)
+                gerado = Path(work_dir) / (tmp_docx.stem + ".pdf")
+                if not gerado.exists():
+                    stderr = result.stderr.decode(errors="replace") if result.stderr else ""
+                    stdout = result.stdout.decode(errors="replace") if result.stdout else ""
+                    raise RuntimeError(
+                        f"LibreOffice (exit {result.returncode}) não gerou PDF. "
+                        f"docx={str(tmp_docx)!r} stderr={stderr!r} stdout={stdout!r}"
+                    )
+                _sh.copy2(gerado, pdf_abs)
+        else:
+            # Sem LibreOffice — usa Google Drive API (Vercel / ambientes read-only)
+            from services.google_drive_pdf import docx_bytes_to_pdf
+            docx_bytes = Path(caminho_docx).read_bytes()
+            pdf_bytes  = docx_bytes_to_pdf(docx_bytes, Path(caminho_docx).name)
+            Path(caminho_pdf).write_bytes(pdf_bytes)
 
 
 def _slugify(texto: str) -> str:

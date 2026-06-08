@@ -2,7 +2,10 @@ import os
 import json
 from pathlib import Path
 
-SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+SCOPES = [
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/drive.file',
+]
 CREDENTIALS_FILE = Path(__file__).parent.parent / 'google_credentials.json'
 TOKEN_FILE        = Path(__file__).parent.parent / 'google_token.json'
 
