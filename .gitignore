@@ -49,3 +49,4 @@ dist-ssr
 # Google Calendar
 google_credentials.json
 google_token.json
+.vercel
