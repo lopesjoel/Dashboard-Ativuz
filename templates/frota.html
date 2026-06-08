@@ -669,12 +669,8 @@
           <div style="overflow-x:auto"><table class="asaas-table" id="asaas-table-motoristas"></table></div>
         </div>
         <div style="margin-top:18px;">
-          <div style="font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Saídas detalhadas</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Entradas e Saídas detalhadas</div>
           <div style="overflow-x:auto"><table class="asaas-table" id="asaas-table-saidas"></table></div>
-        </div>
-        <button class="asaas-toggle-det" id="asaas-btn-det" onclick="asaasToggleDet()">Ver todas as transações</button>
-        <div id="asaas-det-wrap" style="display:none;margin-top:12px;overflow-x:auto">
-          <table class="asaas-table" id="asaas-table-det"></table>
         </div>
       </div>
     </div>
@@ -2133,7 +2129,6 @@ document.addEventListener('click', function(e) {
 <script>
 /* ══ CONCILIAÇÃO ASAAS ══ */
 (function () {
-  var _det = false;
   var _extratos = [];   // lista de extratos salvos
   var _dadosGlobais = null;  // dados combinados exibidos
 
@@ -2253,7 +2248,6 @@ document.addEventListener('click', function(e) {
     _renderSaldo(d);
     _renderMotoristas(d.transacoes);
     _renderSaidas(d.transacoes);
-    _renderDetalhe(d.transacoes);
     var pl = document.getElementById('asaas-periodo-lbl');
     if (pl) pl.textContent = d.periodo || '';
     // Atualiza resumo executivo com dados reais do ASAAS
@@ -2315,28 +2309,19 @@ document.addEventListener('click', function(e) {
   }
 
   function _renderSaidas(transacoes) {
-    var saidas = transacoes.filter(function(t) {
-      return t.relevante && t.valor < 0 && t.categoria !== 'repasse_investidor';
-    });
-    var rows = saidas.map(function(t) {
-      return '<tr><td>' + t.data + '</td><td>' + _catBadge(t.categoria) + '</td>' +
-        '<td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.descricao + '">' + t.descricao + '</td>' +
-        '<td class="neg">' + _brl(t.valor) + '</td></tr>';
+    var itens = transacoes.filter(function(t) { return t.relevante; });
+    var rows = itens.map(function(t) {
+      var pos = t.valor > 0;
+      var nome = t.motorista ? ' <span style="font-size:11px;color:var(--ink-3);">· ' + t.motorista + '</span>' : '';
+      return '<tr>' +
+        '<td>' + t.data + '</td>' +
+        '<td>' + _catBadge(t.categoria) + '</td>' +
+        '<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.descricao + '">' + t.descricao + nome + '</td>' +
+        '<td class="' + (pos ? 'pos' : 'neg') + '" style="text-align:right;white-space:nowrap;">' + (pos ? '+' : '') + _brl(t.valor) + '</td>' +
+        '</tr>';
     }).join('');
     document.getElementById('asaas-table-saidas').innerHTML =
-      '<thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody>';
-  }
-
-  function _renderDetalhe(transacoes) {
-    var rows = transacoes.map(function(t) {
-      var pos = t.valor > 0;
-      return '<tr><td>' + t.data + '</td><td>' + _catBadge(t.categoria) + '</td>' +
-        '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.descricao + '">' + t.descricao + '</td>' +
-        '<td class="' + (pos ? 'pos' : 'neg') + '">' + (pos ? '+' : '') + _brl(t.valor) + '</td></tr>';
-    }).join('');
-    document.getElementById('asaas-table-det').innerHTML =
-      '<thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>' +
+      '<thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th style="text-align:right">Valor</th></tr></thead>' +
       '<tbody>' + rows + '</tbody>';
   }
 
@@ -2367,12 +2352,6 @@ document.addEventListener('click', function(e) {
       .catch(function(e) { alert('Erro ao processar: ' + e); })
       .finally(function() { if (loadMsg) loadMsg.style.display = 'none'; });
   }
-
-  window.asaasToggleDet = function() {
-    _det = !_det;
-    document.getElementById('asaas-det-wrap').style.display = _det ? '' : 'none';
-    document.getElementById('asaas-btn-det').textContent    = _det ? 'Ocultar transações' : 'Ver todas as transações';
-  };
 
   window.asaasReset = function() { _bindInput(); };
 
