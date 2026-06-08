@@ -4187,7 +4187,9 @@ def pagina_dre():
 
 @app.route("/dre/api/aceitar-ajuste", methods=["POST"])
 def dre_aceitar_ajuste():
+    import sys
     dados = request.get_json(force=True, silent=True) or {}
+    print("[aceitar-ajuste] recebido:", dados, file=sys.stderr, flush=True)
     codigo_atual  = str(dados.get("codigo_atual", "")).strip()
     descricao     = str(dados.get("descricao", "")).strip()
     codigo_novo   = str(dados.get("codigo_novo", "")).strip()
