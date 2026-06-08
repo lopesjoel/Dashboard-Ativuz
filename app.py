@@ -216,19 +216,20 @@ def api_asaas_parse():
         s = unicodedata.normalize("NFD", str(s or "").lower())
         return "".join(c for c in s if unicodedata.category(c) != "Mn")
 
-    wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+    wb = openpyxl.load_workbook(f, data_only=True)
     ws = wb.active
     rows = list(ws.iter_rows(values_only=True))
     wb.close()
 
-    # Localiza linha de cabeçalho real
+    # Localiza linha de cabeçalho: busca "Data" em qualquer coluna da linha
     header_row = None
     for i, r in enumerate(rows):
-        if r[0] == "Data":
+        cells = [str(c or "").strip() for c in r]
+        if "Data" in cells and "Descrição" in cells:
             header_row = i
             break
     if header_row is None:
-        return jsonify({"erro": "Formato de arquivo não reconhecido"}), 400
+        return jsonify({"erro": "Formato de arquivo não reconhecido — certifique-se de usar o extrato oficial do ASAAS (.xlsx)"}), 400
 
     # Extrai período
     periodo = ""
