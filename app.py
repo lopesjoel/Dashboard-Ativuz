@@ -2543,41 +2543,41 @@ def pagina_inadimplencia():
 
     _vencido_raw   = sum(r["_valor"] for r in registros_vencidos)
     _a_vencer_raw  = sum(r["_valor"] for r in registros_a_vencer)
-    # Base semanal = snapshot da última segunda (total_valor em valor original)
+    # Base semanal = snapshot da segunda desta semana (ou mais recente disponível)
     _base_semanal = 0.0
     _taxa_debug   = ""
-    # 1º: snapshot salvo para a segunda desta semana
     _sb = _supabase()
     if _sb:
-        _ultima_segunda = (hoje - timedelta(days=hoje.weekday())).isoformat()
+        _segunda_atual = (hoje - timedelta(days=hoje.weekday())).isoformat()
         try:
+            # 1º: snapshot exato desta segunda
             _snap = (_sb.table("inad_snapshots")
-                       .select("total_valor")
-                       .eq("semana", _ultima_segunda)
+                       .select("semana,total_valor")
+                       .eq("semana", _segunda_atual)
                        .limit(1)
                        .execute())
             if _snap.data:
                 _base_semanal = float(_snap.data[0].get("total_valor") or 0)
-                _taxa_debug = f"snapshot {_ultima_segunda}"
+                _taxa_debug = f"snapshot {_segunda_atual}"
+            else:
+                # 2º: snapshot mais recente de qualquer segunda anterior
+                _snaps_all = (_sb.table("inad_snapshots")
+                                .select("semana,total_valor")
+                                .lte("semana", _segunda_atual)
+                                .order("semana", desc=True)
+                                .limit(10)
+                                .execute())
+                for _s in (_snaps_all.data or []):
+                    _d = date.fromisoformat(_s["semana"])
+                    if _d.weekday() == 0:  # só segundas
+                        _base_semanal = float(_s.get("total_valor") or 0)
+                        _taxa_debug = f"snapshot {_s['semana']} (anterior)"
+                        break
         except Exception:
             pass
-    # 2º: entradas da segunda ainda na planilha (dias_atraso == dias desde segunda)
-    if _base_semanal == 0 and hoje.weekday() > 0:
-        _dias_desde_segunda = hoje.weekday()
-        _base_semanal = sum(r["_valor"] for r in registros_vencidos
-                            if r["dias_atraso"] == _dias_desde_segunda)
-        if _base_semanal > 0:
-            _taxa_debug = f"D+{_dias_desde_segunda} da planilha"
-    # 3º: próxima segunda nos lançamentos "a vencer"
-    if _base_semanal == 0:
-        _dias_ate_segunda = 7 - hoje.weekday()
-        _base_semanal = sum(r["_valor"] for r in registros_a_vencer
-                            if r.get("dias_ate") == _dias_ate_segunda)
-        if _base_semanal > 0:
-            _taxa_debug = f"a_vencer D+{_dias_ate_segunda}"
     # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
     _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
-    taxa_inadimplencia = round(_overdue_raw / _base_semanal * 100, 1) if _base_semanal > 0 else 0.0
+    taxa_inadimplencia = round(_overdue_raw / _base_semanal * 100, 1) if _base_semanal > 0 else None
 
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
     _nome_cnt = Counter(

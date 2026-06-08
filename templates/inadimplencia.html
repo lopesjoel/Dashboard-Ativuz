@@ -1233,11 +1233,15 @@
     </div>
   </div>
 
-  <div class="inad-card {% if taxa_inadimplencia < 10 %}c-green{% elif taxa_inadimplencia < 25 %}c-orange{% else %}c-red{% endif %}">
+  {% set _taxa_ok = taxa_inadimplencia is not none %}
+  <div class="inad-card {% if not _taxa_ok %}c-slate{% elif taxa_inadimplencia < 10 %}c-green{% elif taxa_inadimplencia < 25 %}c-orange{% else %}c-red{% endif %}">
     <div class="inad-card-top">Taxa de Inadimplência</div>
     <div>
-      <div class="inad-card-val">{{ taxa_inadimplencia }}%</div>
-      <div class="inad-card-sub">{{ "R$ {:,.2f}".format(taxa_numerador).replace(",","X").replace(".",",").replace("X",".") }} ÷ {{ "R$ {:,.2f}".format(taxa_denominador).replace(",","X").replace(".",",").replace("X",".") }}</div>
+      <div class="inad-card-val">{% if _taxa_ok %}{{ taxa_inadimplencia }}%{% else %}—{% endif %}</div>
+      <div class="inad-card-sub">
+        {{ "R$ {:,.2f}".format(taxa_numerador).replace(",","X").replace(".",",").replace("X",".") }}
+        {% if _taxa_ok %} ÷ {{ "R$ {:,.2f}".format(taxa_denominador).replace(",","X").replace(".",",").replace("X",".") }}{% else %} ÷ sem snapshot{% endif %}
+      </div>
       <div class="inad-card-sub" style="font-size:10px;opacity:0.6;margin-top:2px;">{{ taxa_debug }}</div>
     </div>
   </div>
