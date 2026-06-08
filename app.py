@@ -554,10 +554,9 @@ def _converter_pdf(caminho_docx: str, caminho_pdf: str):
                     )
                 _sh.copy2(gerado, pdf_abs)
         else:
-            # Sem LibreOffice — usa Google Drive API (Vercel / ambientes read-only)
-            from services.google_drive_pdf import docx_bytes_to_pdf
-            docx_bytes = Path(caminho_docx).read_bytes()
-            pdf_bytes  = docx_bytes_to_pdf(docx_bytes, Path(caminho_docx).name)
+            # Sem LibreOffice — usa mammoth + xhtml2pdf (Vercel / ambientes serverless)
+            from services.docx_to_pdf import docx_bytes_to_pdf
+            pdf_bytes = docx_bytes_to_pdf(Path(caminho_docx).read_bytes())
             Path(caminho_pdf).write_bytes(pdf_bytes)
 
 
