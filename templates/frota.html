@@ -2143,7 +2143,7 @@ document.addEventListener('click', function(e) {
       repasse_investidor:   ['repasse',  'Repasse investidor'],
       taxa_ativuz:          ['ativuz',   'Taxa Ativuz'],
       reembolso_manutencao: ['ativuz',   'Reembolso manutenção'],
-      ipva:                 ['seguro',   'IPVA'],
+      ipva:                 ['seguro',   'Seguro'],
       taxa_asaas:           ['taxa',     'Taxa ASAAS'],
       estorno:              ['estorno',  'Estorno'],
       outro:                ['outro',    'Outro'],
@@ -2262,7 +2262,7 @@ document.addEventListener('click', function(e) {
       { lbl: 'Cauções',               val: d.totais.caucao || 0,                  cls: 'entrada', sinal: 'pos', sub: 'R$3.000 por contrato' },
       { lbl: 'Taxa adm (Ativuz)',     val: d.totais.taxa_ativuz || 0,             cls: 'saida',   sinal: 'neg', sub: 'Gestão e administração' },
       { lbl: 'Reembolso manutenção',  val: d.totais.reembolso_manutencao || 0,    cls: 'saida',   sinal: 'neg', sub: 'PIX ao motorista' },
-      { lbl: 'IPVA',                  val: d.totais.ipva || 0,                    cls: 'saida',   sinal: 'neg', sub: 'Por veículo' },
+      { lbl: 'Seguro',                 val: d.totais.ipva || 0,                    cls: 'saida',   sinal: 'neg', sub: 'Por veículo' },
       { lbl: 'Taxas ASAAS',           val: d.totais.taxa_asaas || 0,              cls: 'saida',   sinal: 'neg', sub: 'Pix, WhatsApp, boleto' },
     ];
     document.getElementById('asaas-cards').innerHTML = cards.map(function(c) {
@@ -2437,7 +2437,7 @@ document.addEventListener('click', function(e) {
     var saidasCats = [
       {key:'taxa_ativuz',          label:'Taxa adm (ATIVUZ)',          cor:'#c2410c'},
       {key:'reembolso_manutencao', label:'Reembolso de manutenção',   cor:'#c2410c'},
-      {key:'ipva',                 label:'IPVA',                       cor:'#0369a1'},
+      {key:'ipva',                 label:'Seguro',                     cor:'#0369a1'},
       {key:'taxa_asaas',           label:'Taxas da plataforma ASAAS', cor:'#64748b'},
     ];
     var rowsSaidas = saidasCats.filter(function(c){ return d.totais[c.key]; }).map(function(c) {
@@ -2485,7 +2485,7 @@ document.addEventListener('click', function(e) {
       if (c === 'reembolso_manutencao') return 'Reembolso manutenção';
       if (c === 'ipva') {
         var m = (t.placa_seguro || t.descricao).match(/TSW[\w-]+/i);
-        return 'IPVA' + (m ? ' — ' + m[0].toUpperCase() : '');
+        return 'Seguro' + (m ? ' — ' + m[0].toUpperCase() : '');
       }
       if (c === 'taxa_asaas')           return 'Taxa ASAAS';
       return t.descricao.substring(0, 40);
@@ -2550,7 +2550,7 @@ document.addEventListener('click', function(e) {
     '<div class="card entrada"><div class="card-lbl">Cauções</div><div class="card-val pos">' + brl(d.totais.caucao||0) + '</div></div>' +
     '<div class="card saida"><div class="card-lbl">Taxa adm (Ativuz)</div><div class="card-val neg">' + brl(d.totais.taxa_ativuz||0) + '</div></div>' +
     (d.totais.reembolso_manutencao?'<div class="card saida"><div class="card-lbl">Reembolso manutenção</div><div class="card-val neg">'+brl(d.totais.reembolso_manutencao)+'</div></div>':'') +
-    (d.totais.ipva?'<div class="card saida"><div class="card-lbl">IPVA</div><div class="card-val neg">'+brl(d.totais.ipva)+'</div></div>':'') +
+    (d.totais.ipva?'<div class="card saida"><div class="card-lbl">Seguro</div><div class="card-val neg">'+brl(d.totais.ipva)+'</div></div>':'') +
     '<div class="card neutro"><div class="card-lbl">Taxas ASAAS</div><div class="card-val">' + brl(d.totais.taxa_asaas||0) + '</div></div>' +
     '</div>' +
     '<h2>' + (seg ? 'Extrato da semana' : 'Extrato do período') + ' — ' + semanaRef + '</h2>' +
