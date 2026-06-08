@@ -132,7 +132,9 @@
       "Bash(awk NR>=2540 && NR<=2548 || NR>=3756 && NR<=3780 *)",
       "Bash(venv/bin/python3 app.py)",
       "Bash(pkill -f \"venv/bin/python3 app.py\")",
-      "Bash(awk NR>=750 && NR<=760 *)"
+      "Bash(awk NR>=750 && NR<=760 *)",
+      "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz diff --stat)",
+      "Bash(git *)"
     ]
   }
 }
