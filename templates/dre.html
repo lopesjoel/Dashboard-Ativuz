@@ -406,7 +406,11 @@
       onclick="aceitarAjuste(this)">
       Aceitar
     </button>
-    <button class="btn-manter" onclick="this.closest('.ajuste-card').style.display='none'">
+    <button class="btn-manter"
+      data-atual="{{ a.codigo_atual | e }}"
+      data-descricao="{{ a.descricao | e }}"
+      data-nat-atual="{{ a.natureza_atual | e }}"
+      onclick="manterAjuste(this)">
       Manter atual
     </button>
   </div>
@@ -476,6 +480,36 @@ async function aceitarAjuste(btn) {
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'Aceitar';
+    alert('Erro de rede: ' + e.message);
+  }
+}
+
+async function manterAjuste(btn) {
+  const codigoAtual  = btn.dataset.atual;
+  const descricao    = btn.dataset.descricao;
+  const naturezaAtual = btn.dataset.natAtual;
+  btn.disabled = true;
+  btn.textContent = 'Salvando…';
+  try {
+    const resp = await fetch('/dre/api/aceitar-ajuste', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        codigo_atual: codigoAtual, descricao: descricao,
+        codigo_novo: codigoAtual, natureza_nova: naturezaAtual
+      })
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      btn.closest('.ajuste-card').classList.add('aceito');
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Manter atual';
+      alert('Erro: ' + (data.erro || 'desconhecido'));
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Manter atual';
     alert('Erro de rede: ' + e.message);
   }
 }
