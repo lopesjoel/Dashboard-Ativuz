@@ -10,6 +10,16 @@
             "timeout": 60
           }
         ]
+      },
+      {
+        "statusMessage": "Fazendo deploy automático para produção...",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vercel --prod",
+            "timeout": 300
+          }
+        ]
       }
     ]
   }
