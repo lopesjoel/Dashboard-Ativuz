@@ -1226,25 +1226,7 @@ def download_contrato(filename):
 
 @app.route("/historico/download-pdf/<path:filename>")
 def download_contrato_pdf(filename):
-    caminho_docx = (CONTRATOS_FOLDER / filename).resolve()
-    if not str(caminho_docx).startswith(str(CONTRATOS_FOLDER.resolve())):
-        abort(400)
-    if not caminho_docx.exists():
-        return jsonify({"error": "Arquivo não encontrado."}), 404
-
-    nome_pdf    = Path(filename).stem + ".pdf"
-    caminho_pdf = CONTRATOS_FOLDER / nome_pdf
-    try:
-        _converter_pdf(str(caminho_docx), str(caminho_pdf))
-        pdf_bytes = BytesIO(Path(caminho_pdf).read_bytes())
-        return send_file(
-            pdf_bytes,
-            as_attachment=True,
-            download_name=nome_pdf,
-            mimetype="application/pdf",
-        )
-    except Exception as e:
-        return jsonify({"error": f"Erro ao gerar PDF: {e}"}), 422
+    return redirect(url_for("visualizar_contrato_historico_pdf", filename=filename))
 
 
 @app.route("/historico/visualizar-pdf/<path:filename>")
@@ -1509,38 +1491,7 @@ def download_contrato_locacao_docx(contrato_id):
 
 @app.route("/historico/contratos/download/<contrato_id>/pdf")
 def download_contrato_locacao_pdf(contrato_id):
-    sb = _supabase()
-    if not sb:
-        abort(503)
-    try:
-        res = sb.table("contratos_locacao").select("arquivo_path").eq("id", contrato_id).single().execute()
-        docx_path = res.data["arquivo_path"]
-        docx_bytes = sb.storage.from_("documentos").download(docx_path)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    if not isinstance(docx_bytes, (bytes, bytearray)):
-        docx_bytes = getattr(docx_bytes, 'content', None) or bytes(docx_bytes)
-
-    tmp_docx = TEMP_FOLDER / f"{uuid.uuid4().hex}.docx"
-    tmp_pdf  = tmp_docx.with_suffix(".pdf")
-    TEMP_FOLDER.mkdir(exist_ok=True)
-    try:
-        tmp_docx.write_bytes(docx_bytes)
-        _converter_pdf(str(tmp_docx), str(tmp_pdf))
-        if not tmp_pdf.exists():
-            raise FileNotFoundError(f"LibreOffice não gerou o PDF")
-        pdf_bytes = tmp_pdf.read_bytes()
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"error": f"Erro ao gerar PDF: {e}"}), 422
-    finally:
-        tmp_docx.unlink(missing_ok=True)
-        tmp_pdf.unlink(missing_ok=True)
-
-    nome_pdf = Path(docx_path).stem + ".pdf"
-    return send_file(BytesIO(pdf_bytes), as_attachment=True,
-                     download_name=nome_pdf, mimetype="application/pdf")
+    return redirect(url_for("visualizar_contrato_pdf", contrato_id=contrato_id))
 
 
 @app.route("/historico/contratos/<contrato_id>/editar")
@@ -2117,35 +2068,8 @@ def editar_vistoria(vistoria_id):
 
 @app.route("/historico/vistorias/download/<vistoria_id>/pdf")
 def download_vistoria_pdf(vistoria_id):
-    sb = _supabase()
-    if not sb:
-        abort(503)
-    try:
-        res = sb.table("vistorias").select("*").eq("id", vistoria_id).single().execute()
-        registro = res.data
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    try:
-        docx_bytes, nome_docx = _gerar_docx_vistoria_bytes(registro, sb)
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"error": f"Erro ao regenerar vistoria: {e}"}), 500
+    return redirect(url_for("visualizar_vistoria_pdf", vistoria_id=vistoria_id))
 
-    TEMP_FOLDER.mkdir(exist_ok=True)
-    tmp_docx = TEMP_FOLDER / f"{uuid.uuid4().hex}.docx"
-    tmp_pdf  = tmp_docx.with_suffix(".pdf")
-    try:
-        tmp_docx.write_bytes(docx_bytes)
-        _converter_pdf(str(tmp_docx), str(tmp_pdf))
-        pdf_bytes = tmp_pdf.read_bytes()
-    except Exception as e:
-        return jsonify({"error": f"Erro ao gerar PDF: {e}"}), 422
-    finally:
-        tmp_docx.unlink(missing_ok=True)
-        tmp_pdf.unlink(missing_ok=True)
-
-    nome_pdf = nome_docx.replace(".docx", ".pdf")
-    return send_file(BytesIO(pdf_bytes), as_attachment=True, download_name=nome_pdf, mimetype="application/pdf")
 
 
 @app.route("/vistoria/download/<nome>")
