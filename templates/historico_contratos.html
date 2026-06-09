@@ -19,18 +19,29 @@ tbody tr { border-bottom: 1px solid #f1f5f9; }
 tbody tr:last-child { border-bottom: none; }
 tbody td { padding: 10px 14px; color: #374151; vertical-align: middle; }
 tbody tr:hover { background: #f8fafc; }
-.btn-acao {
-  display: inline-flex; align-items: center; gap: 5px;
-  border: none; border-radius: 6px; padding: 5px 11px;
-  font-size: 0.78rem; font-weight: 600; cursor: pointer;
-  text-decoration: none; transition: opacity 0.15s; color: #fff;
+.menu-wrap { position: relative; display: inline-block; }
+.btn-dots {
+  background: #334155; color: #cbd5e1; border: none; border-radius: 6px;
+  width: 32px; height: 32px; font-size: 1.2rem; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
 }
-.btn-acao:hover { opacity: 0.85; }
-.btn-docx { background: #1e3a5f; }
-.btn-pdf  { background: #b91c1c; }
-.btn-edit { background: #6b7280; }
-.btn-del  { background: #991b1b; }
-.acoes { display: flex; gap: 5px; flex-wrap: wrap; }
+.btn-dots:hover { background: #475569; }
+.dropdown {
+  display: none; position: absolute; right: 0; top: 36px; z-index: 200;
+  background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4); min-width: 150px; overflow: hidden;
+}
+.dropdown.open { display: block; }
+.dropdown a, .dropdown button {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 14px; background: none; border: none; text-align: left;
+  font-size: 0.82rem; font-weight: 600; color: #e2e8f0;
+  text-decoration: none; cursor: pointer; transition: background 0.12s;
+}
+.dropdown a:hover, .dropdown button:hover { background: #334155; }
+.dropdown .item-del { color: #f87171; }
+.dropdown .item-del:hover { background: #7f1d1d22; }
 .empty-state { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
 .alert-erro {
   background: #fef2f2; border: 1px solid #fecaca;
@@ -70,41 +81,31 @@ tbody tr:hover { background: #f8fafc; }
           <td>{{ (c.veiculo_marca or '') + ' ' + (c.veiculo_modelo or '') or '—' }}</td>
           <td style="white-space:nowrap">{{ c.contrato_inicio or '—' }}</td>
           <td>{% if c.valor_semanal %}R$ {{ c.valor_semanal }}{% else %}—{% endif %}</td>
-          <td>
+          <td style="text-align:right">
             {% if c.arquivo_path %}
-            <div class="acoes">
-              <a class="btn-acao btn-docx"
-                 href="{{ url_for('download_contrato_locacao_docx', contrato_id=c.id) }}">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                DOCX
-              </a>
-              <a class="btn-acao btn-pdf"
-                 href="{{ url_for('visualizar_contrato_pdf', contrato_id=c.id) }}"
-                 target="_blank">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                PDF
-              </a>
-              <a class="btn-acao btn-edit"
-                 href="{{ url_for('editar_contrato_locacao', contrato_id=c.id) }}">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Editar
-              </a>
-              <button class="btn-acao btn-del"
-                      data-id="{{ c.id }}"
-                      data-nome="{{ c.locatario_nome or c.veiculo_placa or 'este registro' }}"
-                      onclick="confirmarExclusao(this.dataset.id, this.dataset.nome)">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                Excluir
-              </button>
+            <div class="menu-wrap">
+              <button class="btn-dots" onclick="toggleMenu(this)" title="Ações">⋯</button>
+              <div class="dropdown">
+                <a href="{{ url_for('download_contrato_locacao_docx', contrato_id=c.id) }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Baixar DOCX
+                </a>
+                <a href="{{ url_for('visualizar_contrato_pdf', contrato_id=c.id) }}" target="_blank">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Visualizar PDF
+                </a>
+                <a href="{{ url_for('editar_contrato_locacao', contrato_id=c.id) }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Editar
+                </a>
+                <button class="item-del"
+                        data-id="{{ c.id }}"
+                        data-nome="{{ c.locatario_nome or c.veiculo_placa or 'este registro' }}"
+                        onclick="confirmarExclusao(this.dataset.id, this.dataset.nome)">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  Excluir
+                </button>
+              </div>
             </div>
             {% else %}
             <span style="color:#94a3b8; font-size:0.8rem;">sem arquivo</span>
@@ -181,6 +182,21 @@ async function executarExclusao() {
   btn.disabled = false; btn.textContent = 'Excluir';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharModal(); fecharMenus(); } });
+
+function toggleMenu(btn) {
+  const drop = btn.nextElementSibling;
+  const isOpen = drop.classList.contains('open');
+  fecharMenus();
+  if (!isOpen) drop.classList.add('open');
+}
+
+function fecharMenus() {
+  document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.menu-wrap')) fecharMenus();
+});
 </script>
 {% endblock %}
