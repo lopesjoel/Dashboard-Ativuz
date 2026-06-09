@@ -4917,7 +4917,7 @@ def api_sob_adm_toggle():
 
 
 
-_CONTRATOS_XLSX = Path(__file__).parent / "planilhas" / "Contratos de Locação.xlsx"
+_CONTRATOS_XLSX = Path(__file__).parent / "planilhas" / "contratos_locacao.xlsx"
 
 
 def _ler_contratos():
