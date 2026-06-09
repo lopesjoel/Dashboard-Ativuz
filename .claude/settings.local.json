@@ -142,7 +142,11 @@
       "Bash(vercel login *)",
       "Bash(vercel whoami *)",
       "Bash(vercel link *)",
-      "Bash(vercel *)"
+      "Bash(vercel *)",
+      "Read(//Users/karol/.config/**)",
+      "Read(//Users/karol/**)",
+      "Bash(cp /Users/karol/Documents/Dashboard-Ativuz/.vercel/project.json /tmp/vercel-project-backup.json)",
+      "Read(//tmp/**)"
     ]
   }
 }
