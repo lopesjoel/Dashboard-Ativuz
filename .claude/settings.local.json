@@ -146,7 +146,8 @@
       "Read(//Users/karol/.config/**)",
       "Read(//Users/karol/**)",
       "Bash(cp /Users/karol/Documents/Dashboard-Ativuz/.vercel/project.json /tmp/vercel-project-backup.json)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(venv/bin/python3 -c ' *)"
     ]
   }
 }

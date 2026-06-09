@@ -3,9 +3,40 @@ Converte DOCX → PDF usando mammoth (DOCX→HTML) + fpdf2 (HTML→PDF).
 100% Python puro — sem dependências de sistema (LibreOffice, Cairo, etc).
 """
 import io
+import unicodedata
 import mammoth
 from fpdf import FPDF
 from bs4 import BeautifulSoup, NavigableString
+
+
+def _safe(text: str) -> str:
+    """Normaliza texto para Latin-1 (suportado pela fonte Helvetica do fpdf2)."""
+    # Substitui pontuação tipográfica por equivalentes ASCII
+    _MAP = {
+        '“': '"', '”': '"',   # aspas duplas curvas
+        '‘': "'", '’': "'",   # aspas simples curvas
+        '—': '--', '–': '-',  # travessão / meia-risca
+        '…': '...', '•': '-', # reticências, bullet
+        '°': 'o',                  # grau
+        '½': '1/2', '¼': '1/4', '¾': '3/4',
+    }
+    text = ''.join(_MAP.get(ch, ch) for ch in text)
+    # Decompõe acentos e mantém só a letra base quando necessário
+    result = []
+    for ch in text:
+        try:
+            ch.encode('latin-1')
+            result.append(ch)
+        except UnicodeEncodeError:
+            # Tenta decompor (ex: ã → a + ~) e pega só a base
+            decomposed = unicodedata.normalize('NFD', ch)
+            base = decomposed[0]
+            try:
+                base.encode('latin-1')
+                result.append(base)
+            except UnicodeEncodeError:
+                result.append('?')
+    return ''.join(result)
 
 
 class _PDF(FPDF):
@@ -32,12 +63,12 @@ def _render_elem(pdf: FPDF, elem, base_size: int = 11):
         size = max(14 - (level - 1) * 2, 10)
         pdf.ln(3)
         pdf.set_font("Helvetica", style="B", size=size)
-        pdf.multi_cell(0, 7, elem.get_text().strip())
+        pdf.multi_cell(0, 7, _safe(elem.get_text().strip()))
         pdf.ln(1)
         pdf.set_font("Helvetica", size=base_size)
 
     elif tag == "p":
-        text = elem.get_text().strip()
+        text = _safe(elem.get_text().strip())
         if not text:
             pdf.ln(3)
             return
@@ -50,9 +81,9 @@ def _render_elem(pdf: FPDF, elem, base_size: int = 11):
 
     elif tag in ("ul", "ol"):
         for i, li in enumerate(elem.find_all("li", recursive=False)):
-            prefix = f"{i + 1}." if tag == "ol" else "•"
+            prefix = f"{i + 1}." if tag == "ol" else "-"
             pdf.set_font("Helvetica", size=base_size)
-            pdf.multi_cell(0, 6, f"   {prefix}  {li.get_text().strip()}")
+            pdf.multi_cell(0, 6, f"   {prefix}  {_safe(li.get_text().strip())}")
         pdf.ln(1)
 
     elif tag == "table":
@@ -70,8 +101,7 @@ def _render_elem(pdf: FPDF, elem, base_size: int = 11):
             cells = row.find_all(["td", "th"])
             is_header = r_idx == 0 or any(c.name == "th" for c in cells)
             line_h = 6
-            # Calcula altura máxima da linha
-            row_texts = [c.get_text().strip() for c in cells]
+            row_texts = [_safe(c.get_text().strip()) for c in cells]
 
             x0 = pdf.l_margin
             y0 = pdf.get_y()
