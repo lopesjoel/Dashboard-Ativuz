@@ -524,6 +524,11 @@ DOCX_TEMPLATES.mkdir(exist_ok=True)
 
 # ── helpers ───────────────────────────────────────────────
 
+def _docx_bytes_to_html(docx_bytes: bytes) -> str:
+    import mammoth, io
+    return mammoth.convert_to_html(io.BytesIO(docx_bytes)).value
+
+
 def _converter_pdf(caminho_docx: str, caminho_pdf: str):
     """Converte .docx para PDF.
     - Windows: usa Word via docx2pdf
@@ -1121,17 +1126,13 @@ def gerar_contrato_route():
 
     # ── Download direto ────────────────────────────────────
     if formato == "pdf":
-        nome_pdf    = nome_saida.replace(".docx", ".pdf")
-        caminho_pdf = str(CONTRATOS_FOLDER / nome_pdf)
+        nome_pdf = nome_saida.replace(".docx", ".pdf")
         try:
-            _converter_pdf(caminho_saida, caminho_pdf)
-            pdf_bytes = BytesIO(Path(caminho_pdf).read_bytes())
-            return send_file(
-                pdf_bytes,
-                as_attachment=True,
-                download_name=nome_pdf,
-                mimetype="application/pdf",
-            )
+            html_content = _docx_bytes_to_html(Path(caminho_saida).read_bytes())
+            viewer_html  = render_template("pdf_viewer.html",
+                                           html_content=html_content,
+                                           nome_arquivo=nome_pdf)
+            return jsonify({"viewer_html": viewer_html})
         except Exception as e:
             docx_url = url_for("download_contrato", filename=nome_saida)
             return jsonify({
@@ -1257,6 +1258,55 @@ def download_contrato_pdf(filename):
         )
     except Exception as e:
         return jsonify({"error": f"Erro ao gerar PDF: {e}"}), 422
+
+
+@app.route("/historico/visualizar-pdf/<path:filename>")
+def visualizar_contrato_historico_pdf(filename):
+    caminho_docx = (CONTRATOS_FOLDER / filename).resolve()
+    if not str(caminho_docx).startswith(str(CONTRATOS_FOLDER.resolve())):
+        abort(400)
+    if not caminho_docx.exists():
+        abort(404)
+    html_content = _docx_bytes_to_html(caminho_docx.read_bytes())
+    nome_pdf = Path(filename).stem + ".pdf"
+    return render_template("pdf_viewer.html", html_content=html_content, nome_arquivo=nome_pdf)
+
+
+@app.route("/historico/contratos/<contrato_id>/visualizar")
+def visualizar_contrato_pdf(contrato_id):
+    sb = _supabase()
+    if not sb:
+        abort(503)
+    try:
+        res = sb.table("contratos_locacao").select("arquivo_path").eq("id", contrato_id).single().execute()
+        docx_path  = res.data["arquivo_path"]
+        docx_bytes = sb.storage.from_("documentos").download(docx_path)
+    except Exception as e:
+        return f"Erro ao buscar contrato: {e}", 500
+    if not isinstance(docx_bytes, (bytes, bytearray)):
+        docx_bytes = getattr(docx_bytes, "content", None) or bytes(docx_bytes)
+    html_content = _docx_bytes_to_html(bytes(docx_bytes))
+    nome_pdf = Path(docx_path).stem + ".pdf"
+    return render_template("pdf_viewer.html", html_content=html_content, nome_arquivo=nome_pdf)
+
+
+@app.route("/historico/vistorias/<vistoria_id>/visualizar")
+def visualizar_vistoria_pdf(vistoria_id):
+    sb = _supabase()
+    if not sb:
+        abort(503)
+    try:
+        res = sb.table("vistorias").select("*").eq("id", vistoria_id).single().execute()
+        registro = res.data
+    except Exception as e:
+        return f"Erro ao buscar vistoria: {e}", 500
+    try:
+        docx_bytes, nome_docx = _gerar_docx_vistoria_bytes(registro, sb)
+    except Exception as e:
+        return f"Erro ao regenerar vistoria: {e}", 500
+    html_content = _docx_bytes_to_html(bytes(docx_bytes) if not isinstance(docx_bytes, (bytes, bytearray)) else docx_bytes)
+    nome_pdf = nome_docx.replace(".docx", ".pdf")
+    return render_template("pdf_viewer.html", html_content=html_content, nome_arquivo=nome_pdf)
 
 
 @app.route("/historico/excluir/<entry_id>", methods=["POST"])

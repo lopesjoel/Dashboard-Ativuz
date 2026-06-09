@@ -178,7 +178,7 @@ function fecharModalDownload() {
   _downloadFilename = null;
 }
 
-async function baixarFormato(formato) {
+function baixarFormato(formato) {
   if (!_downloadFilename) return;
 
   if (formato === 'docx') {
@@ -187,45 +187,9 @@ async function baixarFormato(formato) {
     return;
   }
 
-  // PDF — fetch + blob
-  const btnPdf   = document.getElementById('btn-dl-pdf');
-  const btnWord  = document.getElementById('btn-dl-word');
-  btnPdf.disabled  = true;
-  btnWord.disabled = true;
-  btnPdf.innerHTML = `
-    <svg class="spin" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
-         viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-    <span class="formato-nome">Gerando...</span>`;
-
-  try {
-    const resp = await fetch(`/historico/download-pdf/${encodeURIComponent(_downloadFilename)}`);
-    const ct = resp.headers.get('content-type') || '';
-
-    if (ct.includes('application/json')) {
-      const data = await resp.json();
-      document.getElementById('modal-dl-formatos').style.display = 'none';
-      document.getElementById('modal-dl-erro-msg').textContent   = data.error;
-      document.getElementById('modal-dl-erro').style.display     = 'flex';
-      return;
-    }
-
-    const blob = await resp.blob();
-    const disposition = resp.headers.get('content-disposition') || '';
-    const match = disposition.match(/filename[^;=\n]*=['"]?([^'"\n]+)['"]?/);
-    const filename = match ? match[1] : _downloadFilename.replace('.docx', '.pdf');
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    fecharModalDownload();
-
-  } catch (_) {
-    document.getElementById('modal-dl-formatos').style.display = 'none';
-    document.getElementById('modal-dl-erro-msg').textContent   = 'Erro de conexão. Tente novamente.';
-    document.getElementById('modal-dl-erro').style.display     = 'flex';
-  }
+  // PDF — abre em nova aba com html2pdf.js
+  window.open(`/historico/visualizar-pdf/${encodeURIComponent(_downloadFilename)}`, '_blank');
+  fecharModalDownload();
 }
 
 // ── Exclusão ─────────────────────────────────────────────────────────────────

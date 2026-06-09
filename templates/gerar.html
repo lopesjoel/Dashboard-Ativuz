@@ -668,6 +668,15 @@ async function submeterFormato(formato) {
   const btnEl      = document.getElementById(formato === 'docx' ? 'btn-word' : 'btn-pdf');
   const outroBtnEl = document.getElementById(formato === 'docx' ? 'btn-pdf'  : 'btn-word');
 
+  // Abre nova aba imediatamente (antes do fetch) para evitar bloqueio de pop-up
+  let pdfWin = null;
+  if (formato === 'pdf') {
+    pdfWin = window.open('', '_blank');
+    if (pdfWin) {
+      pdfWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Gerando PDF…</title></head><body style="font-family:sans-serif;padding:3rem;text-align:center;color:#374151"><p style="font-size:1.1rem">⏳ Gerando PDF…</p></body></html>');
+    }
+  }
+
   btnEl.disabled      = true;
   outroBtnEl.disabled = true;
   btnEl.innerHTML = `
@@ -689,10 +698,20 @@ async function submeterFormato(formato) {
 
     if (ct.includes('application/json')) {
       const data = await resp.json();
+      if (data.viewer_html && pdfWin) {
+        pdfWin.document.open();
+        pdfWin.document.write(data.viewer_html);
+        pdfWin.document.close();
+        fecharModal();
+        return;
+      }
+      if (pdfWin) pdfWin.close();
       if (data.redirect_url) { window.location.href = data.redirect_url; return; }
       mostrarErro(data.error, data.docx_url);
       return;
     }
+
+    if (pdfWin) pdfWin.close();
 
     const blob = await resp.blob();
     const disposition = resp.headers.get('content-disposition') || '';
@@ -711,6 +730,7 @@ async function submeterFormato(formato) {
     fecharModal();
 
   } catch (err) {
+    if (pdfWin) pdfWin.close();
     mostrarErro('Erro de conexão. Tente novamente.');
   }
 }
