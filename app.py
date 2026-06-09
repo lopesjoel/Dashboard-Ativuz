@@ -1115,10 +1115,11 @@ def gerar_contrato_route():
     if formato == "pdf":
         nome_pdf = nome_saida.replace(".docx", ".pdf")
         try:
-            html_content = _docx_bytes_to_html(Path(caminho_saida).read_bytes())
-            viewer_html  = render_template("pdf_viewer.html",
-                                           html_content=html_content,
-                                           nome_arquivo=nome_pdf)
+            import base64 as _b64
+            docx_b64    = _b64.b64encode(Path(caminho_saida).read_bytes()).decode()
+            viewer_html = render_template("pdf_viewer.html",
+                                          docx_b64=docx_b64,
+                                          nome_arquivo=nome_pdf)
             return jsonify({"viewer_html": viewer_html})
         except Exception as e:
             docx_url = url_for("download_contrato", filename=nome_saida)
@@ -1236,9 +1237,10 @@ def visualizar_contrato_historico_pdf(filename):
         abort(400)
     if not caminho_docx.exists():
         abort(404)
-    html_content = _docx_bytes_to_html(caminho_docx.read_bytes())
+    import base64 as _b64
+    docx_b64 = _b64.b64encode(caminho_docx.read_bytes()).decode()
     nome_pdf = Path(filename).stem + ".pdf"
-    return render_template("pdf_viewer.html", html_content=html_content, nome_arquivo=nome_pdf)
+    return render_template("pdf_viewer.html", docx_b64=docx_b64, nome_arquivo=nome_pdf)
 
 
 @app.route("/historico/contratos/<contrato_id>/visualizar")
@@ -1254,9 +1256,10 @@ def visualizar_contrato_pdf(contrato_id):
         return f"Erro ao buscar contrato: {e}", 500
     if not isinstance(docx_bytes, (bytes, bytearray)):
         docx_bytes = getattr(docx_bytes, "content", None) or bytes(docx_bytes)
-    html_content = _docx_bytes_to_html(bytes(docx_bytes))
+    import base64 as _b64
+    docx_b64 = _b64.b64encode(bytes(docx_bytes)).decode()
     nome_pdf = Path(docx_path).stem + ".pdf"
-    return render_template("pdf_viewer.html", html_content=html_content, nome_arquivo=nome_pdf)
+    return render_template("pdf_viewer.html", docx_b64=docx_b64, nome_arquivo=nome_pdf)
 
 
 @app.route("/historico/vistorias/<vistoria_id>/visualizar")
@@ -1273,9 +1276,11 @@ def visualizar_vistoria_pdf(vistoria_id):
         docx_bytes, nome_docx = _gerar_docx_vistoria_bytes(registro, sb)
     except Exception as e:
         return f"Erro ao regenerar vistoria: {e}", 500
-    html_content = _docx_bytes_to_html(bytes(docx_bytes) if not isinstance(docx_bytes, (bytes, bytearray)) else docx_bytes)
+    import base64 as _b64
+    raw = bytes(docx_bytes) if not isinstance(docx_bytes, (bytes, bytearray)) else docx_bytes
+    docx_b64 = _b64.b64encode(raw).decode()
     nome_pdf = nome_docx.replace(".docx", ".pdf")
-    return render_template("pdf_viewer.html", html_content=html_content, nome_arquivo=nome_pdf)
+    return render_template("pdf_viewer.html", docx_b64=docx_b64, nome_arquivo=nome_pdf)
 
 
 @app.route("/historico/excluir/<entry_id>", methods=["POST"])
