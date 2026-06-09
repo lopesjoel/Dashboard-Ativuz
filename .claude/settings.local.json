@@ -134,7 +134,10 @@
       "Bash(pkill -f \"venv/bin/python3 app.py\")",
       "Bash(awk NR>=750 && NR<=760 *)",
       "Bash(git -C /Users/karol/Documents/Dashboard-Ativuz diff --stat)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(vercel logs *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel env *)"
     ]
   }
 }
