@@ -40,58 +40,30 @@ tbody tr:last-child { border-bottom: none; }
 tbody td { padding: 10px 14px; color: #374151; vertical-align: middle; }
 tbody tr:hover { background: #f8fafc; }
 
-/* Botões de ação */
-.btn-acao {
-  display: inline-flex; align-items: center; gap: 5px;
-  border: none; border-radius: 6px;
-  padding: 5px 11px; font-size: 0.78rem; font-weight: 600;
-  cursor: pointer; text-decoration: none;
-  transition: opacity 0.15s;
-  color: #fff;
-  white-space: nowrap;
+.menu-wrap { position: relative; display: inline-block; }
+.btn-dots {
+  background: #334155; color: #cbd5e1; border: none; border-radius: 6px;
+  width: 32px; height: 32px; font-size: 1.2rem; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
 }
-.btn-acao:hover { opacity: 0.85; }
-.btn-edit      { background: #6b7280; }
-.btn-devolucao { background: #1e3a5f; }
-.btn-del       { background: #991b1b; }
-
-/* Dropdown de download */
-.dropdown { position: relative; display: inline-block; }
-.btn-download {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: #0f766e; color: #fff;
-  border: none; border-radius: 6px;
-  padding: 5px 11px; font-size: 0.78rem; font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+.btn-dots:hover { background: #475569; }
+.dropdown {
+  display: none; position: absolute; right: 0; top: 36px; z-index: 200;
+  background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4); min-width: 160px; overflow: hidden;
 }
-.btn-download:hover { opacity: 0.85; }
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  min-width: 130px;
-  z-index: 100;
-  overflow: hidden;
+.dropdown.open { display: block; }
+.dropdown a, .dropdown button {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 14px; background: none; border: none; text-align: left;
+  font-size: 0.82rem; font-weight: 600; color: #e2e8f0;
+  text-decoration: none; cursor: pointer; transition: background 0.12s;
 }
-.dropdown.open .dropdown-menu { display: block; }
-.dropdown-menu a {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px;
-  font-size: 0.82rem; font-weight: 600;
-  color: #374151; text-decoration: none;
-}
-.dropdown-menu a:hover { background: #f8fafc; }
-.dropdown-menu a + a { border-top: 1px solid #f1f5f9; }
-.ico-docx { color: #1e3a5f; }
-.ico-pdf  { color: #b91c1c; }
-
-.acoes { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.dropdown a:hover, .dropdown button:hover { background: #334155; }
+.dropdown .item-del { color: #f87171; }
+.dropdown .item-del:hover { background: #7f1d1d22; }
+.dropdown hr { border: none; border-top: 1px solid #334155; margin: 2px 0; }
 
 .empty-state {
   text-align: center; padding: 3rem 1rem; color: #94a3b8;
@@ -144,69 +116,39 @@ tbody tr:hover { background: #f8fafc; }
               <span style="color:#94a3b8; font-size:0.8rem;">—</span>
             {% endif %}
           </td>
-          <td>
-            <div class="acoes">
-
-              {# ── Download dropdown ── #}
-              {% if v.arquivo_path %}
-              <div class="dropdown" id="dd_{{ v.id }}">
-                <button class="btn-download" onclick="toggleDd('{{ v.id }}')">
-                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                       viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Download
-                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"
-                       viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <td style="text-align:right">
+            <div class="menu-wrap">
+              <button class="btn-dots" onclick="toggleMenu(this)" title="Ações">⋯</button>
+              <div class="dropdown">
+                {% if v.arquivo_path %}
+                <a href="{{ url_for('download_vistoria_supabase', vistoria_id=v.id) }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Baixar DOCX
+                </a>
+                <a href="{{ url_for('visualizar_vistoria_pdf', vistoria_id=v.id) }}" target="_blank">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Visualizar PDF
+                </a>
+                <hr>
+                {% endif %}
+                {% if v.status == 'pendente_saida' %}
+                <a href="{{ url_for('editar_vistoria', vistoria_id=v.id) }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+                  Devolução
+                </a>
+                {% endif %}
+                <a href="{{ url_for('editar_vistoria', vistoria_id=v.id) }}">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Editar
+                </a>
+                <button class="item-del"
+                        data-id="{{ v.id }}"
+                        data-nome="{{ v.cliente or v.placa or 'este registro' }}"
+                        onclick="confirmarExclusao(this.dataset.id, this.dataset.nome)">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  Excluir
                 </button>
-                <div class="dropdown-menu">
-                  <a href="{{ url_for('download_vistoria_supabase', vistoria_id=v.id) }}">
-                    <svg class="ico-docx" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
-                         viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/></svg>
-                    DOCX
-                  </a>
-                  <a href="{{ url_for('visualizar_vistoria_pdf', vistoria_id=v.id) }}" target="_blank">
-                    <svg class="ico-pdf" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
-                         viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/></svg>
-                    PDF
-                  </a>
-                </div>
               </div>
-              {% endif %}
-
-              {# ── Devolução (só para pendente_saida) ── #}
-              {% if v.status == 'pendente_saida' %}
-              <a class="btn-acao btn-devolucao"
-                 href="{{ url_for('editar_vistoria', vistoria_id=v.id) }}">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path d="M9 14l-4-4 4-4"/>
-                  <path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
-                Devolução
-              </a>
-              {% endif %}
-
-              {# ── Editar ── #}
-              <a class="btn-acao btn-edit"
-                 href="{{ url_for('editar_vistoria', vistoria_id=v.id) }}">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Editar
-              </a>
-
-              {# ── Excluir ── #}
-              <button class="btn-acao btn-del"
-                      data-id="{{ v.id }}"
-                      data-nome="{{ v.cliente or v.placa or 'este registro' }}"
-                      onclick="confirmarExclusao(this.dataset.id, this.dataset.nome)">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                Excluir
-              </button>
-
             </div>
           </td>
         </tr>
@@ -252,17 +194,18 @@ tbody tr:hover { background: #f8fafc; }
 </div>
 
 <script>
-/* ── Dropdown de download ── */
-function toggleDd(id) {
-  const el = document.getElementById('dd_' + id);
-  const isOpen = el.classList.contains('open');
+/* ── Menu ── */
+function toggleMenu(btn) {
+  const drop = btn.nextElementSibling;
+  const isOpen = drop.classList.contains('open');
+  fecharMenus();
+  if (!isOpen) drop.classList.add('open');
+}
+function fecharMenus() {
   document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-  if (!isOpen) el.classList.add('open');
 }
 document.addEventListener('click', e => {
-  if (!e.target.closest('.dropdown')) {
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-  }
+  if (!e.target.closest('.menu-wrap')) fecharMenus();
 });
 
 /* ── Exclusão ── */
@@ -294,6 +237,6 @@ async function executarExclusao() {
   btn.disabled = false; btn.textContent = 'Excluir';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharModal(); fecharMenus(); } });
 </script>
 {% endblock %}
