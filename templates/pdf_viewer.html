@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ nome_arquivo }}</title>
-  <script src="https://unpkg.com/docx-preview@0.3.5/dist/docx-preview.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.1.22/dist/docx-preview.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; background: #f1f5f9; }
@@ -57,36 +57,49 @@
   </div>
 
   <script>
-    const b64 = "{{ docx_b64 }}";
+    const b64 = "{{ docx_b64 | safe }}";
 
-    function b64toBlob(b64) {
-      const bin = atob(b64);
-      const arr = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-      return new Blob([arr], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    function b64toBlob(b64str) {
+      try {
+        const bin = atob(b64str);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      } catch(e) {
+        return null;
+      }
     }
 
-    const blob = b64toBlob(b64);
+    function renderDoc() {
+      if (typeof docx === "undefined") {
+        document.getElementById("status-msg").textContent = "❌ Erro: biblioteca não carregou.";
+        return;
+      }
+      const blob = b64toBlob(b64);
+      if (!blob) {
+        document.getElementById("status-msg").textContent = "❌ Erro ao decodificar documento.";
+        return;
+      }
+      docx.renderAsync(blob, document.getElementById("conteudo"), null, {
+        className: "docx-preview",
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        breakPages: true,
+        useBase64URL: true,
+        renderEndnotes: true,
+        renderFootnotes: true,
+        renderFooters: true,
+        renderHeaders: true,
+      }).then(() => {
+        document.getElementById("status-msg").textContent = "";
+      }).catch(err => {
+        document.getElementById("status-msg").textContent = "❌ Erro ao renderizar: " + err.message;
+        console.error(err);
+      });
+    }
 
-    docx.renderAsync(blob, document.getElementById("conteudo"), null, {
-      className: "docx-preview",
-      inWrapper: true,
-      ignoreWidth: false,
-      ignoreHeight: false,
-      ignoreFonts: false,
-      breakPages: true,
-      useBase64URL: true,
-      useMathMLPolyfill: false,
-      renderEndnotes: true,
-      renderFootnotes: true,
-      renderFooters: true,
-      renderHeaders: true,
-    }).then(() => {
-      document.getElementById("status-msg").textContent = "";
-    }).catch(err => {
-      document.getElementById("status-msg").textContent = "Erro ao renderizar documento.";
-      console.error(err);
-    });
+    window.addEventListener("load", renderDoc);
 
     function baixarPDF() {
       window.print();
