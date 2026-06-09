@@ -1,0 +1,21 @@
+name: Deploy to Vercel (Colinatech)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to Production
+        run: vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: team_KJCYEweWviglyBKocbfLV2aj
+          VERCEL_PROJECT_ID: prj_NoZCsAbekkoh5zMfRP6xfuUwmQnT
