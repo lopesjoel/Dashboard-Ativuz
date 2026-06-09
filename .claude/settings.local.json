@@ -137,7 +137,12 @@
       "Bash(git *)",
       "Bash(vercel logs *)",
       "Bash(vercel ls *)",
-      "Bash(vercel env *)"
+      "Bash(vercel env *)",
+      "Bash(vercel logout *)",
+      "Bash(vercel login *)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel link *)",
+      "Bash(vercel *)"
     ]
   }
 }
