@@ -91,7 +91,9 @@ def login():
                 res = auth_client.auth.sign_in_with_password({"email": email, "password": senha})
                 session["usuario"] = nome
                 return redirect(url_for("dashboard"))
-            except Exception:
+            except Exception as e:
+                import traceback; traceback.print_exc()
+                print(f"LOGIN ERROR: {e}")
                 erro = "Nome ou senha incorretos."
     return render_template("login.html", erro=erro)
 
