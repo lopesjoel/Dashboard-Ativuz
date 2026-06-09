@@ -60,7 +60,7 @@ def _nh(s):
 
 # ── Autenticação ──────────────────────────────────────────────────────────────
 
-_ROTAS_PUBLICAS = {"login", "static", "admin_novo_usuario"}
+_ROTAS_PUBLICAS = {"login", "static", "admin_novo_usuario", "debug_env"}
 
 @app.before_request
 def verificar_login():
@@ -96,6 +96,21 @@ def login():
                 print(f"LOGIN ERROR: {e}")
                 erro = "Nome ou senha incorretos."
     return render_template("login.html", erro=erro)
+
+
+@app.route("/debug-env")
+def debug_env():
+    import os, traceback
+    url = os.environ.get("SUPABASE_URL", "NAO_ENCONTRADO")
+    key = os.environ.get("SUPABASE_KEY", "NAO_ENCONTRADO")
+    key_preview = key[:20] + "..." if len(key) > 20 else key
+    try:
+        from supabase import create_client
+        client = create_client(url, key)
+        result = {"supabase_url": url, "supabase_key_preview": key_preview, "client": "OK"}
+    except Exception as e:
+        result = {"supabase_url": url, "supabase_key_preview": key_preview, "client_error": str(e), "traceback": traceback.format_exc()}
+    return jsonify(result)
 
 
 @app.route("/logout")
