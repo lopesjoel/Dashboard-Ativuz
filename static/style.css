@@ -84,14 +84,18 @@
   --sb-active-ink:#fff;
 }
 
-/* logo: white on dark/orange sidebar */
-.sidebar[data-variant="dark"] .sb-brand-logo,
-.sidebar[data-variant="orange"] .sb-brand-logo {
+/* logo: white on dark/orange sidebar (only legacy logo) */
+.sidebar[data-variant="dark"] .sb-brand-logo:not(.sb-logo-full):not(.sb-logo-z),
+.sidebar[data-variant="orange"] .sb-brand-logo:not(.sb-logo-full):not(.sb-logo-z) {
   filter: brightness(0) invert(1);
 }
 .sidebar[data-variant="light"] .sb-brand-logo {
   filter: none;
 }
+/* sidebar logo swap: full ↔ z */
+.sb-logo-z { display: none !important; }
+.app[data-sidebar="collapsed"] .sb-logo-full { display: none !important; }
+.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 32px; width: auto; flex: none; }
 
 /* brand area */
 .sb-brand {
