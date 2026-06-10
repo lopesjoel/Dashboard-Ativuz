@@ -2,7 +2,13 @@
 <html lang="pt-BR">
 <head>
 <script>
-  (function(){var t=localStorage.getItem('ativuz-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+  (function(){
+    var t=localStorage.getItem('ativuz-theme');
+    if(t==='dark')document.documentElement.setAttribute('data-theme','dark');
+    if(localStorage.getItem('ativuz-sidebar')==='collapsed'){
+      document.documentElement.setAttribute('data-sidebar-init','collapsed');
+    }
+  })();
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -435,9 +441,19 @@
   var collapseBtn = document.getElementById('collapse-btn');
   var logoZ = document.getElementById('logo-z-expand');
 
+  // Restaurar estado salvo
+  if (app && localStorage.getItem('ativuz-sidebar') === 'collapsed') {
+    app.dataset.sidebar = 'collapsed';
+    if (collapseBtn) {
+      collapseBtn.setAttribute('aria-label', 'Expandir menu');
+      collapseBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+    }
+  }
+
   function expandSidebar() {
     if (!app) return;
     delete app.dataset.sidebar;
+    localStorage.removeItem('ativuz-sidebar');
     if (collapseBtn) {
       collapseBtn.setAttribute('aria-label', 'Recolher menu');
       collapseBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -450,6 +466,7 @@
         expandSidebar();
       } else {
         app.dataset.sidebar = 'collapsed';
+        localStorage.setItem('ativuz-sidebar', 'collapsed');
         collapseBtn.setAttribute('aria-label', 'Expandir menu');
         collapseBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
       }
