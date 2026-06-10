@@ -2675,6 +2675,10 @@ def exportar_inadimplencia():
 
                 venc_raw  = _gv(row, i_venc)
                 sit_raw   = _nh(str(_gv(row, i_sit) or ""))
+                doc_raw   = _gv(row, i_doc)
+                num_doc   = str(doc_raw or "").strip()
+                for s in ("None", "nan", ""):
+                    if num_doc == s: num_doc = ""
                 venc_date = None
                 if venc_raw:
                     if isinstance(venc_raw, datetime): venc_date = venc_raw.date()
