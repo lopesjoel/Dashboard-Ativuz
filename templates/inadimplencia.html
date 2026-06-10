@@ -1096,6 +1096,65 @@
   }
   .btn-copy-resumo:hover { background: #e0f2fe; }
   .btn-copy-resumo.copied { background: #dcfce7; color: #166534; }
+  .btn-aplicar-desconto {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px; background: transparent; color: #93c5fd;
+    border: 1.5px solid #3b6ea5; border-radius: 9px;
+    font-size: 0.8rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; white-space: nowrap;
+    transition: background .12s, color .12s, border-color .12s;
+    flex-shrink: 0;
+  }
+  .btn-aplicar-desconto:hover { background: rgba(147,197,253,.12); border-color: #93c5fd; color: #fff; }
+  .debitos-desconto-form {
+    display: none;
+    align-items: center; gap: 8px;
+    padding: 10px 20px;
+    background: #16304f;
+    border-top: 1px solid #2a4a6e;
+    flex-shrink: 0;
+  }
+  .debitos-desconto-form.open { display: flex; }
+  .debitos-desconto-form label {
+    font-size: 0.75rem; font-weight: 700; color: #93c5fd;
+    white-space: nowrap;
+  }
+  .desconto-input {
+    width: 110px; padding: 7px 10px;
+    background: #1e3a5f; border: 1.5px solid #3b6ea5; border-radius: 7px;
+    color: #fff; font-size: 0.85rem; font-family: inherit;
+    outline: none; text-align: right;
+  }
+  .desconto-input:focus { border-color: #93c5fd; }
+  .btn-desconto-salvar {
+    padding: 7px 14px; background: #22c55e; color: #fff;
+    border: none; border-radius: 7px;
+    font-size: 0.78rem; font-weight: 700; font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-desconto-salvar:hover { background: #16a34a; }
+  .btn-desconto-cancelar-form {
+    padding: 7px 10px; background: transparent; color: #6b7280;
+    border: 1px solid #374151; border-radius: 7px;
+    font-size: 0.78rem; font-weight: 600; font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-desconto-cancelar-form:hover { color: #e5e7eb; border-color: #6b7280; }
+  .tr-desconto td { color: #4ade80; font-style: italic; }
+  .tr-desconto .td-val { color: #4ade80; font-weight: 700; }
+  .btn-cancelar-desconto-row {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px;
+    background: #fee2e2; color: #dc2626;
+    border: none; border-radius: 5px;
+    font-size: 0.85rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; line-height: 1;
+  }
+  .btn-cancelar-desconto-row:hover { background: #fca5a5; }
+  .debitos-footer-total .fp-lbl-desc {
+    font-size: 0.6rem; color: #4ade80; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .04em; margin-top: 1px;
+  }
 </style>
 {% endblock %}
 
@@ -1880,6 +1939,8 @@ const _detalhe = [
   var searchInput  = document.getElementById('search-nome');
   var dropdown     = document.getElementById('search-dropdown');
   var _debitosItens = [];
+  var _descontoValor = 0;
+  var _totalOriginal = 0;
 
   function fecharDropdown() {
     if (dropdown) dropdown.style.display = 'none';
@@ -1925,25 +1986,119 @@ const _detalhe = [
     tbody.innerHTML = rows;
     if (elSub)   elSub.textContent  = itens.length + ' fatura' + (itens.length !== 1 ? 's' : '') + ' em aberto';
     if (elTotal) elTotal.textContent = _brlFmt(soma);
+    _totalOriginal = soma;
+    _descontoValor = 0;
 
     var btnRes = document.getElementById('btn-copy-resumo');
-    if (btnRes) { btnRes.textContent = 'Copiar Resumo'; btnRes.classList.remove('copied'); }
+    if (btnRes) { btn_resumo_reset(btnRes); }
+
+    // reset desconto UI
+    var lbl = document.getElementById('debitos-total-lbl');
+    var orig = document.getElementById('debitos-total-original');
+    if (lbl)  { lbl.textContent = 'Total Pendente'; }
+    if (orig) { orig.style.display = 'none'; orig.textContent = ''; }
+    var formD = document.getElementById('desconto-form');
+    if (formD) { formD.classList.remove('open'); document.getElementById('desconto-input').value = ''; }
 
     overlay.classList.add('open');
   }
 
+  function btn_resumo_reset(btn) {
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar Resumo';
+    btn.classList.remove('copied');
+  }
+
+  window.abrirFormDesconto = function () {
+    var form = document.getElementById('desconto-form');
+    if (!form) return;
+    form.classList.add('open');
+    var inp = document.getElementById('desconto-input');
+    if (inp) { inp.value = _descontoValor > 0 ? _brlFmt(_descontoValor).replace('R$ ','') : ''; inp.focus(); }
+  };
+
+  window.fecharFormDesconto = function () {
+    var form = document.getElementById('desconto-form');
+    if (form) form.classList.remove('open');
+  };
+
+  window.salvarDesconto = function () {
+    var inp = document.getElementById('desconto-input');
+    if (!inp) return;
+    var raw = inp.value.trim().replace(/\./g,'').replace(',','.');
+    var val = parseFloat(raw);
+    if (isNaN(val) || val < 0) { inp.focus(); return; }
+    if (val >= _totalOriginal) { inp.focus(); return; }
+    _descontoValor = val;
+    _aplicarDesconto();
+    fecharFormDesconto();
+  };
+
+  function _aplicarDesconto() {
+    var elTotal = document.getElementById('debitos-modal-total');
+    var lbl     = document.getElementById('debitos-total-lbl');
+    var orig    = document.getElementById('debitos-total-original');
+    var tbody   = document.getElementById('debitos-modal-tbody');
+    if (!elTotal) return;
+
+    if (_descontoValor > 0) {
+      var novoTotal = _totalOriginal - _descontoValor;
+      if (elTotal) elTotal.textContent = _brlFmt(novoTotal);
+      if (lbl)  lbl.textContent = 'Total com Desconto';
+      if (orig) { orig.textContent = 'Original: ' + _brlFmt(_totalOriginal); orig.style.display = ''; }
+
+      // remove existing desconto row if any
+      var old = document.getElementById('tr-desconto');
+      if (old) old.remove();
+
+      // insert desconto row at end of tbody
+      if (tbody) {
+        var tr = document.createElement('tr');
+        tr.id = 'tr-desconto';
+        tr.className = 'tr-desconto';
+        tr.innerHTML =
+          '<td class="td-num" style="color:#4ade80;font-style:italic;">DESCONTO</td>' +
+          '<td></td>' +
+          '<td class="td-val">− ' + _brlFmt(_descontoValor) + '</td>' +
+          '<td><button class="btn-cancelar-desconto-row" onclick="cancelarDesconto()" title="Cancelar desconto">✕</button></td>';
+        tbody.appendChild(tr);
+      }
+    } else {
+      _cancelarDescontoUI();
+    }
+  }
+
+  window.cancelarDesconto = function () {
+    _descontoValor = 0;
+    _cancelarDescontoUI();
+  };
+
+  function _cancelarDescontoUI() {
+    var elTotal = document.getElementById('debitos-modal-total');
+    var lbl     = document.getElementById('debitos-total-lbl');
+    var orig    = document.getElementById('debitos-total-original');
+    var old     = document.getElementById('tr-desconto');
+    if (elTotal) elTotal.textContent = _brlFmt(_totalOriginal);
+    if (lbl)  lbl.textContent = 'Total Pendente';
+    if (orig) { orig.style.display = 'none'; orig.textContent = ''; }
+    if (old)  old.remove();
+  }
+
   window.copiarResumoDebitos = function () {
     var elNome  = document.getElementById('debitos-modal-nome');
-    var elTotal = document.getElementById('debitos-modal-total');
     var nome    = elNome  ? elNome.textContent  : '';
-    var total   = elTotal ? elTotal.textContent : '';
     var sep     = '─────────────────────────';
     var linhas  = [nome, sep];
     _debitosItens.forEach(function (r) {
       linhas.push('Fatura: ' + (r.num_doc || '—') + ' | Vencimento: ' + r.venc + ' | Valor: ' + r.valor_s);
     });
     linhas.push(sep);
-    linhas.push('Total Pendente: ' + total);
+    if (_descontoValor > 0) {
+      linhas.push('Subtotal: ' + _brlFmt(_totalOriginal));
+      linhas.push('Desconto: − ' + _brlFmt(_descontoValor));
+      linhas.push('Total com Desconto: ' + _brlFmt(_totalOriginal - _descontoValor));
+    } else {
+      linhas.push('Total Pendente: ' + _brlFmt(_totalOriginal));
+    }
     var txt = linhas.join('\n');
     var btn = document.getElementById('btn-copy-resumo');
     function fb() {
@@ -3851,18 +4006,35 @@ function inadSwitch(aba) {
         <tbody id="debitos-modal-tbody"></tbody>
       </table>
     </div>
+    <div class="debitos-desconto-form" id="desconto-form">
+      <label for="desconto-input">Desconto (R$)</label>
+      <input type="text" id="desconto-input" class="desconto-input" placeholder="0,00"
+             oninput="this.value=this.value.replace(/[^0-9,.]/g,'')"
+             onkeydown="if(event.key==='Enter')salvarDesconto()">
+      <button class="btn-desconto-salvar" onclick="salvarDesconto()">Salvar</button>
+      <button class="btn-desconto-cancelar-form" onclick="fecharFormDesconto()">Cancelar</button>
+    </div>
     <div class="debitos-modal-footer">
       <div class="debitos-footer-total">
-        <span class="fp-lbl">Total Pendente</span>
+        <span class="fp-lbl" id="debitos-total-lbl">Total Pendente</span>
         <span class="fp-val" id="debitos-modal-total"></span>
+        <span class="fp-lbl-desc" id="debitos-total-original" style="display:none;"></span>
       </div>
-      <button class="btn-copy-resumo" id="btn-copy-resumo" onclick="copiarResumoDebitos()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <rect x="9" y="9" width="13" height="13" rx="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-        </svg>
-        Copiar Resumo
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+        <button class="btn-aplicar-desconto" id="btn-aplicar-desconto" onclick="abrirFormDesconto()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Desconto
+        </button>
+        <button class="btn-copy-resumo" id="btn-copy-resumo" onclick="copiarResumoDebitos()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copiar Resumo
+        </button>
+      </div>
     </div>
   </div>
 </div>
