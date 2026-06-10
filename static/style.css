@@ -274,6 +274,8 @@
 .app[data-sidebar="collapsed"] .sb-user .info { display: none; }
 .app[data-sidebar="collapsed"] .sb-user { justify-content: center; padding: 14px 8px; }
 .app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 15px !important; width: auto; flex: none; }
+.app[data-sidebar="collapsed"] .sb-manut-tag { display: none; }
+.app[data-sidebar="collapsed"] .sb-item-config { margin: 0 !important; padding: 9px; justify-content: center; }
 
 /* ═══════════════════════════════════
    TOPBAR
