@@ -28,9 +28,10 @@
       <a href="{{ url_for('dashboard') }}" style="display:flex;align-items:center;flex:1;min-width:0;">
         <img src="{{ url_for('static', filename='sidebar-logo-full.png') }}"
              alt="ATIVUZ" class="sb-brand-logo sb-logo-full">
-        <img src="{{ url_for('static', filename='sidebar-logo-z.png') }}"
-             alt="ATIVUZ" class="sb-brand-logo sb-logo-z">
       </a>
+      <img src="{{ url_for('static', filename='sidebar-logo-z.png') }}"
+           alt="ATIVUZ" class="sb-brand-logo sb-logo-z"
+           id="logo-z-expand" style="cursor:pointer;" title="Expandir menu">
       <button class="sb-collapse-btn" id="collapse-btn"
               aria-label="Recolher menu" title="Recolher menu">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -432,18 +433,31 @@
   /* ── Desktop collapse ── */
   var app = document.getElementById('app-shell');
   var collapseBtn = document.getElementById('collapse-btn');
+  var logoZ = document.getElementById('logo-z-expand');
+
+  function expandSidebar() {
+    if (!app) return;
+    delete app.dataset.sidebar;
+    if (collapseBtn) {
+      collapseBtn.setAttribute('aria-label', 'Recolher menu');
+      collapseBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
+    }
+  }
+
   if (collapseBtn && app) {
     collapseBtn.addEventListener('click', function () {
       if (app.dataset.sidebar === 'collapsed') {
-        delete app.dataset.sidebar;
-        collapseBtn.setAttribute('aria-label', 'Recolher menu');
-        collapseBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>';
+        expandSidebar();
       } else {
         app.dataset.sidebar = 'collapsed';
         collapseBtn.setAttribute('aria-label', 'Expandir menu');
         collapseBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
       }
     });
+  }
+
+  if (logoZ) {
+    logoZ.addEventListener('click', expandSidebar);
   }
 
   /* ── Mobile menu ── */

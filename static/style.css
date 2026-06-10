@@ -95,7 +95,8 @@
 /* sidebar logo swap: full ↔ z */
 .sb-logo-z { display: none !important; }
 .app[data-sidebar="collapsed"] .sb-logo-full { display: none !important; }
-.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 32px; width: auto; flex: none; }
+.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 19px; width: auto; flex: none; }
+.app[data-sidebar="collapsed"] .sb-collapse-btn { display: none; }
 
 /* brand area */
 .sb-brand {
@@ -108,7 +109,7 @@
   flex-shrink: 0;
 }
 .sb-brand-logo {
-  height: 36px;
+  height: 22px;
   width: auto;
   max-width: 140px;
   display: block;
