@@ -1496,20 +1496,6 @@
       </div>
 
 
-      <!-- Próxima ação accordion (open by default at D+7+) -->
-      <details class="inad-acao-wrap" {% if r.dias_atraso >= 7 %}open{% endif %}>
-        <summary>
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-          Próxima ação
-          <svg class="acao-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </summary>
-        <div class="inad-acao-body">{{ r.proxima_acao }}</div>
-      </details>
-
       <!-- Financial breakdown -->
       <div class="inad-fin">
         <div class="fin-row">
