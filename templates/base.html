@@ -498,6 +498,32 @@
     });
   }
 
+  /* ── Tooltips no modo colapsado ── */
+  var sbTip = document.createElement('div');
+  sbTip.style.cssText = 'position:fixed;z-index:9999;background:#1e2d4f;color:#e2e8f0;padding:5px 11px;border-radius:7px;font-size:0.78rem;font-family:inherit;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 2px 10px rgba(0,0,0,.3);';
+  document.body.appendChild(sbTip);
+
+  if (sidebar) {
+    sidebar.querySelectorAll('.sb-item').forEach(function (item) {
+      var labelEl = item.querySelector('.sb-item-label');
+      if (!labelEl) return;
+      item.addEventListener('mouseenter', function () {
+        if (!app || app.dataset.sidebar !== 'collapsed') return;
+        var label = labelEl.textContent.trim();
+        if (!label) return;
+        var rect = item.getBoundingClientRect();
+        sbTip.textContent = label;
+        sbTip.style.top  = (rect.top + rect.height / 2) + 'px';
+        sbTip.style.left = (rect.right + 10) + 'px';
+        sbTip.style.transform = 'translateY(-50%)';
+        sbTip.style.opacity = '1';
+      });
+      item.addEventListener('mouseleave', function () {
+        sbTip.style.opacity = '0';
+      });
+    });
+  }
+
 })();
 </script>
 
