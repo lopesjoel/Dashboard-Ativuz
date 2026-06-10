@@ -95,7 +95,8 @@
 /* sidebar logo swap: full ↔ z */
 .sb-logo-z { display: none !important; }
 .app[data-sidebar="collapsed"] .sb-logo-full { display: none !important; }
-.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 19px; width: auto; flex: none; }
+.app[data-sidebar="collapsed"] .sb-brand a { display: none; }
+.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 15px; width: auto; flex: none; margin: 0 auto; }
 .app[data-sidebar="collapsed"] .sb-collapse-btn { display: none; }
 
 /* brand area */
