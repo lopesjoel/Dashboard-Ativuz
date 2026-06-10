@@ -95,9 +95,8 @@
 /* sidebar logo swap: full ↔ z */
 .sb-logo-z { display: none !important; }
 .app[data-sidebar="collapsed"] .sb-logo-full { display: none !important; }
-.app[data-sidebar="collapsed"] .sb-brand a { display: none; }
-.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 15px; width: auto; flex: none; margin: 0 auto; }
-.app[data-sidebar="collapsed"] .sb-collapse-btn { display: none; }
+.app[data-sidebar="collapsed"] .sb-brand a { display: none !important; }
+.app[data-sidebar="collapsed"] .sb-collapse-btn { display: none !important; }
 
 /* brand area */
 .sb-brand {
@@ -263,7 +262,7 @@
 .sb-user .role { font-size: 11px; color: var(--sb-ink-3, var(--ink-3)); }
 
 /* ── Collapsed sidebar ── */
-.app[data-sidebar="collapsed"] .sb-brand { padding: 12px 8px; justify-content: center; }
+.app[data-sidebar="collapsed"] .sb-brand { padding: 0 8px; justify-content: center; gap: 0; }
 .app[data-sidebar="collapsed"] .sb-brand-logo { height: 28px; flex: none; }
 .app[data-sidebar="collapsed"] .sb-collapse-btn { margin-left: 0; }
 .app[data-sidebar="collapsed"] .sb-nav { padding: 12px 8px; }
@@ -274,6 +273,7 @@
 .app[data-sidebar="collapsed"] .sb-item-badge,
 .app[data-sidebar="collapsed"] .sb-user .info { display: none; }
 .app[data-sidebar="collapsed"] .sb-user { justify-content: center; padding: 14px 8px; }
+.app[data-sidebar="collapsed"] .sb-logo-z { display: block !important; height: 15px !important; width: auto; flex: none; }
 
 /* ═══════════════════════════════════
    TOPBAR
