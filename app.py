@@ -883,6 +883,7 @@ def dashboard():
                 or placa == _PLACA_EXCLUIR.upper().replace(' ', ''))
     try:
         lista_contratos, _ = _ler_contratos()
+        _sync_contratos_supabase(lista_contratos)
         ativos_lst = [c for c in lista_contratos if c['situacao'] == 'EM ANDAMENTO']
         ativos_filtrados = [c for c in ativos_lst if not _excluir_app(c)]
         contratos_ativos = len(ativos_filtrados)
@@ -4840,6 +4841,45 @@ def api_sob_adm_toggle():
 _CONTRATOS_XLSX = Path(__file__).parent / "planilhas" / "contratos_locacao.xlsx"
 
 
+def _sync_contratos_supabase(contratos: list):
+    """Upsert de todos os contratos na tabela contratos_frota do Supabase."""
+    if not contratos:
+        return
+    try:
+        sb = _supabase()
+        if not sb:
+            return
+        rows = []
+        from datetime import datetime as _dt
+        for c in contratos:
+            rows.append({
+                "contrato_comercial": c["contrato_comercial"],
+                "contrato_locacao":   c["contrato_locacao"],
+                "cliente":            c["cliente"],
+                "placa":              c["placa"],
+                "modelo":             c["modelo"],
+                "grupo":              c["grupo"],
+                "tipo_contrato":      c["tipo_contrato"],
+                "tipo_pessoa":        c["tipo_pessoa"],
+                "situacao":           c["situacao"],
+                "sit_faturamento":    c["sit_faturamento"],
+                "periodo":            c["periodo"],
+                "inicio":             c["inicio"],
+                "termino_previsto":   c["termino_previsto"],
+                "valor_locacao":      c["valor_locacao"],
+                "valor_inicial":      c["valor_inicial"],
+                "gasto_total":        c["gasto_total"],
+                "gasto_sinistros":    c["gasto_sinistros"],
+                "gasto_manutencao":   c["gasto_manutencao"],
+                "km":                 c["km"],
+                "unidade_fat":        c["unidade_fat"],
+                "atualizado_em":      _dt.utcnow().isoformat(),
+            })
+        sb.table("contratos_frota").upsert(rows, on_conflict="contrato_comercial").execute()
+    except Exception as e:
+        print(f"[sync_contratos] erro: {e}")
+
+
 def _ler_contratos():
     import openpyxl
     if not _CONTRATOS_XLSX.exists():
@@ -4894,6 +4934,7 @@ def _ler_contratos():
 @app.route("/insights/contratos")
 def pagina_contratos():
     contratos, erro = _ler_contratos()
+    _sync_contratos_supabase(contratos)
     ativos = [c for c in contratos if c['situacao'] == 'EM ANDAMENTO']
 
     receita_mes    = sum(c['valor_locacao'] for c in ativos)
