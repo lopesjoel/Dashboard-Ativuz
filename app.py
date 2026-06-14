@@ -4976,16 +4976,17 @@ def _sync_contas_supabase():
                 if num_doc  == bad: num_doc  = ""
                 if unidade  == bad: unidade  = ""
 
-            dias_vencimento = (hoje - venc_date).days if venc_date else None
+            # positivo = dias até vencer (futuro), negativo = dias em atraso
+            dias_vencimento = (venc_date - hoje).days if venc_date else None
 
             faixa = ""
             if dias_vencimento is not None:
                 d = dias_vencimento
-                if d < 0:   faixa = "A vencer"
+                if d > 0:    faixa = "A vencer"
                 elif d == 0: faixa = "Vence hoje"
-                elif d <= 7: faixa = "1-7 dias"
-                elif d <= 15: faixa = "8-15 dias"
-                elif d <= 30: faixa = "16-30 dias"
+                elif d >= -7: faixa = "1-7 dias"
+                elif d >= -15: faixa = "8-15 dias"
+                elif d >= -30: faixa = "16-30 dias"
                 else: faixa = "Mais de 30 dias"
 
             row_id = f"{num_doc}|{venc_date.isoformat()}" if num_doc else f"{nome}|{venc_date.isoformat()}"
