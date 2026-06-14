@@ -2507,6 +2507,7 @@ def pagina_inadimplencia():
     from collections import Counter
 
     registros_vencidos, registros_a_vencer, erro_leitura = _ler_inad_dados()
+    _sync_contas_supabase()
 
     registros_vencidos.sort(key=lambda r: r["dias_atraso"], reverse=True)
     registros_a_vencer.sort(key=lambda r: r["dias_ate"])
@@ -4878,6 +4879,136 @@ def _sync_contratos_supabase(contratos: list):
         sb.table("contratos_frota").upsert(rows, on_conflict="contrato_comercial").execute()
     except Exception as e:
         print(f"[sync_contratos] erro: {e}")
+
+
+def _sync_contas_supabase():
+    """Lê CONTAS-A-RECEBER.xlsx e upsert em contas_receber_frota no Supabase."""
+    try:
+        sb = _supabase()
+        if not sb:
+            return
+        import openpyxl
+        from datetime import datetime as _dt, date as _date
+
+        _base     = Path(__file__).parent / "planilhas"
+        xlsx_path = _base / "CONTAS-A-RECEBER.xlsx"
+        if not xlsx_path.exists():
+            return
+
+        wb = openpyxl.load_workbook(str(xlsx_path), read_only=True, data_only=True)
+        ws = wb.active
+        all_rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+
+        header_idx = 0
+        for ri, row in enumerate(all_rows[:10]):
+            nh_row = [_nh(str(c or "")) for c in row]
+            if sum(1 for t in ["receber de", "vencimento", "valor"]
+                   if any(t in n for n in nh_row)) >= 2:
+                header_idx = ri
+                break
+
+        header    = all_rows[header_idx]
+        data_rows = all_rows[header_idx + 1:]
+
+        def _ci(keyword):
+            nk = _nh(keyword)
+            return next((i for i, h in enumerate(header)
+                         if h is not None and nk in _nh(str(h))), None)
+
+        i_nome  = _ci("receber de (fantasia)") or _ci("receber de")
+        i_valor = _ci("valor previsto") or _ci("valor")
+        i_venc  = _ci("data de vencimento") or _ci("vencimento")
+        i_sit   = _ci("situacao (data de vencimento)") or _ci("situacao")
+        i_tipo  = _ci("tipo de fatura") or _ci("tipo")
+        i_doc   = _ci("numero do documento") or _ci("documento")
+        i_unid  = _ci("unidade")
+        i_comp  = _ci("data de competencia") or _ci("competencia")
+
+        hoje = _date.today()
+        seen = {}
+        for row in data_rows:
+            def _get(idx):
+                return row[idx] if idx is not None and idx < len(row) else None
+
+            nome_raw = _get(i_nome)
+            if not nome_raw:
+                continue
+            nome = str(nome_raw).strip()
+            if not nome:
+                continue
+
+            venc_raw = _get(i_venc)
+            venc_date = None
+            if venc_raw:
+                if isinstance(venc_raw, _dt):
+                    venc_date = venc_raw.date()
+                elif isinstance(venc_raw, _date):
+                    venc_date = venc_raw
+                else:
+                    venc_str = str(venc_raw).strip()
+                    for fmt in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
+                        try:
+                            venc_date = _dt.strptime(venc_str, fmt).date()
+                            break
+                        except (ValueError, TypeError):
+                            pass
+            if venc_date is None:
+                continue
+
+            comp_raw  = _get(i_comp)
+            comp_date = None
+            if comp_raw:
+                if isinstance(comp_raw, _dt):
+                    comp_date = comp_raw.date()
+                elif isinstance(comp_raw, _date):
+                    comp_date = comp_raw
+
+            num_doc     = str(_get(i_doc)   or "").strip()
+            unidade     = str(_get(i_unid)  or "").strip()
+            sit_raw     = _get(i_sit)
+            tipo_raw    = _get(i_tipo)
+            situacao    = str(sit_raw  or "").strip()
+            tipo_fatura = str(tipo_raw or "").strip()
+            valor       = _parse_valor_excel(_get(i_valor))
+
+            for bad in ("None", "nan", ""):
+                if num_doc  == bad: num_doc  = ""
+                if unidade  == bad: unidade  = ""
+
+            dias_vencimento = (hoje - venc_date).days if venc_date else None
+
+            faixa = ""
+            if dias_vencimento is not None:
+                d = dias_vencimento
+                if d < 0:   faixa = "A vencer"
+                elif d == 0: faixa = "Vence hoje"
+                elif d <= 7: faixa = "1-7 dias"
+                elif d <= 15: faixa = "8-15 dias"
+                elif d <= 30: faixa = "16-30 dias"
+                else: faixa = "Mais de 30 dias"
+
+            row_id = f"{num_doc}|{venc_date.isoformat()}" if num_doc else f"{nome}|{venc_date.isoformat()}"
+            seen[row_id] = {
+                "id":               row_id,
+                "numero_documento": num_doc,
+                "cliente":          nome,
+                "unidade":          unidade,
+                "data_vencimento":  venc_date.isoformat(),
+                "data_competencia": comp_date.isoformat() if comp_date else None,
+                "valor":            valor,
+                "situacao":         situacao,
+                "tipo_fatura":      tipo_fatura,
+                "dias_vencimento":  dias_vencimento,
+                "faixa_vencimento": faixa,
+                "atualizado_em":    _dt.utcnow().isoformat(),
+            }
+
+        rows = list(seen.values())
+        if rows:
+            sb.table("contas_receber_frota").upsert(rows, on_conflict="id").execute()
+    except Exception as e:
+        print(f"[sync_contas] erro: {e}")
 
 
 def _ler_contratos():
