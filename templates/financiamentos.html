@@ -91,6 +91,26 @@
   border-radius: 4px; padding: 2px 6px; vertical-align: middle; margin-left: 6px;
 }
 
+/* ── Abas ── */
+.fin-tabs {
+  display: flex; gap: 4px; margin-bottom: 24px;
+  border-bottom: 2px solid var(--line); padding-bottom: 0;
+}
+.fin-tab-btn {
+  padding: 8px 20px; font-size: 13px; font-weight: 600;
+  border: none; background: none; cursor: pointer;
+  border-bottom: 3px solid transparent; color: var(--ink-3); margin-bottom: -2px;
+}
+.fin-tab-btn.active { border-bottom-color: var(--brand-orange, #FF4713); color: var(--brand-orange, #FF4713); }
+
+.fin-btn-vender, .fin-btn-restaurar {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink-3); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+}
+.fin-btn-vender:hover { color: var(--danger, #e53e3e); border-color: var(--danger, #e53e3e); }
+.fin-btn-restaurar:hover { color: var(--brand-orange, #FF4713); border-color: var(--brand-orange, #FF4713); }
+
 /* Progress bar */
 .prog-wrap {
   display: flex; align-items: center; gap: 6px; justify-content: center;
@@ -166,6 +186,15 @@
 
 </div>
 
+{# ── Abas ── #}
+<div class="fin-tabs">
+  <button id="fin-tab-btn-ativa" class="fin-tab-btn active" onclick="finSwitch('ativa')">Carteira Ativa</button>
+  <button id="fin-tab-btn-vendidos" class="fin-tab-btn" onclick="finSwitch('vendidos')">Vendidos ({{ vendidos | length }})</button>
+</div>
+
+<!-- ══════════════ ABA: CARTEIRA ATIVA ══════════════ -->
+<div id="fin-tab-ativa">
+
 {# ── Search ── #}
 <div class="fin-search">
   <label for="fin-search-input">Pesquise por placa:</label>
@@ -191,6 +220,7 @@
         <th>C. Prazo</th>
         <th>L. Prazo</th>
         <th>% Quitado</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -225,6 +255,7 @@
             <span class="prog-pct">{{ pct_int }}%</span>
           </div>
         </td>
+        <td><button class="fin-btn-vender" onclick="finMarcarVendido('{{ c.id }}', true)">Vendido</button></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -242,9 +273,48 @@
         <td style="font-weight:700;color:var(--ink)">{{ contratos | sum(attribute='c_prazo') | brl }}</td>
         <td style="font-weight:700;color:var(--ink)">{{ contratos | sum(attribute='l_prazo') | brl }}</td>
         <td></td>
+        <td></td>
       </tr>
     </tfoot>
   </table>
+</div>
+
+</div>{# /fin-tab-ativa #}
+
+<!-- ══════════════ ABA: VENDIDOS ══════════════ -->
+<div id="fin-tab-vendidos" style="display:none;">
+  <div class="fin-table-wrap">
+    <table class="fin-table">
+      <thead>
+        <tr>
+          <th>ID Operação</th>
+          <th>Contrato</th>
+          <th>Placa</th>
+          <th>Parcelas</th>
+          <th>R$ Parcela</th>
+          <th>Total Pago</th>
+          <th>Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="fin-vendidos-tbody">
+        {% for c in vendidos %}
+        <tr data-id="{{ c.id }}">
+          <td>{{ c.operacao }}</td>
+          <td>{{ c.contrato }}</td>
+          <td>{{ c.placa }}</td>
+          <td>{{ c.parcelas_total }}</td>
+          <td>{{ c.valor_parcela | brl }}</td>
+          <td>{{ c.total_pago | brl }}</td>
+          <td>{{ c.total | brl }}</td>
+          <td><button class="fin-btn-restaurar" onclick="finMarcarVendido('{{ c.id }}', false)">Restaurar</button></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="color:var(--ink-3);">Nenhum carro vendido cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -270,6 +340,28 @@
     if (e.key === 'Escape') { input.value = ''; input.dispatchEvent(new Event('input')); }
   });
 })();
+
+function finSwitch(aba) {
+  ['ativa', 'vendidos'].forEach(function (a) {
+    document.getElementById('fin-tab-' + a).style.display = (a === aba ? '' : 'none');
+    document.getElementById('fin-tab-btn-' + a).classList.toggle('active', a === aba);
+  });
+}
+
+function finMarcarVendido(id, vendido) {
+  if (!confirm(vendido ? 'Marcar este carro como vendido e remover da carteira ativa?' : 'Restaurar este carro para a carteira ativa?')) return;
+  fetch('/api/financiamentos/' + id + '/vendido', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vendido: vendido }),
+  })
+    .then(function (r) { return r.json(); })
+    .then(function (json) {
+      if (json.ok) location.reload();
+      else alert('Erro: ' + (json.erro || 'falha ao atualizar.'));
+    })
+    .catch(function () { alert('Erro de conexão.'); });
+}
 </script>
 
 </div>{# .fin-wrap #}

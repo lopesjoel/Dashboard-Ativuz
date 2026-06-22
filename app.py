@@ -4281,13 +4281,15 @@ def pagina_financiamentos():
         return ceil(dias / 30.44) if dias > 0 else 0
 
     contratos = []
+    vendidos  = []
     for r in rows:
         parcelas = int(r["parcelas_total"])
         parcela  = float(r["valor_parcela"])
         restante = _restante(r.get("data_vencimento"))
         pagas    = parcelas - restante
 
-        contratos.append({
+        item = {
+            "id":              r["id"],
             "operacao":        r["operacao"],
             "contrato":        r.get("contrato") or "",
             "placa":           r.get("placa") or "",
@@ -4302,9 +4304,15 @@ def pagina_financiamentos():
             "l_prazo":         max(restante - 12, 0) * parcela,
             "pct_quitado":     pagas / parcelas if parcelas else 0,
             "quitado":         restante == 0,
-        })
+        }
+
+        if r.get("vendido"):
+            vendidos.append(item)
+        else:
+            contratos.append(item)
 
     contratos.sort(key=lambda x: x["pct_quitado"], reverse=True)
+    vendidos.sort(key=lambda x: x["placa"])
 
     ativos   = [c for c in contratos if not c["quitado"]]
     quitados = [c for c in contratos if     c["quitado"]]
@@ -4335,8 +4343,24 @@ def pagina_financiamentos():
     return render_template("financiamentos.html",
         active="financiamentos",
         contratos=contratos,
+        vendidos=vendidos,
         cards=cards,
     )
+
+
+@app.route("/api/financiamentos/<uuid:contrato_id>/vendido", methods=["PUT"])
+def api_financiamentos_marcar_vendido(contrato_id):
+    sb = _supabase()
+    if not sb:
+        return jsonify({"ok": False, "erro": "Sem conexão com o banco."}), 500
+    vendido = bool((request.get_json(silent=True) or {}).get("vendido", True))
+    try:
+        sb.table("financiamentos_contratos").update(
+            {"vendido": vendido}
+        ).eq("id", str(contrato_id)).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
 
 
 # ── Capital Investido ─────────────────────────────────────────────────────────
