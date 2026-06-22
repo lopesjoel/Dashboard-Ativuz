@@ -2556,8 +2556,8 @@ def pagina_inadimplencia():
                         break
         except Exception:
             pass
-    # Genuinamente em atraso = D+1 em diante, valor original (sem multa/juros)
-    _overdue_raw   = sum(r["_valor"] for r in registros_vencidos if r["dias_atraso"] > 0)
+    # Numerador = Total Original (todos os vencidos, valor original sem multa/juros)
+    _overdue_raw   = _vencido_raw
     taxa_inadimplencia = round(_overdue_raw / _base_semanal * 100, 1) if _base_semanal > 0 else None
 
     _EXCLUIR_OCORR = {"segcomp", "onevo", "new charger", "m&s", "marcelo bento de araujo"}
