@@ -4399,6 +4399,8 @@ def _fin_total_pago():
         hoje = datetime.now(_BRT).date()
         total = 0.0
         for r in rows:
+            if r.get("vendido"):
+                continue
             parcelas = int(r["parcelas_total"])
             parcela  = float(r["valor_parcela"])
             vcto_str = r.get("data_vencimento")
