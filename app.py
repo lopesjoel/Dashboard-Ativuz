@@ -2238,7 +2238,7 @@ def _ler_inad_dados():
         i_doc   = _ci("numero do documento") or _ci("documento")
         i_unid  = _ci("unidade")
 
-        _NOMES_EXCLUIDOS = {"MARCELO BENTO DE ARAUJO"}
+        _NOMES_EXCLUIDOS = {"MARCELO BENTO DE ARAUJO", "M&S DO TRABALHO"}
 
         # Placas de veículos de investidores: só entram manutenção,
         # lançamento avulso e taxa de administração — locação e caução ficam de fora.
