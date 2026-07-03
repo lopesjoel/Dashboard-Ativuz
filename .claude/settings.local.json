@@ -151,7 +151,8 @@
       "Bash(cp \"/Users/karol/Downloads/z.png\" \"/Users/karol/Documents/Dashboard-Ativuz/static/favicon.png\")",
       "Bash(identify \"/Users/karol/Documents/Dashboard-Ativuz/static/favicon.png\")",
       "Bash(convert \"/Users/karol/Downloads/zsf.png\" -trim -resize 64x64 \"/Users/karol/Documents/Dashboard-Ativuz/static/favicon.png\")",
-      "Bash(venv/bin/python3 -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\)\")"
+      "Bash(venv/bin/python3 -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\)\")",
+      "Bash(fly logs *)"
     ]
   }
 }
