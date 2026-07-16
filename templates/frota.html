@@ -33,13 +33,13 @@
 .fr-kpi-sub        { font-size:12px; color:var(--ink-3); margin-top:5px; }
 
 /* Composição */
-.fr-comp { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:28px; }
+.fr-comp { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:28px; }
 @media (max-width:900px){ .fr-comp { grid-template-columns:repeat(3,1fr); } }
 @media (max-width:500px){ .fr-comp { grid-template-columns:repeat(2,1fr); } }
-.fr-comp-card { background:var(--surface); border:1px solid var(--line); border-left-width:3px; border-radius:10px; padding:14px 16px; }
-.fr-comp-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
-.fr-comp-count { font-size:24px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:4px; }
-.fr-comp-count span { font-size:13px; font-weight:500; color:var(--ink-3); }
+.fr-comp-card { background:var(--surface); border:1px solid var(--line); border-left-width:3px; border-radius:10px; padding:10px 12px; }
+.fr-comp-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fr-comp-count { font-size:19px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:3px; }
+.fr-comp-count span { font-size:11px; font-weight:500; color:var(--ink-3); }
 .fr-comp-value { font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
 
 /* Table toolbar */
@@ -1225,7 +1225,7 @@ var CURR_MES_LABEL  = '{{ curr_mes_label }}';  /* 'MAI/26' */
 var PREV_MES_KEY    = '{{ prev_mes_key }}';    /* 'abr26' */
 var PREV_MES_LABEL  = '{{ prev_mes_label }}';  /* 'ABR/26' */
 
-var MODELO_COR = { GOL:'#22a06b', VOYAGE:'#2E6BE6', SANDERO:'#7B8499', START:'#F59E0B', BROSS:'#FF4713' };
+var MODELO_COR = { GOL:'#22a06b', VOYAGE:'#2E6BE6', SANDERO:'#7B8499', START:'#F59E0B', BROSS:'#FF4713', 'BYD DOLPHIN MINI':'#14B8A6' };
 
 /* ── Helpers de mês ── */
 var _MES_NOMES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -1358,7 +1358,7 @@ function renderComp() {
     grouped[v.modelo].count++;
     if (a.val != null) grouped[v.modelo].total += a.val;
   });
-  var order = ['GOL','VOYAGE','SANDERO','START','BROSS'];
+  var order = ['GOL','VOYAGE','SANDERO','START','BROSS','BYD DOLPHIN MINI'];
   document.getElementById('fr-comp').innerHTML = order.filter(function(m){ return grouped[m]; }).map(function(m) {
     var g = grouped[m], cor = MODELO_COR[m] || '#888';
     return '<div class="fr-comp-card" style="border-left-color:' + cor + '">' +
@@ -1768,7 +1768,7 @@ function renderLineChart() {
 function renderDoughnutChart() {
   var grouped = {};
   VEICULOS.forEach(function(v){ grouped[v.modelo] = (grouped[v.modelo]||0) + 1; });
-  var order  = ['GOL','VOYAGE','SANDERO','START','BROSS'];
+  var order  = ['GOL','VOYAGE','SANDERO','START','BROSS','BYD DOLPHIN MINI'];
   var labels = [], counts = [], colors = [];
   order.forEach(function(m){
     if (!grouped[m]) return;
