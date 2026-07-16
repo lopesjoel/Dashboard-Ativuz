@@ -1,197 +1,191 @@
 {% extends "base.html" %}
-{% block title %}Benchmarking — Ativuz{% endblock %}
+{% block title %}Análise de Dados — Ativuz{% endblock %}
 
 {% block head %}
 <style>
-.bm-header {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 12px; margin-bottom: 28px;
-}
-.bm-title { font-size: 20px; font-weight: 700; color: var(--ink); }
-.bm-subtitle { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
-.bm-meta { font-size: 12px; color: var(--ink-3); }
+.ad-wrap { width: 100%; }
 
-.bm-refresh-btn {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 16px; border-radius: 8px;
-  background: var(--brand-orange, #FF4713); color: #fff;
-  border: none; cursor: pointer; font-size: 13px; font-weight: 600;
-  transition: opacity .15s;
-}
-.bm-refresh-btn:disabled { opacity: .5; cursor: not-allowed; }
+/* ── Header ── */
+.ad-header { margin-bottom: 24px; text-align: left; }
+.ad-header h1 { font-size: 20px; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
+.ad-header p  { font-size: 13px; color: var(--ink-3); margin: 0; }
 
-.bm-wrap { overflow-x: auto; }
+/* ── KPI cards ── */
+.ad-kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 32px; }
+@media (max-width: 1100px) { .ad-kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px)  { .ad-kpis { grid-template-columns: repeat(2, 1fr); } }
+.ad-kpi {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px;
+}
+.ad-kpi-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--ink-3); margin-bottom: 8px;
+}
+.ad-kpi-value {
+  font-size: 19px; font-weight: 700; color: var(--ink-3);
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
 
-.bm-table {
-  width: 100%; border-collapse: collapse;
-  font-size: 13px; min-width: 560px;
-}
-.bm-table th, .bm-table td {
-  padding: 12px 16px; text-align: center;
-  border-bottom: 1px solid var(--line);
-}
-.bm-table th {
-  background: var(--surface-2, #f5f5f5);
-  font-weight: 700; font-size: 12px;
-  text-transform: uppercase; letter-spacing: .04em;
-  color: var(--ink-2);
-}
-.bm-table th.col-ind {
-  text-align: left; color: var(--ink);
-}
-.bm-table td.col-ind {
-  text-align: left; font-weight: 600; color: var(--ink);
-}
-.bm-table tr:hover td { background: var(--surface-hover, #fafafa); }
+/* ── Sections ── */
+.ad-section { margin-bottom: 32px; }
+.ad-section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }
+.ad-section-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.ad-section-sub   { font-size: 12px; color: var(--ink-3); }
 
-.bm-company-name { font-weight: 700; font-size: 14px; color: var(--ink); }
-.bm-ticker { font-size: 11px; color: var(--brand); font-weight: 600; }
-
-.bm-val { color: var(--ink); }
-.bm-nd { color: var(--ink-3); font-size: 12px; }
-.bm-erro { color: #e03; font-size: 11px; }
-
-.bm-source {
-  margin-top: 20px; font-size: 11px; color: var(--ink-3);
+.ad-placeholder {
+  border: 1px dashed var(--line); border-radius: 12px;
+  background: var(--surface);
+  min-height: 220px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-3); font-size: 13px; text-align: center; padding: 24px;
 }
-.bm-source a { color: var(--brand); }
+.ad-placeholder-tag {
+  display: inline-block; margin-top: 6px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--brand-orange, #FF4713);
+}
 
-.col-ativuz {
-  background: color-mix(in srgb, var(--brand) 6%, transparent);
-  font-weight: 700;
-}
-.bm-table th.col-ativuz {
-  color: var(--brand);
-  border-top: 2px solid var(--brand);
-}
-.bm-na { color: var(--ink-3); font-size: 11px; font-style: italic; }
+.ad-split { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .ad-split { grid-template-columns: 1fr; } }
 
-.bm-nota {
-  margin-top: 24px; padding: 16px 20px;
-  background: color-mix(in srgb, var(--brand) 5%, transparent);
-  border-left: 3px solid var(--brand);
-  border-radius: 6px; font-size: 12px; color: var(--ink-2);
+.ad-mini-cards { display: flex; flex-direction: column; gap: 12px; }
+.ad-mini-card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px; flex: 1;
 }
-.bm-nota strong { display: block; margin-bottom: 6px; color: var(--ink); font-size: 13px; }
-.bm-nota p { margin: 0 0 6px; line-height: 1.6; }
-.bm-nota p:last-child { margin-bottom: 0; }
+.ad-mini-card .ad-kpi-label { margin-bottom: 6px; }
+.ad-mini-card .ad-kpi-value { font-size: 17px; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="bm-header">
-  <div>
-    <div class="bm-title">Benchmarking — Ativuz x Mercado</div>
-    <div class="bm-subtitle">Indicadores fundamentalistas das principais locadoras listadas na B3</div>
+<div class="ad-wrap">
+
+  <div class="ad-header">
+    <h1>Análise de Dados</h1>
+    <p>Alavancagem, receita e indicadores operacionais da Ativuz — página em construção, cálculos ainda não implementados.</p>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span class="bm-meta" id="bm-meta">Atualizado em: {{ atualizado_em }}</span>
-    <button class="bm-refresh-btn" id="bm-refresh-btn" onclick="atualizarDados()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <polyline points="23 4 23 10 17 10"/>
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-      </svg>
-      Atualizar dados
-    </button>
+
+  <!-- ── KPIs no topo ── -->
+  <div class="ad-kpis">
+    <div class="ad-kpi">
+      <div class="ad-kpi-label">Receita Líquida (12m)</div>
+      <div class="ad-kpi-value">—</div>
+    </div>
+    <div class="ad-kpi">
+      <div class="ad-kpi-label">EBITDA (12m)</div>
+      <div class="ad-kpi-value">—</div>
+    </div>
+    <div class="ad-kpi">
+      <div class="ad-kpi-label">Saldo Devedor</div>
+      <div class="ad-kpi-value">—</div>
+    </div>
+    <div class="ad-kpi">
+      <div class="ad-kpi-label">Dívida / EBITDA</div>
+      <div class="ad-kpi-value">—</div>
+    </div>
+    <div class="ad-kpi">
+      <div class="ad-kpi-label">Valor da Frota (FIPE)</div>
+      <div class="ad-kpi-value">—</div>
+    </div>
+    <div class="ad-kpi">
+      <div class="ad-kpi-label">Taxa de Inadimplência</div>
+      <div class="ad-kpi-value">—</div>
+    </div>
   </div>
+
+  <!-- ── Receita & Margens ── -->
+  <div class="ad-section">
+    <div class="ad-section-head">
+      <div>
+        <div class="ad-section-title">Receita &amp; Margens</div>
+        <div class="ad-section-sub">Receita líquida e margem EBITDA, mês a mês</div>
+      </div>
+    </div>
+    <div class="ad-placeholder">
+      <div>
+        Gráfico de evolução mensal (receita líquida + margem EBITDA)
+        <div class="ad-placeholder-tag">em construção</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Alavancagem ── -->
+  <div class="ad-section">
+    <div class="ad-section-head">
+      <div>
+        <div class="ad-section-title">Alavancagem</div>
+        <div class="ad-section-sub">Saldo devedor reconstruído mês a mês + Dívida/EBITDA, e corte curto x longo prazo</div>
+      </div>
+    </div>
+    <div class="ad-split">
+      <div class="ad-placeholder">
+        <div>
+          Gráfico de evolução da dívida (saldo devedor e Dívida/EBITDA)
+          <div class="ad-placeholder-tag">em construção</div>
+        </div>
+      </div>
+      <div class="ad-mini-cards">
+        <div class="ad-mini-card">
+          <div class="ad-kpi-label">Curto Prazo (até 12m)</div>
+          <div class="ad-kpi-value">—</div>
+        </div>
+        <div class="ad-mini-card">
+          <div class="ad-kpi-label">Longo Prazo</div>
+          <div class="ad-kpi-value">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Valor da Frota ── -->
+  <div class="ad-section">
+    <div class="ad-section-head">
+      <div>
+        <div class="ad-section-title">Valor da Frota</div>
+        <div class="ad-section-sub">FIPE total da frota vs. valor de aquisição, mês a mês</div>
+      </div>
+    </div>
+    <div class="ad-placeholder">
+      <div>
+        Gráfico de evolução do valor FIPE da frota vs. valor de aquisição
+        <div class="ad-placeholder-tag">em construção</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Inadimplência ── -->
+  <div class="ad-section">
+    <div class="ad-section-head">
+      <div>
+        <div class="ad-section-title">Inadimplência</div>
+        <div class="ad-section-sub">Total em atraso por semana</div>
+      </div>
+    </div>
+    <div class="ad-placeholder">
+      <div>
+        Gráfico de evolução semanal do total em atraso
+        <div class="ad-placeholder-tag">em construção</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Receita por Cliente ── -->
+  <div class="ad-section">
+    <div class="ad-section-head">
+      <div>
+        <div class="ad-section-title">Receita por Cliente</div>
+        <div class="ad-section-sub">Top 10 clientes ativos por receita</div>
+      </div>
+    </div>
+    <div class="ad-placeholder">
+      <div>
+        Tabela/ranking dos clientes com maior receita
+        <div class="ad-placeholder-tag">em construção</div>
+      </div>
+    </div>
+  </div>
+
 </div>
-
-<div class="bm-wrap">
-  <table class="bm-table" id="bm-table">
-    <thead>
-      <tr>
-        <th class="col-ind">Indicador</th>
-        {% for d in dados %}
-        <th {% if d.get('is_ativuz') %}class="col-ativuz"{% endif %}>
-          <div class="bm-company-name">{{ d.nome }}</div>
-          <div class="bm-ticker">{{ d.ticker }}</div>
-        </th>
-        {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% set labels = {
-        'pl':             'P/L',
-        'pvp':            'P/VP',
-        'roe':            'ROE',
-        'margem_bruta':   'M. Bruta',
-        'margem_ebit':    'M. EBIT',
-        'margem_ebitda':  'M. EBITDA',
-        'margem_liquida': 'M. Líquida',
-        'div_ebitda':     'Dív. Líq./EBITDA',
-        'div_ebit':       'Dív. Líq./EBIT'
-      } %}
-      {% for chave, label in indicadores %}
-      <tr>
-        <td class="col-ind">{{ label }}</td>
-        {% for d in dados %}
-        <td {% if d.get('is_ativuz') %}class="col-ativuz"{% endif %}>
-          {% set val = d.get(chave, 'N/D') %}
-          {% if val == 'N/A' %}
-            <span class="bm-na">N/A</span>
-          {% elif val == 'N/D' or (d.erro and val == 'N/D') %}
-            <span class="bm-nd">N/D</span>
-          {% else %}
-            <span class="bm-val">{{ val }}</span>
-          {% endif %}
-        </td>
-        {% endfor %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{% for d in dados %}
-{% if d.erro %}
-<p class="bm-erro" style="margin-top:12px;">
-  ⚠ Erro ao buscar {{ d.ticker }}: {{ d.erro }}
-</p>
-{% endif %}
-{% endfor %}
-
-<div class="bm-nota">
-  <strong>Nota sobre o M. EBIT da Ativuz</strong>
-  <p>
-    O M. EBIT da Ativuz é calculado subtraindo a depreciação anual da frota do EBITDA.
-    Com {{ depreciacao_frota_veiculos }} veículos ativos e valor total de aquisição de
-    R$&nbsp;{{ depreciacao_frota_total }}, a depreciação anual estimada é de
-    R$&nbsp;{{ depreciacao_frota_anual }} (vida útil de 5 anos, conforme critério da Receita Federal
-    para veículos leves). Como a Ativuz é uma empresa em fase de crescimento de frota,
-    esse custo contábil consome grande parte do EBITDA — o que é comum em locadoras
-    com frota própria e capital intensivo.
-  </p>
-  <p>
-    Os indicadores P/L, P/VP e ROE não se aplicam por ser uma empresa de capital fechado.
-    As margens são calculadas com base nos lançamentos dos últimos 12 meses.
-  </p>
-</div>
-
-<p class="bm-source">
-  Concorrentes: <a href="https://finance.yahoo.com" target="_blank" rel="noopener">Yahoo Finance</a>
-  via yfinance — dados atualizados a cada 4 horas.
-  Ativuz: lançamentos internos dos últimos 12 meses.
-</p>
-
-<script>
-async function atualizarDados() {
-  const btn = document.getElementById('bm-refresh-btn');
-  const meta = document.getElementById('bm-meta');
-  btn.disabled = true;
-  btn.textContent = 'Atualizando...';
-  try {
-    const r = await fetch('/benchmarking/atualizar', { method: 'POST' });
-    const j = await r.json();
-    if (j.ok) {
-      meta.textContent = 'Atualizado em: ' + j.atualizado_em;
-      window.location.reload();
-    }
-  } catch (e) {
-    alert('Erro ao atualizar: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Atualizar dados`;
-  }
-}
-</script>
 {% endblock %}

@@ -22,7 +22,6 @@ import uuid
 
 from services.gerar_contrato import gerar_docx, gerar_termo_quitacao, gerar_notificacao_avalista, gerar_notificacao_inadimplente, nome_arquivo_saida
 from services.gerar_vistoria_entrada_saida import gerar_vistoria_entrada_saida, docx_para_pdf as _docx_para_pdf_es
-from services import benchmarking_scraper
 
 app = Flask(__name__)
 app.secret_key = _os.environ.get("SECRET_KEY", "ativuz-secret-dev-2026")
@@ -5742,45 +5741,15 @@ def api_checklist_delete_item(item_id):
         return jsonify({"error": str(e)}), 500
 
 
-# ── Benchmarking ──────────────────────────────────────────────────────────────
+# ── Análise de Dados ──────────────────────────────────────────────────────────
+# Página em construção: estrutura e seções definidas, cálculos a implementar
+# depois (receita/margens via _dre_calcular, alavancagem via
+# _fin_calcular_restante reconstruído mês a mês, frota via frota_fipe_historico,
+# inadimplência via inad_snapshots, receita por cliente via contratos_frota).
 
 @app.route("/benchmarking")
 def pagina_benchmarking():
-    concorrentes = benchmarking_scraper.obter_dados()
-    ativuz = _calcular_indicadores_ativuz() or {"ticker": "ATIVUZ", "nome": "Ativuz",
-        "erro": "Sem dados", "is_ativuz": True,
-        **{k: "N/D" for k in ["pl","pvp","roe","margem_bruta","margem_ebitda",
-                               "margem_ebit","margem_liquida","div_ebitda","div_ebit"]}}
-    dados = [ativuz] + concorrentes
-    atualizado_em = benchmarking_scraper.cache_info()
-
-    dep_veiculos = 0
-    dep_total = 0.0
-    try:
-        sb = _supabase()
-        if sb:
-            res = sb.table("frota_veiculos").select("vl_aquisicao").eq("ativo", True).execute()
-            rows = res.data or []
-            dep_veiculos = len(rows)
-            dep_total = sum(float(r.get("vl_aquisicao") or 0) for r in rows)
-    except Exception:
-        pass
-
-    def _fmt_brl(v):
-        return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-    return render_template("benchmarking.html", active="benchmarking",
-                           dados=dados, atualizado_em=atualizado_em,
-                           indicadores=benchmarking_scraper.INDICADORES,
-                           depreciacao_frota_veiculos=dep_veiculos,
-                           depreciacao_frota_total=_fmt_brl(dep_total),
-                           depreciacao_frota_anual=_fmt_brl(dep_total / 5) if dep_total else "0,00")
-
-
-@app.route("/benchmarking/atualizar", methods=["POST"])
-def atualizar_benchmarking():
-    benchmarking_scraper.obter_dados(forcar=True)
-    return jsonify({"ok": True, "atualizado_em": benchmarking_scraper.cache_info()})
+    return render_template("benchmarking.html", active="benchmarking")
 
 
 @app.route("/configuracoes")

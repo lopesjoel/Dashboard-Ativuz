@@ -180,8 +180,9 @@
               </span>
               <span class="sb-item-label">Contratos</span>
             </a>
-            <span class="sb-item" style="opacity:0.45; cursor:not-allowed; pointer-events:none;"
-                  title="Em manutenção">
+            <a href="{{ url_for('pagina_benchmarking') }}" class="sb-item"
+               data-active="{{ 'true' if active == 'benchmarking' else 'false' }}"
+               aria-current="{{ 'page' if active == 'benchmarking' else 'false' }}">
               <span class="sb-item-icon" aria-hidden="true">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <line x1="18" y1="20" x2="18" y2="10"/>
@@ -189,9 +190,8 @@
                   <line x1="6" y1="20" x2="6" y2="14"/>
                 </svg>
               </span>
-              <span class="sb-item-label">Benchmarking</span>
-              <span class="sb-manut-tag" style="font-size:0.65rem;color:#f59e0b;font-weight:600;margin-left:4px;white-space:nowrap;">em manutenção</span>
-            </span>
+              <span class="sb-item-label">Análise de Dados</span>
+            </a>
           </div>
         </div>
       </div>
@@ -376,6 +376,7 @@
           {% elif active == 'capital_investido' %}Capital Investido
           {% elif active == 'frota' %}Frota
           {% elif active == 'contratos' %}Contratos
+          {% elif active == 'benchmarking' %}Análise de Dados
           {% elif active == 'configuracoes' %}Configurações
           {% else %}ATIVUZ
           {% endif %}
