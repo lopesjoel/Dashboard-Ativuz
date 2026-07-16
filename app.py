@@ -4066,12 +4066,9 @@ def _calcular_indicadores_ativuz():
         if sb:
             rows = sb.table("financiamentos_contratos").select("*").execute().data or []
             hoje_d = hoje.date()
-            from math import ceil
             for r in rows:
                 try:
-                    vcto = date.fromisoformat(str(r.get("data_vencimento", ""))[:10])
-                    dias = (vcto - hoje_d).days
-                    restante = ceil(dias / 30.44) if dias > 0 else 0
+                    restante = _fin_calcular_restante(r, hoje_d)
                     saldo_devedor += restante * float(r["valor_parcela"])
                 except Exception:
                     continue
@@ -4265,30 +4262,62 @@ def dre_api_recalcular():
 
 # ── Financiamentos & Consórcios ───────────────────────────────────────────────
 
+def _fin_calcular_restante(r, hoje):
+    """
+    Parcelas restantes de um contrato de financiamento.
+
+    Assume parcelas mensais regulares terminando em data_vencimento. Se o
+    contrato tiver data_parcela_1 / data_parcela_2 preenchidas (parcelas
+    1 e 2 pagas fora do calendário mensal normal, ex.: entrada + carência),
+    a contagem regular só é usada a partir da parcela 3 em diante.
+    """
+    from math import ceil
+    parcelas_total = int(r["parcelas_total"])
+    vcto_str = r.get("data_vencimento")
+    if not vcto_str:
+        return 0
+    try:
+        vcto = date.fromisoformat(str(vcto_str)[:10])
+    except Exception:
+        return 0
+
+    dias = (vcto - hoje).days
+    restante_regular = ceil(dias / 30.44) if dias > 0 else 0
+    pagas_regular = max(0, parcelas_total - restante_regular)
+
+    p1_str = r.get("data_parcela_1")
+    p2_str = r.get("data_parcela_2")
+    if p1_str and p2_str:
+        try:
+            p1 = date.fromisoformat(str(p1_str)[:10])
+            p2 = date.fromisoformat(str(p2_str)[:10])
+            if hoje < p1:
+                pagas = 0
+            elif hoje < p2:
+                pagas = 1
+            else:
+                pagas = max(2, pagas_regular)
+            return parcelas_total - min(pagas, parcelas_total)
+        except Exception:
+            pass
+
+    return min(restante_regular, parcelas_total)
+
+
 @app.route("/financiamentos")
 def pagina_financiamentos():
-    from math import ceil
     hoje = datetime.now(_BRT).date()
 
     sb   = _supabase()
     rows = sb.table("financiamentos_contratos").select("*").order("created_at").execute().data or []
-
-    def _restante(vcto_str):
-        if not vcto_str:
-            return 0
-        try:
-            vcto = date.fromisoformat(str(vcto_str)[:10])
-        except Exception:
-            return 0
-        dias = (vcto - hoje).days
-        return ceil(dias / 30.44) if dias > 0 else 0
 
     contratos = []
     vendidos  = []
     for r in rows:
         parcelas = int(r["parcelas_total"])
         parcela  = float(r["valor_parcela"])
-        restante = _restante(r.get("data_vencimento"))
+        entrada  = float(r.get("valor_entrada") or 0)
+        restante = _fin_calcular_restante(r, hoje)
         pagas    = parcelas - restante
 
         item = {
@@ -4300,8 +4329,8 @@ def pagina_financiamentos():
             "restante":        restante,
             "parcelas_total":  parcelas,
             "valor_parcela":   parcela,
-            "total_pago":      pagas * parcela,
-            "total":           parcelas * parcela,
+            "total_pago":      pagas * parcela + entrada,
+            "total":           parcelas * parcela + entrada,
             "devedor":         restante * parcela,
             "c_prazo":         min(restante, 12) * parcela,
             "l_prazo":         max(restante - 12, 0) * parcela,
@@ -4395,7 +4424,6 @@ def _ci_fetch_csv():
 
 
 def _fin_total_pago():
-    from math import ceil
     try:
         sb   = _supabase()
         rows = sb.table("financiamentos_contratos").select("*").execute().data or []
@@ -4406,17 +4434,10 @@ def _fin_total_pago():
                 continue
             parcelas = int(r["parcelas_total"])
             parcela  = float(r["valor_parcela"])
-            vcto_str = r.get("data_vencimento")
-            restante = 0
-            if vcto_str:
-                try:
-                    vcto = date.fromisoformat(str(vcto_str)[:10])
-                    dias = (vcto - hoje).days
-                    restante = ceil(dias / 30.44) if dias > 0 else 0
-                except Exception:
-                    pass
-            pagas = parcelas - restante
-            total += pagas * parcela
+            entrada  = float(r.get("valor_entrada") or 0)
+            restante = _fin_calcular_restante(r, hoje)
+            pagas    = parcelas - restante
+            total += pagas * parcela + entrada
         return total
     except Exception:
         return 0.0

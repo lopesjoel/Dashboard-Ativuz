@@ -130,6 +130,12 @@ create table if not exists public.financiamentos_contratos (
   data_vencimento date,
   parcelas_total  integer not null,
   valor_parcela   numeric(12,2) not null,
+  valor_entrada   numeric(12,2) default 0,
+  -- data_parcela_1 / data_parcela_2: preencher só quando as parcelas 1 e 2
+  -- do contrato fogem do calendário mensal regular (ex.: carência antes de
+  -- retomar a contagem normal a partir da parcela 3). Ver _fin_calcular_restante.
+  data_parcela_1  date,
+  data_parcela_2  date,
   created_at      timestamptz default now()
 );
 
