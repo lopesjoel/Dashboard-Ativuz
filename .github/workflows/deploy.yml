@@ -1,4 +1,4 @@
-name: Deploy to Vercel (Colinatech)
+name: Deploy to Vercel (dashboard-ativuz)
 
 on:
   push:
@@ -17,5 +17,5 @@ jobs:
       - name: Deploy to Production
         run: vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: team_KJCYEweWviglyBKocbfLV2aj
-          VERCEL_PROJECT_ID: prj_rXrDSCyYS4xdVx66qV21yUguVkSy
+          VERCEL_ORG_ID: team_HnDEwhCVw7YpAYN518hc2BtY
+          VERCEL_PROJECT_ID: prj_r0phoaLEQvl2RSyaMI9jmAUSFP3w
