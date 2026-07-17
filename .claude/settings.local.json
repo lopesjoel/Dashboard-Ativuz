@@ -156,7 +156,9 @@
       "mcp__claude_ai_Gmail__search_threads",
       "mcp__claude_ai_Gmail__get_message",
       "mcp__claude_ai_Google_Drive__search_files",
-      "Skill(schedule)"
+      "Skill(schedule)",
+      "Bash(node -e \"require\\('jsdom'\\)\")",
+      "Bash(node harness.js script_3.js)"
     ]
   }
 }
