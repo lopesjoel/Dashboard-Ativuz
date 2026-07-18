@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root {
+      /* Troque pelas cores da sua marca */
+      --cor-primaria: #1f4e79;
+      --cor-primaria-escura: #163a5a;
+      --cor-fundo: #f4f6f8;
+      --cor-card: #ffffff;
+      --cor-texto: #222;
+      --cor-erro: #c0392b;
+      --cor-ok: #2e7d32;
+      --cor-avariado: #e67e22;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--cor-fundo);
+      color: var(--cor-texto);
+      margin: 0;
+      padding: 0 0 40px 0;
+    }
+    header {
+      background: var(--cor-primaria);
+      color: #fff;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+    header p { margin: 2px 0 0; font-size: 12px; opacity: .85; }
+    .logo-placeholder {
+      width: 34px; height: 34px; border-radius: 6px;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 12px; flex-shrink: 0;
+    }
+    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
+    .card {
+      background: var(--cor-card);
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .card h2 { font-size: 15px; margin: 0 0 12px 0; color: var(--cor-primaria); }
+    .card h3 { font-size: 13px; margin: 14px 0 6px; color: #555; }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+    select, input[type="text"], input[type="tel"], input[type="number"], textarea {
+      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 14px; background: #fff;
+    }
+    textarea { resize: vertical; min-height: 55px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .acc-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid #eee; font-size: 13px;
+    }
+    .acc-row:last-child { border-bottom: none; }
+    .status-group { display: flex; gap: 6px; flex-shrink: 0; }
+    .status-btn {
+      border: 1px solid #ccc; background: #fff; border-radius: 6px;
+      padding: 4px 9px; font-size: 12px; cursor: pointer;
+    }
+    .status-btn.active-S { background: var(--cor-ok); color: #fff; border-color: var(--cor-ok); }
+    .status-btn.active-N { background: #888; color: #fff; border-color: #888; }
+    .status-btn.active-A { background: var(--cor-erro); color: #fff; border-color: var(--cor-erro); }
+
+    .photo-block { margin-bottom: 14px; }
+    .photo-block label { margin-bottom: 4px; }
+    input[type="file"] {
+      width: 100%; padding: 8px; border: 1px dashed #aaa; border-radius: 6px;
+      background: #fafafa; font-size: 12px;
+    }
+    .preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
+    .preview-grid img { width: 100%; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
+
+    canvas.sig-pad {
+      width: 100%; height: 130px; border: 1px solid #ccc; border-radius: 6px;
+      touch-action: none; background: #fff;
+    }
+    .sig-block { margin-bottom: 16px; }
+    .sig-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .sig-actions span { font-size: 12px; font-weight: 600; color: #555; }
+    .sig-actions button {
+      background: none; border: none; color: var(--cor-primaria);
+      font-size: 12px; cursor: pointer; text-decoration: underline;
+    }
+
+    #submitBtn {
+      width: 100%; background: var(--cor-primaria); color: #fff; border: none;
+      border-radius: 8px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    #submitBtn:disabled { background: #999; }
+    #msg { margin-top: 12px; font-size: 13px; text-align: center; }
+    #msg.erro { color: var(--cor-erro); }
+    #msg.ok { color: var(--cor-ok); }
+    .required::after { content: ' *'; color: var(--cor-erro); }
+    .hint { font-size: 11px; color: #888; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-placeholder">LOGO</div>
+    <div>
+      <h1>Ordem de Serviço e Vistoria</h1>
+      <p>Anexo I do Contrato de Locação</p>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="card">
+      <h2>Dados do cliente / motorista</h2>
+
+      <label class="required">Nome do cliente / motorista</label>
+      <input type="text" id="clientName" list="clientList" placeholder="Digite ou selecione" onblur="tryAutofillFromContract()">
+      <datalist id="clientList"></datalist>
+      <div class="hint">Se já existir uma pasta com esse nome no Drive, os arquivos vão para dentro dela. Se não existir, uma nova pasta é criada automaticamente.</div>
+      <div id="contractStatus" class="hint"></div>
+      <button type="button" id="fetchContractBtn" onclick="tryAutofillFromContract(true)"
+        style="margin-top:6px; background:none; border:1px solid var(--cor-primaria); color:var(--cor-primaria); border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer;">
+        Buscar dados do contrato
+      </button>
+
+      <div class="row2">
+        <div>
+          <label>Telefone</label>
+          <input type="tel" id="phone" placeholder="(00) 00000-0000">
+        </div>
+        <div>
+          <label class="required">Preenchido por</label>
+          <input type="text" id="filledBy" placeholder="Responsável pela vistoria">
+        </div>
+      </div>
+
+      <label>Endereço</label>
+      <input type="text" id="address" placeholder="Rua, número, bairro, cidade">
+    </div>
+
+    <div class="card">
+      <h2>Dados do veículo</h2>
+      <div class="row2">
+        <div>
+          <label class="required">Veículo</label>
+          <input type="text" id="vehicle" placeholder="Ex: VW Voyage MPI">
+        </div>
+        <div>
+          <label class="required">Placa</label>
+          <input type="text" id="plate" placeholder="ABC-1D23">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Cor</label>
+          <input type="text" id="color">
+        </div>
+        <div>
+          <label>Ano</label>
+          <input type="text" id="year" placeholder="2022/2023">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Número do chassi</label>
+          <input type="text" id="chassis">
+        </div>
+        <div>
+          <label>Número do motor</label>
+          <input type="text" id="motorNumber">
+        </div>
+      </div>
+      <div class="row3">
+        <div>
+          <label>Hodômetro entrega</label>
+          <input type="number" id="odometerDelivery">
+        </div>
+        <div>
+          <label>Hodômetro retorno</label>
+          <input type="number" id="odometerReturn">
+        </div>
+        <div>
+          <label>Combustível</label>
+          <select id="fuelLevel"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Acessórios e equipamentos</h2>
+      <div class="hint" style="margin-bottom:8px;">S = Sim / existente &nbsp;•&nbsp; N = Não existente &nbsp;•&nbsp; A = Avariado</div>
+      <div id="accessoriesContainer">Carregando...</div>
+    </div>
+
+    <div class="card">
+      <h2>Observações</h2>
+      <textarea id="observations" placeholder="Danos, avarias, observações gerais..."></textarea>
+    </div>
+
+    <div class="card">
+      <h2>Descrição dos sintomas</h2>
+      <textarea id="symptoms" placeholder="Sintomas relatados pelo cliente sobre o veículo..."></textarea>
+    </div>
+
+    <div class="card">
+      <h2 class="required">Fotos da vistoria</h2>
+      <div class="hint" style="margin-bottom:8px;">Na foto de "Painel / Hodômetro", tire com o veículo ligado para registrar as luzes de alerta acesas, se houver. Todas as fotos recebem automaticamente uma marca d'água com data e hora.</div>
+      <div id="photoCategoriesContainer">Carregando categorias...</div>
+    </div>
+
+    <div class="card">
+      <h2 class="required">Assinaturas</h2>
+
+      <div class="sig-block">
+        <div class="sig-actions">
+          <span>Assinatura do cliente</span>
+          <button type="button" onclick="clearSig('client')">Limpar</button>
+        </div>
+        <canvas id="sigClient" class="sig-pad"></canvas>
+      </div>
+
+      <div class="sig-block">
+        <div class="sig-actions">
+          <span>Assinatura do responsável</span>
+          <button type="button" onclick="clearSig('responsible')">Limpar</button>
+        </div>
+        <canvas id="sigResponsible" class="sig-pad"></canvas>
+      </div>
+    </div>
+
+    <button id="submitBtn" onclick="submitForm()">Enviar vistoria</button>
+    <div id="msg"></div>
+  </div>
+
+  <script>
+    let config = { clients: [], accessoryItems: [], photoCategories: [], fuelLevels: [] };
+    let photosByCategory = {};
+
+    google.script.run.withSuccessHandler(function (cfg) {
+      config = cfg;
+      buildClientList();
+      buildAccessories();
+      buildFuelSelect();
+      buildPhotoCategories();
+    }).withFailureHandler(function (err) {
+      document.getElementById('accessoriesContainer').textContent = 'Erro ao carregar configuração.';
+      console.error(err);
+    }).getFormConfig();
+
+    function buildClientList() {
+      document.getElementById('clientList').innerHTML =
+        config.clients.map(function (c) { return '<option value="' + c + '">'; }).join('');
+    }
+
+    function buildAccessories() {
+      const container = document.getElementById('accessoriesContainer');
+      container.innerHTML = config.accessoryItems.map(function (item) {
+        return '<div class="acc-row" data-item="' + item + '">' +
+          '<span>' + item + '</span>' +
+          '<div class="status-group">' +
+            '<button type="button" class="status-btn" data-status="S" onclick="setAccStatus(this)">S</button>' +
+            '<button type="button" class="status-btn" data-status="N" onclick="setAccStatus(this)">N</button>' +
+            '<button type="button" class="status-btn" data-status="A" onclick="setAccStatus(this)">A</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    function setAccStatus(btn) {
+      const row = btn.closest('.acc-row');
+      row.querySelectorAll('.status-btn').forEach(function (b) { b.classList.remove('active-S', 'active-N', 'active-A'); });
+      btn.classList.add('active-' + btn.dataset.status);
+      row.dataset.selected = btn.dataset.status;
+    }
+
+    let lastAutofillClient = '';
+    function tryAutofillFromContract(manual) {
+      const clientName = document.getElementById('clientName').value.trim();
+      const statusEl = document.getElementById('contractStatus');
+      if (!clientName) return;
+      if (!manual && clientName === lastAutofillClient) return; // evita buscar de novo sem necessidade
+
+      statusEl.textContent = 'Buscando dados do contrato...';
+      statusEl.className = 'hint';
+
+      google.script.run
+        .withSuccessHandler(function (data) {
+          lastAutofillClient = clientName;
+          if (!data.found) {
+            statusEl.textContent = manual ? ('Contrato não encontrado (' + (data.reason || '') + ').') : '';
+            return;
+          }
+          const fields = ['phone', 'address', 'vehicle', 'plate', 'color', 'year', 'chassis', 'motorNumber'];
+          const idMap = {
+            phone: 'phone', address: 'address', vehicle: 'vehicle', plate: 'plate',
+            color: 'color', year: 'year', chassis: 'chassis', motorNumber: 'motorNumber'
+          };
+          fields.forEach(function (f) {
+            const el = document.getElementById(idMap[f]);
+            if (el && data[f]) el.value = data[f];
+          });
+          statusEl.textContent = 'Dados preenchidos automaticamente a partir do contrato. Confira antes de enviar.';
+          statusEl.style.color = 'var(--cor-ok)';
+        })
+        .withFailureHandler(function (err) {
+          statusEl.textContent = 'Erro ao buscar contrato: ' + err.message;
+          statusEl.style.color = 'var(--cor-erro)';
+        })
+        .getContractData(clientName);
+    }
+
+    function buildFuelSelect() {
+      const sel = document.getElementById('fuelLevel');
+      sel.innerHTML = '<option value="">Selecione</option>' +
+        config.fuelLevels.map(function (f) { return '<option value="' + f + '">' + f + '</option>'; }).join('');
+    }
+
+    function buildPhotoCategories() {
+      const container = document.getElementById('photoCategoriesContainer');
+      container.innerHTML = config.photoCategories.map(function (cat, idx) {
+        photosByCategory[cat] = [];
+        const inputId = 'photoInput_' + idx;
+        return '<div class="photo-block">' +
+          '<label>' + cat + '</label>' +
+          '<input type="file" id="' + inputId + '" accept="image/*" capture="environment" multiple data-category="' + cat + '">' +
+          '<div class="preview-grid" id="preview_' + idx + '"></div>' +
+        '</div>';
+      }).join('');
+
+      config.photoCategories.forEach(function (cat, idx) {
+        document.getElementById('photoInput_' + idx).addEventListener('change', async function (e) {
+          const newFiles = Array.from(e.target.files);
+          const stampedFiles = [];
+          for (const file of newFiles) {
+            try {
+              stampedFiles.push(await addTimestampWatermark(file));
+            } catch (err) {
+              console.error('Falha ao carimbar foto, usando original:', err);
+              stampedFiles.push(file);
+            }
+          }
+          photosByCategory[cat] = photosByCategory[cat].concat(stampedFiles);
+          renderPreview(cat, idx);
+          e.target.value = '';
+        });
+      });
+    }
+
+    // Desenha a imagem num canvas e carimba data/hora atual no canto inferior direito.
+    // Retorna um novo File (JPEG) já com a marca d'água, pronto para envio.
+    function addTimestampWatermark(file) {
+      return new Promise(function (resolve, reject) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          const text = formatTimestamp(new Date());
+          const fontSize = Math.max(20, Math.round(canvas.width * 0.028));
+          ctx.font = fontSize + 'px Arial';
+          const paddingX = fontSize * 0.6;
+          const paddingY = fontSize * 0.5;
+          const textWidth = ctx.measureText(text).width;
+          const boxWidth = textWidth + paddingX * 2;
+          const boxHeight = fontSize + paddingY * 2;
+          const margin = Math.max(10, canvas.width * 0.015);
+          const x = canvas.width - boxWidth - margin;
+          const y = canvas.height - boxHeight - margin;
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+          ctx.fillRect(x, y, boxWidth, boxHeight);
+          ctx.fillStyle = '#ffffff';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(text, x + paddingX, y + boxHeight / 2);
+
+          URL.revokeObjectURL(url);
+          canvas.toBlob(function (blob) {
+            if (!blob) { reject(new Error('Falha ao gerar imagem')); return; }
+            resolve(new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }));
+          }, 'image/jpeg', 0.88);
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Não foi possível carregar a imagem')); };
+        img.src = url;
+      });
+    }
+
+    function formatTimestamp(d) {
+      const pad = function (n) { return String(n).padStart(2, '0'); };
+      return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() +
+        ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+
+    function renderPreview(cat, idx) {
+      const grid = document.getElementById('preview_' + idx);
+      grid.innerHTML = '';
+      photosByCategory[cat].forEach(function (file) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        grid.appendChild(img);
+      });
+    }
+
+    function fileToBase64(file) {
+      return new Promise(function (resolve, reject) {
+        const reader = new FileReader();
+        reader.onload = function () { resolve(reader.result.split(',')[1]); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // ---------- Assinaturas ----------
+    const sigPads = {};
+    ['client', 'responsible'].forEach(function (key) {
+      const canvas = document.getElementById(key === 'client' ? 'sigClient' : 'sigResponsible');
+      const ctx = canvas.getContext('2d');
+      sigPads[key] = { canvas: canvas, ctx: ctx, drawing: false, hasSignature: false };
+      resizeSig(key);
+    });
+    window.addEventListener('resize', function () { ['client', 'responsible'].forEach(resizeSig); });
+
+    function resizeSig(key) {
+      const pad = sigPads[key];
+      const ratio = window.devicePixelRatio || 1;
+      pad.canvas.width = pad.canvas.clientWidth * ratio;
+      pad.canvas.height = pad.canvas.clientHeight * ratio;
+      pad.ctx.scale(ratio, ratio);
+      pad.ctx.lineWidth = 2;
+      pad.ctx.lineCap = 'round';
+      pad.ctx.strokeStyle = '#000';
+    }
+    function getPos(canvas, evt) {
+      const rect = canvas.getBoundingClientRect();
+      const point = evt.touches ? evt.touches[0] : evt;
+      return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+    }
+    function bindSig(key) {
+      const pad = sigPads[key];
+      function start(evt) {
+        pad.drawing = true; pad.hasSignature = true;
+        const p = getPos(pad.canvas, evt);
+        pad.ctx.beginPath(); pad.ctx.moveTo(p.x, p.y);
+        evt.preventDefault();
+      }
+      function move(evt) {
+        if (!pad.drawing) return;
+        const p = getPos(pad.canvas, evt);
+        pad.ctx.lineTo(p.x, p.y); pad.ctx.stroke();
+        evt.preventDefault();
+      }
+      function end() { pad.drawing = false; }
+      pad.canvas.addEventListener('mousedown', start);
+      pad.canvas.addEventListener('mousemove', move);
+      pad.canvas.addEventListener('mouseup', end);
+      pad.canvas.addEventListener('mouseleave', end);
+      pad.canvas.addEventListener('touchstart', start);
+      pad.canvas.addEventListener('touchmove', move);
+      pad.canvas.addEventListener('touchend', end);
+    }
+    bindSig('client'); bindSig('responsible');
+
+    function clearSig(key) {
+      const pad = sigPads[key];
+      pad.ctx.clearRect(0, 0, pad.canvas.width, pad.canvas.height);
+      pad.hasSignature = false;
+    }
+
+    // ---------- Envio ----------
+    async function submitForm() {
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('submitBtn');
+      msg.textContent = ''; msg.className = '';
+
+      const clientName = document.getElementById('clientName').value.trim();
+      const filledBy = document.getElementById('filledBy').value.trim();
+
+      const allPhotos = [];
+      Object.keys(photosByCategory).forEach(function (cat) {
+        photosByCategory[cat].forEach(function (f) { allPhotos.push({ category: cat, file: f }); });
+      });
+
+      if (!clientName) return showError('Informe o nome do cliente/motorista.');
+      if (!filledBy) return showError('Informe quem preencheu a vistoria.');
+      if (allPhotos.length === 0) return showError('Adicione ao menos uma foto.');
+      if (!sigPads.client.hasSignature) return showError('Colete a assinatura do cliente.');
+      if (!sigPads.responsible.hasSignature) return showError('Colete a assinatura do responsável.');
+
+      const accessories = Array.from(document.querySelectorAll('.acc-row')).map(function (row) {
+        return { item: row.dataset.item, status: row.dataset.selected || 'S' };
+      });
+
+      btn.disabled = true; btn.textContent = 'Enviando...';
+
+      try {
+        const photosB64 = await Promise.all(allPhotos.map(async function (p) {
+          return { category: p.category, name: p.file.name, mimeType: p.file.type || 'image/jpeg', data: await fileToBase64(p.file) };
+        }));
+
+        const payload = {
+          clientName: clientName,
+          phone: document.getElementById('phone').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          filledBy: filledBy,
+          vehicle: document.getElementById('vehicle').value.trim(),
+          plate: document.getElementById('plate').value.trim(),
+          color: document.getElementById('color').value.trim(),
+          year: document.getElementById('year').value.trim(),
+          chassis: document.getElementById('chassis').value.trim(),
+          motorNumber: document.getElementById('motorNumber').value.trim(),
+          odometerDelivery: document.getElementById('odometerDelivery').value,
+          odometerReturn: document.getElementById('odometerReturn').value,
+          fuelLevel: document.getElementById('fuelLevel').value,
+          accessories: accessories,
+          observations: document.getElementById('observations').value.trim(),
+          symptoms: document.getElementById('symptoms').value.trim(),
+          clientSignature: { data: sigPads.client.canvas.toDataURL('image/png').split(',')[1], mimeType: 'image/png' },
+          responsibleSignature: { data: sigPads.responsible.canvas.toDataURL('image/png').split(',')[1], mimeType: 'image/png' },
+          photos: photosB64
+        };
+
+        google.script.run
+          .withSuccessHandler(function () {
+            msg.className = 'ok';
+            msg.textContent = 'Vistoria enviada com sucesso!';
+            btn.textContent = 'Enviar vistoria';
+            btn.disabled = false;
+          })
+          .withFailureHandler(function (err) {
+            showError('Erro ao enviar: ' + err.message);
+            btn.textContent = 'Enviar vistoria';
+            btn.disabled = false;
+          })
+          .uploadVistoria(payload);
+      } catch (err) {
+        showError('Erro ao processar fotos: ' + err.message);
+        btn.textContent = 'Enviar vistoria';
+        btn.disabled = false;
+      }
+
+      function showError(text) {
+        msg.className = 'erro';
+        msg.textContent = text;
+        btn.disabled = false;
+        btn.textContent = 'Enviar vistoria';
+      }
+    }
+  </script>
+</body>
+</html>
