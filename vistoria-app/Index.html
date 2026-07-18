@@ -71,6 +71,9 @@
     .status-btn.active-N { background: #888; color: #fff; border-color: #888; }
     .status-btn.active-A { background: var(--cor-erro); color: #fff; border-color: var(--cor-erro); }
 
+    .etapa-btn { flex: 1; font-weight: 600; }
+    .etapa-btn.active-etapa { background: var(--cor-primaria); color: #fff; border-color: var(--cor-primaria); }
+
     .photo-block { margin-bottom: 14px; }
     .photo-block label { margin-bottom: 4px; }
     input[type="file"] {
@@ -115,6 +118,26 @@
   </header>
 
   <div class="container">
+
+    <div class="card">
+      <h2 class="required">Etapa da vistoria</h2>
+      <div class="row2">
+        <button type="button" class="status-btn etapa-btn active-etapa" data-etapa="entrada" onclick="setEtapa('entrada')"
+          style="padding:10px; font-size:14px;">Entrada (retirada)</button>
+        <button type="button" class="status-btn etapa-btn" data-etapa="saida" onclick="setEtapa('saida')"
+          style="padding:10px; font-size:14px;">Saída (devolução)</button>
+      </div>
+      <div class="hint" style="margin-top:8px;">Entrada = quando o cliente retira o carro. Saída = quando devolve.</div>
+    </div>
+
+    <div class="card">
+      <h2>Contrato</h2>
+      <label>Contrato ativo (opcional)</label>
+      <select id="contratoSelect" onchange="onContratoSelecionado()">
+        <option value="">Nenhum / não encontrado na lista</option>
+      </select>
+      <div class="hint">Selecionar um contrato preenche cliente, veículo e placa automaticamente, e vincula a vistoria a esse contrato no Dashboard.</div>
+    </div>
 
     <div class="card">
       <h2>Dados do cliente / motorista</h2>
@@ -176,14 +199,10 @@
           <input type="text" id="motorNumber">
         </div>
       </div>
-      <div class="row3">
+      <div class="row2">
         <div>
-          <label>Hodômetro entrega</label>
-          <input type="number" id="odometerDelivery">
-        </div>
-        <div>
-          <label>Hodômetro retorno</label>
-          <input type="number" id="odometerReturn">
+          <label>Hodômetro</label>
+          <input type="number" id="odometer">
         </div>
         <div>
           <label>Combustível</label>
@@ -239,8 +258,9 @@
   </div>
 
   <script>
-    let config = { clients: [], accessoryItems: [], photoCategories: [], fuelLevels: [] };
+    let config = { clients: [], accessoryItems: [], photoCategories: [], fuelLevels: [], contratos: [] };
     let photosByCategory = {};
+    let currentEtapa = 'entrada';
 
     google.script.run.withSuccessHandler(function (cfg) {
       config = cfg;
@@ -248,14 +268,47 @@
       buildAccessories();
       buildFuelSelect();
       buildPhotoCategories();
+      buildContratos();
     }).withFailureHandler(function (err) {
       document.getElementById('accessoriesContainer').textContent = 'Erro ao carregar configuração.';
       console.error(err);
     }).getFormConfig();
 
+    function setEtapa(etapa) {
+      currentEtapa = etapa;
+      document.querySelectorAll('.etapa-btn').forEach(function (b) {
+        b.classList.toggle('active-etapa', b.dataset.etapa === etapa);
+      });
+    }
+
     function buildClientList() {
       document.getElementById('clientList').innerHTML =
         config.clients.map(function (c) { return '<option value="' + c + '">'; }).join('');
+    }
+
+    function buildContratos() {
+      const sel = document.getElementById('contratoSelect');
+      const contratos = config.contratos || [];
+      sel.innerHTML = '<option value="">Nenhum / não encontrado na lista</option>' +
+        contratos.map(function (c) {
+          return '<option value="' + c.id + '">' + c.cliente + ' — ' + c.placa + ' (' + c.modelo + ')</option>';
+        }).join('');
+      if (contratos.length === 0) {
+        sel.disabled = true;
+        sel.insertAdjacentHTML('afterend',
+          '<div class="hint" style="color:var(--cor-erro);">Não foi possível carregar contratos do Dashboard agora — preencha os dados manualmente.</div>');
+      }
+    }
+
+    function onContratoSelecionado() {
+      const sel = document.getElementById('contratoSelect');
+      const id = sel.value;
+      const contratos = config.contratos || [];
+      const c = contratos.find(function (x) { return x.id === id; });
+      if (!c) return;
+      document.getElementById('clientName').value = c.cliente;
+      document.getElementById('vehicle').value = c.modelo;
+      document.getElementById('plate').value = c.placa;
     }
 
     function buildAccessories() {
@@ -323,11 +376,11 @@
     function buildPhotoCategories() {
       const container = document.getElementById('photoCategoriesContainer');
       container.innerHTML = config.photoCategories.map(function (cat, idx) {
-        photosByCategory[cat] = [];
+        photosByCategory[cat.key] = [];
         const inputId = 'photoInput_' + idx;
         return '<div class="photo-block">' +
-          '<label>' + cat + '</label>' +
-          '<input type="file" id="' + inputId + '" accept="image/*" capture="environment" multiple data-category="' + cat + '">' +
+          '<label>' + cat.label + '</label>' +
+          '<input type="file" id="' + inputId + '" accept="image/*" capture="environment" multiple data-category="' + cat.key + '">' +
           '<div class="preview-grid" id="preview_' + idx + '"></div>' +
         '</div>';
       }).join('');
@@ -344,8 +397,8 @@
               stampedFiles.push(file);
             }
           }
-          photosByCategory[cat] = photosByCategory[cat].concat(stampedFiles);
-          renderPreview(cat, idx);
+          photosByCategory[cat.key] = photosByCategory[cat.key].concat(stampedFiles);
+          renderPreview(cat.key, idx);
           e.target.value = '';
         });
       });
@@ -506,6 +559,8 @@
         }));
 
         const payload = {
+          etapa: currentEtapa,
+          contratoId: document.getElementById('contratoSelect').value,
           clientName: clientName,
           phone: document.getElementById('phone').value.trim(),
           address: document.getElementById('address').value.trim(),
@@ -516,8 +571,7 @@
           year: document.getElementById('year').value.trim(),
           chassis: document.getElementById('chassis').value.trim(),
           motorNumber: document.getElementById('motorNumber').value.trim(),
-          odometerDelivery: document.getElementById('odometerDelivery').value,
-          odometerReturn: document.getElementById('odometerReturn').value,
+          odometer: document.getElementById('odometer').value,
           fuelLevel: document.getElementById('fuelLevel').value,
           accessories: accessories,
           observations: document.getElementById('observations').value.trim(),
@@ -528,9 +582,14 @@
         };
 
         google.script.run
-          .withSuccessHandler(function () {
-            msg.className = 'ok';
-            msg.textContent = 'Vistoria enviada com sucesso!';
+          .withSuccessHandler(function (result) {
+            if (result && result.dashboard && !result.dashboard.ok) {
+              msg.className = 'erro';
+              msg.textContent = 'Vistoria salva no Drive, mas falhou ao enviar pro Dashboard: ' + result.dashboard.error;
+            } else {
+              msg.className = 'ok';
+              msg.textContent = 'Vistoria enviada com sucesso!';
+            }
             btn.textContent = 'Enviar vistoria';
             btn.disabled = false;
           })

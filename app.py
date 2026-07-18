@@ -59,7 +59,10 @@ def _nh(s):
 
 # ── Autenticação ──────────────────────────────────────────────────────────────
 
-_ROTAS_PUBLICAS = {"login", "static", "admin_novo_usuario"}
+_ROTAS_PUBLICAS = {
+    "login", "static", "admin_novo_usuario",
+    "api_contratos_ativos", "api_vistoria_importar",
+}
 
 @app.before_request
 def verificar_login():
@@ -1573,105 +1576,110 @@ def gerar_vistoria_route():
             Path(foto_path).unlink(missing_ok=True)
 
 
-def _gerar_vistoria_impl():
+_ANGULOS_FOTO = [
+    "frontal", "traseira", "lateral_dir", "lateral_esq",
+    "painel", "hodometro", "estepe", "teto",
+    "motor", "mala", "dano_1", "dano_2",
+]
+
+_CHAVES_ACC = [
+    "acc_calotas", "acc_buzina", "acc_doc_crlv", "acc_triangulo", "acc_antena",
+    "acc_sensor_re", "acc_som", "acc_tapetes", "acc_limpadores", "acc_chave_roda",
+    "acc_vidros_eletricos", "acc_oleo_motor", "acc_alarme", "acc_lampadas", "acc_macaco",
+    "acc_estepe", "acc_gnv", "acc_agua", "acc_borr_psg_dir", "acc_borr_mtr_dir",
+    "acc_asa_dd", "acc_asa_td", "acc_tapete_mala", "acc_tampa_parachoque",
+    "acc_borr_psg_tras", "acc_borr_mtr_tras", "acc_asa_de", "acc_asa_te",
+    "acc_bagagito", "acc_lingueta",
+]
+
+
+def _salvar_foto(file_storage):
+    if not file_storage or not file_storage.filename:
+        return None
+    ext = Path(secure_filename(file_storage.filename)).suffix.lower()
+    if ext not in ('.jpg', '.jpeg', '.png'):
+        return None
+    p = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
+    file_storage.save(str(p))
+    return str(p)
+
+
+def _salvar_foto_base64(b64_data, mime_type=None):
+    """Decodifica uma imagem base64 (payload de API externa) para um arquivo temporário local."""
+    import base64 as _b64
+    if not b64_data:
+        return None
+    ext = ".png" if (mime_type or "").lower() == "image/png" else ".jpg"
+    p = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
+    p.write_bytes(_b64.b64decode(b64_data))
+    return str(p)
+
+
+def _upload_bg(storage_path, docx_bytes, old_storage_path=None):
     import traceback as _tb
-    agora = datetime.now(_BRT)
-    etapa = request.form.get("etapa", "").strip()  # "entrada" | "saida" | "" (legado)
-
-    _ANGULOS_FOTO = [
-        "frontal", "traseira", "lateral_dir", "lateral_esq",
-        "painel", "hodometro", "estepe", "teto",
-        "motor", "mala", "dano_1", "dano_2",
-    ]
-
-    _CHAVES_ACC = [
-        "acc_calotas", "acc_buzina", "acc_doc_crlv", "acc_triangulo", "acc_antena",
-        "acc_sensor_re", "acc_som", "acc_tapetes", "acc_limpadores", "acc_chave_roda",
-        "acc_vidros_eletricos", "acc_oleo_motor", "acc_alarme", "acc_lampadas", "acc_macaco",
-        "acc_estepe", "acc_gnv", "acc_agua", "acc_borr_psg_dir", "acc_borr_mtr_dir",
-        "acc_asa_dd", "acc_asa_td", "acc_tapete_mala", "acc_tampa_parachoque",
-        "acc_borr_psg_tras", "acc_borr_mtr_tras", "acc_asa_de", "acc_asa_te",
-        "acc_bagagito", "acc_lingueta",
-    ]
-
-    def _salvar_foto(file_storage):
-        if not file_storage or not file_storage.filename:
-            return None
-        ext = Path(secure_filename(file_storage.filename)).suffix.lower()
-        if ext not in ('.jpg', '.jpeg', '.png'):
-            return None
-        p = TEMP_FOLDER / f"{uuid.uuid4().hex}{ext}"
-        file_storage.save(str(p))
-        return str(p)
-
-    def _upload_bg(storage_path, docx_bytes, old_storage_path=None):
+    try:
+        sb2 = _supabase()
+        if not sb2:
+            return
         try:
-            sb2 = _supabase()
-            if not sb2:
-                return
-            try:
-                sb2.storage.from_("documentos").upload(
-                    storage_path, docx_bytes,
-                    {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                     "upsert": "true"},
-                )
-            except Exception:
-                _tb.print_exc()
-            if old_storage_path and old_storage_path != storage_path:
-                try:
-                    sb2.storage.from_("documentos").remove([old_storage_path])
-                except Exception:
-                    pass
+            sb2.storage.from_("documentos").upload(
+                storage_path, docx_bytes,
+                {"content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                 "upsert": "true"},
+            )
         except Exception:
             _tb.print_exc()
+        if old_storage_path and old_storage_path != storage_path:
+            try:
+                sb2.storage.from_("documentos").remove([old_storage_path])
+            except Exception:
+                pass
+    except Exception:
+        _tb.print_exc()
 
-    dados_fixos = {
-        "contrato_id":      request.form.get("contrato_id", "").strip(),
-        "cliente_nome":     request.form.get("cliente_nome", ""),
-        "cliente_telefone": request.form.get("cliente_telefone", ""),
-        "cliente_endereco": request.form.get("cliente_endereco", ""),
-        "preenchido_por":   request.form.get("preenchido_por", ""),
-        "veiculo":          request.form.get("veiculo", "").strip(),
-        "placa":            request.form.get("placa", "").upper().strip(),
-        "cor":              request.form.get("cor", ""),
-        "ano":              request.form.get("ano", ""),
-        "chassi":           request.form.get("chassi", ""),
-        "numero_motor":     request.form.get("numero_motor", ""),
-    }
+
+def _montar_e_salvar_vistoria(etapa, dados_fixos, campos, fotos_locais, vistoria_id_hint=""):
+    """
+    Núcleo de geração/gravação de uma vistoria (entrada ou saída): gera o
+    .docx a partir do template, sobe fotos e documento pro Storage, grava/
+    atualiza a linha em `vistorias`. Usado tanto pelo formulário interno
+    (/vistoria/gerar) quanto pela importação externa (/api/vistoria/importar).
+
+    dados_fixos = {contrato_id, cliente_nome, cliente_telefone, cliente_endereco,
+                    preenchido_por, veiculo, placa, cor, ano, chassi, numero_motor}
+    campos = {hodometro, combustivel, obs, sintomas, acessorios: {chave_sem_sufixo: valor}}
+    fotos_locais = {angulo: caminho_temp_local}  — fotos desta etapa
+    vistoria_id_hint = id explícito da vistoria a atualizar (só usado na saída;
+                        se vazio, busca a mais recente pelo contrato_id)
+
+    Retorna {"vistoria_id", "nome_docx", "status"} ou lança Exception.
+    """
+    import traceback as _tb
+    agora = datetime.now(_BRT)
     contrato_id = dados_fixos["contrato_id"]
     placa_slug  = _slugify(dados_fixos["placa"] or "PLACA")
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # ETAPA ENTRADA  (cliente retira o carro)
-    # ─────────────────────────────────────────────────────────────────────────
     if etapa == "entrada":
-        fotos_entrada = {}
-        for angulo in _ANGULOS_FOTO:
-            p = _salvar_foto(request.files.get(f"foto_entrada_{angulo}"))
-            if p:
-                fotos_entrada[angulo] = p
-
         dados = {
             **dados_fixos,
             "data_entrada":        agora.strftime("%d/%m/%Y %H:%M"),
-            "hodometro_entrada":   request.form.get("hodometro_entrada", ""),
-            "combustivel_entrada": request.form.get("combustivel_entrada", ""),
-            "obs_entrada":         request.form.get("obs_entrada", ""),
-            "sintomas_entrada":    request.form.get("sintomas_entrada", ""),
+            "hodometro_entrada":   campos.get("hodometro", ""),
+            "combustivel_entrada": campos.get("combustivel", ""),
+            "obs_entrada":         campos.get("obs", ""),
+            "sintomas_entrada":    campos.get("sintomas", ""),
             "responsavel_entrada": dados_fixos["preenchido_por"],
-            "acessorios_entrada":  {k: request.form.get(f"{k}_entrada", "") for k in _CHAVES_ACC},
-            "fotos_entrada":       fotos_entrada,
+            "acessorios_entrada":  {k: (campos.get("acessorios") or {}).get(k, "") for k in _CHAVES_ACC},
+            "fotos_entrada":       fotos_locais,
         }
 
         data_slug    = agora.strftime("%d.%m.%Y")
         nome_docx    = f"VISTORIA_{placa_slug}_{data_slug}.docx"
         caminho_docx = str(CONTRATOS_FOLDER / nome_docx)
 
-        # Lê bytes das fotos ANTES do finally apagar os arquivos temporários
         pasta_fotos   = f"vistorias/fotos/{placa_slug}_{data_slug}"
-        foto_s_paths  = {}   # {angulo: storage_path}
-        foto_s_bytes  = {}   # {storage_path: bytes} — para upload em background
-        for angulo, local_p in fotos_entrada.items():
+        foto_s_paths  = {}
+        foto_s_bytes  = {}
+        for angulo, local_p in fotos_locais.items():
             ext = Path(local_p).suffix.lower() or ".jpg"
             s_path = f"{pasta_fotos}/{angulo}{ext}"
             foto_s_paths[angulo] = s_path
@@ -1687,13 +1695,11 @@ def _gerar_vistoria_impl():
                 template_path=str(VISTORIA_ES_TEMPLATE),
             )
         except Exception as e:
-            _tb.print_exc()
-            return jsonify({"error": f"Erro ao gerar vistoria (entrada): {e}"}), 500
+            raise Exception(f"Erro ao gerar vistoria (entrada): {e}")
         finally:
-            for p in fotos_entrada.values():
+            for p in fotos_locais.values():
                 Path(p).unlink(missing_ok=True)
 
-        # fotos_entrada no banco: ["angulo:storage_path", ...] (coluna text[])
         fotos_entrada_db = [f"{ang}:{pth}" for ang, pth in foto_s_paths.items()]
 
         _storage_path = f"vistorias/{nome_docx}"
@@ -1728,7 +1734,6 @@ def _gerar_vistoria_impl():
             except Exception:
                 _tb.print_exc()
             _upload_bg(_storage_path, Path(caminho_docx).read_bytes())
-            # Upload individual das fotos em background
             if foto_s_bytes:
                 try:
                     sb2 = _supabase()
@@ -1749,13 +1754,10 @@ def _gerar_vistoria_impl():
         except Exception:
             _tb.print_exc()
 
-        return jsonify({"redirect_url": url_for("historico_vistorias")})
+        return {"vistoria_id": None, "nome_docx": nome_docx, "status": resumo["status"]}
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # ETAPA SAÍDA  (cliente devolve o carro)
-    # ─────────────────────────────────────────────────────────────────────────
     if etapa == "saida":
-        vistoria_id = request.form.get("vistoria_id", "").strip()
+        vistoria_id = vistoria_id_hint
         sb = _supabase()
         registro = {}
         caminho_docx_anterior = None
@@ -1778,15 +1780,9 @@ def _gerar_vistoria_impl():
             except Exception:
                 _tb.print_exc()
 
-        fotos_saida = {}
-        for angulo in _ANGULOS_FOTO:
-            p = _salvar_foto(request.files.get(f"foto_saida_{angulo}"))
-            if p:
-                fotos_saida[angulo] = p
+        fotos_saida = fotos_locais
 
-        # Recupera fotos de entrada do Storage (guardadas na etapa anterior)
-        # Formato no banco: ["angulo:storage_path", ...]
-        fotos_entrada_recuperadas = {}   # {angulo: caminho_temp_local}
+        fotos_entrada_recuperadas = {}
         if sb:
             for item in (registro.get("fotos_entrada") or []):
                 try:
@@ -1812,7 +1808,6 @@ def _gerar_vistoria_impl():
             "ano":              registro.get("ano", dados_fixos["ano"]),
             "chassi":           registro.get("chassi", dados_fixos["chassi"]),
             "numero_motor":     registro.get("numero_motor", dados_fixos["numero_motor"]),
-            # Entrega — do registro existente
             "data_entrada":        registro.get("data_entrada", ""),
             "hodometro_entrada":   registro.get("hodometro_entrada", ""),
             "combustivel_entrada": registro.get("combustivel_entrada", ""),
@@ -1821,23 +1816,21 @@ def _gerar_vistoria_impl():
             "responsavel_entrada": registro.get("responsavel_entrada", ""),
             "acessorios_entrada":  registro.get("acessorios_entrada") or {},
             "fotos_entrada":       fotos_entrada_recuperadas,
-            # Devolução — do form
             "data_saida":        agora.strftime("%d/%m/%Y %H:%M"),
-            "hodometro_saida":   request.form.get("hodometro_saida", ""),
-            "combustivel_saida": request.form.get("combustivel_saida", ""),
-            "obs_saida":         request.form.get("obs_saida", ""),
-            "sintomas_saida":    request.form.get("sintomas_saida", ""),
+            "hodometro_saida":   campos.get("hodometro", ""),
+            "combustivel_saida": campos.get("combustivel", ""),
+            "obs_saida":         campos.get("obs", ""),
+            "sintomas_saida":    campos.get("sintomas", ""),
             "responsavel_saida": dados_fixos["preenchido_por"],
-            "acessorios_saida":  {k: request.form.get(f"{k}_saida", "") for k in _CHAVES_ACC},
+            "acessorios_saida":  {k: (campos.get("acessorios") or {}).get(k, "") for k in _CHAVES_ACC},
             "fotos_saida":       fotos_saida,
         }
 
-        # Lê bytes das fotos de SAÍDA antes do finally apagar os temporários
         placa_saida      = registro.get("placa") or dados_fixos.get("placa") or "PLACA"
         data_slug_saida  = agora.strftime("%d.%m.%Y")
         pasta_fotos_saida = f"vistorias/fotos/{_slugify(placa_saida)}_{data_slug_saida}_saida"
-        foto_saida_s_paths = {}   # {angulo: storage_path}
-        foto_saida_s_bytes = {}   # {storage_path: bytes}
+        foto_saida_s_paths = {}
+        foto_saida_s_bytes = {}
         for angulo, local_p in fotos_saida.items():
             ext = Path(local_p).suffix.lower() or ".jpg"
             s_path = f"{pasta_fotos_saida}/{angulo}{ext}"
@@ -1861,8 +1854,7 @@ def _gerar_vistoria_impl():
                 template_path=str(VISTORIA_ES_TEMPLATE),
             )
         except Exception as e:
-            _tb.print_exc()
-            return jsonify({"error": f"Erro ao gerar vistoria (saida): {e}"}), 500
+            raise Exception(f"Erro ao gerar vistoria (saida): {e}")
         finally:
             for p in fotos_saida.values():
                 Path(p).unlink(missing_ok=True)
@@ -1911,9 +1903,188 @@ def _gerar_vistoria_impl():
         except Exception:
             _tb.print_exc()
 
-        return jsonify({"redirect_url": url_for("historico_vistorias")})
+        return {"vistoria_id": vistoria_id, "nome_docx": nome_docx, "status": resumo["status"]}
 
-    return jsonify({"error": "Etapa de vistoria inválida."}), 400
+    raise Exception("Etapa de vistoria inválida.")
+
+
+def _gerar_vistoria_impl():
+    etapa = request.form.get("etapa", "").strip()  # "entrada" | "saida" | "" (legado)
+
+    dados_fixos = {
+        "contrato_id":      request.form.get("contrato_id", "").strip(),
+        "cliente_nome":     request.form.get("cliente_nome", ""),
+        "cliente_telefone": request.form.get("cliente_telefone", ""),
+        "cliente_endereco": request.form.get("cliente_endereco", ""),
+        "preenchido_por":   request.form.get("preenchido_por", ""),
+        "veiculo":          request.form.get("veiculo", "").strip(),
+        "placa":            request.form.get("placa", "").upper().strip(),
+        "cor":              request.form.get("cor", ""),
+        "ano":              request.form.get("ano", ""),
+        "chassi":           request.form.get("chassi", ""),
+        "numero_motor":     request.form.get("numero_motor", ""),
+    }
+
+    if etapa not in ("entrada", "saida"):
+        return jsonify({"error": "Etapa de vistoria inválida."}), 400
+
+    fotos_locais = {}
+    for angulo in _ANGULOS_FOTO:
+        p = _salvar_foto(request.files.get(f"foto_{etapa}_{angulo}"))
+        if p:
+            fotos_locais[angulo] = p
+
+    campos = {
+        "hodometro":   request.form.get(f"hodometro_{etapa}", ""),
+        "combustivel": request.form.get(f"combustivel_{etapa}", ""),
+        "obs":         request.form.get(f"obs_{etapa}", ""),
+        "sintomas":    request.form.get(f"sintomas_{etapa}", ""),
+        "acessorios":  {k: request.form.get(f"{k}_{etapa}", "") for k in _CHAVES_ACC},
+    }
+
+    try:
+        _montar_e_salvar_vistoria(
+            etapa, dados_fixos, campos, fotos_locais,
+            vistoria_id_hint=request.form.get("vistoria_id", "").strip(),
+        )
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"redirect_url": url_for("historico_vistorias")})
+
+
+# ── API externa de Vistoria (app Google Apps Script) ──────────────────────────
+# Rotas chamadas pelo app de vistoria mobile (fora do Dashboard, sem sessão de
+# login) — autenticadas por token compartilhado, não por login de usuário.
+
+def _checar_token_vistoria():
+    token_esperado = _os.environ.get("VISTORIA_API_TOKEN", "")
+    token_recebido = request.headers.get("X-Vistoria-Token", "")
+    return bool(token_esperado) and token_recebido == token_esperado
+
+
+@app.route("/api/contratos/ativos")
+def api_contratos_ativos():
+    if not _checar_token_vistoria():
+        return jsonify({"error": "Token inválido."}), 401
+
+    sb = _supabase()
+    if not sb:
+        return jsonify({"error": "Supabase não configurado."}), 500
+
+    try:
+        res = (sb.table("contratos_frota")
+                 .select("contrato_comercial, cliente, placa, modelo, situacao")
+                 .eq("situacao", "EM ANDAMENTO")
+                 .order("cliente")
+                 .execute())
+        contratos = [{
+            "id":      r["contrato_comercial"],
+            "cliente": r.get("cliente") or "",
+            "placa":   r.get("placa") or "",
+            "modelo":  r.get("modelo") or "",
+        } for r in (res.data or []) if r.get("contrato_comercial")]
+        return jsonify({"contratos": contratos})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/vistoria/importar", methods=["POST"])
+def api_vistoria_importar():
+    """
+    Recebe uma vistoria feita pelo app mobile (Google Apps Script) e a
+    processa exatamente como o formulário interno: gera o .docx, sobe pro
+    Storage, grava/atualiza a linha em `vistorias`.
+
+    Payload esperado (JSON):
+    {
+      etapa: "entrada" | "saida",
+      contratoId, vistoriaId (opcional, só na saída),
+      clientName, phone, address, filledBy,
+      vehicle, plate, color, year, chassis, motorNumber,
+      odometer, fuelLevel, observations, symptoms,
+      accessories: [{item, status}],   // na mesma ordem de ACCESSORY_ITEMS/_CHAVES_ACC
+      photos: [{category, mimeType, data}],  // category = um dos _ANGULOS_FOTO, data em base64
+      clientSignature: {mimeType, data}, responsibleSignature: {mimeType, data}
+    }
+    """
+    if not _checar_token_vistoria():
+        return jsonify({"error": "Token inválido."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    etapa = (payload.get("etapa") or "").strip()
+    if etapa not in ("entrada", "saida"):
+        return jsonify({"error": "Etapa inválida."}), 400
+
+    dados_fixos = {
+        "contrato_id":      (payload.get("contratoId") or "").strip(),
+        "cliente_nome":     payload.get("clientName") or "",
+        "cliente_telefone": payload.get("phone") or "",
+        "cliente_endereco": payload.get("address") or "",
+        "preenchido_por":   payload.get("filledBy") or "",
+        "veiculo":          (payload.get("vehicle") or "").strip(),
+        "placa":            (payload.get("plate") or "").upper().strip(),
+        "cor":              payload.get("color") or "",
+        "ano":              payload.get("year") or "",
+        "chassi":           payload.get("chassis") or "",
+        "numero_motor":     payload.get("motorNumber") or "",
+    }
+
+    # accessories chega como [{item, status}] na mesma ordem de _CHAVES_ACC
+    accessories_list = payload.get("accessories") or []
+    acessorios = {chave: (accessories_list[i].get("status", "") if i < len(accessories_list) else "")
+                  for i, chave in enumerate(_CHAVES_ACC)}
+
+    campos = {
+        "hodometro":   payload.get("odometer") or "",
+        "combustivel": payload.get("fuelLevel") or "",
+        "obs":         payload.get("observations") or "",
+        "sintomas":    payload.get("symptoms") or "",
+        "acessorios":  acessorios,
+    }
+
+    fotos_locais = {}
+    for foto in (payload.get("photos") or []):
+        angulo = foto.get("category")
+        if angulo not in _ANGULOS_FOTO:
+            continue
+        p = _salvar_foto_base64(foto.get("data"), foto.get("mimeType"))
+        if p:
+            fotos_locais[angulo] = p
+
+    try:
+        resultado = _montar_e_salvar_vistoria(
+            etapa, dados_fixos, campos, fotos_locais,
+            vistoria_id_hint=(payload.get("vistoriaId") or "").strip(),
+        )
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        for p in fotos_locais.values():
+            Path(p).unlink(missing_ok=True)
+        return jsonify({"error": str(e)}), 500
+
+    # Assinaturas: guardadas à parte no Storage (o .docx ainda não as exibe)
+    sb = _supabase()
+    if sb:
+        import base64 as _b64
+        for who, chave_payload in (("cliente", "clientSignature"), ("responsavel", "responsibleSignature")):
+            sig = payload.get(chave_payload) or {}
+            if sig.get("data"):
+                try:
+                    ext = ".png" if (sig.get("mimeType") or "").lower() == "image/png" else ".jpg"
+                    s_path = f"vistorias/assinaturas/{dados_fixos['placa'] or 'PLACA'}_{etapa}_{who}{ext}"
+                    sb.storage.from_("documentos").upload(
+                        s_path, _b64.b64decode(sig["data"]),
+                        {"content-type": "image/png" if ext == ".png" else "image/jpeg", "upsert": "true"})
+                except Exception:
+                    import traceback; traceback.print_exc()
+
+    return jsonify({
+        "ok": True,
+        "nome_docx": resultado["nome_docx"],
+        "vistoria_id": resultado["vistoria_id"],
+    })
 
 
 # ── Histórico de Vistorias (Supabase) ─────────────────────────────────────────

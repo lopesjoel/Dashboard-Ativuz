@@ -1,6 +1,7 @@
 /*******************************************************
  * VISTORIA DE VEÍCULOS - Backend (Google Apps Script)
  * Adaptado ao modelo "Anexo I - Ordem de Serviço e Vistoria"
+ * Integrado ao Dashboard Ativuz (Flask + Supabase).
  *
  * CONFIGURAÇÃO OBRIGATÓRIA: preencha as constantes abaixo
  * antes de publicar.
@@ -18,7 +19,16 @@ const SUBFOLDER_NAME = 'Fotos Vistoria';
 // Deixe em branco ('') que o script cria uma automaticamente.
 const SHEET_ID = '';
 
-// Itens de acessórios/equipamentos do modelo em papel (coluna S/N/A)
+// URL base do Dashboard Ativuz (sem barra no final) e o token de API
+// (mesmo valor da variável de ambiente VISTORIA_API_TOKEN no Dashboard).
+// Toda vistoria enviada aqui também é gravada no Dashboard/Supabase.
+const DASHBOARD_API_URL = 'COLOQUE_AQUI_A_URL_DO_DASHBOARD';   // ex: https://dashboard-ativuz.vercel.app
+const DASHBOARD_API_TOKEN = 'COLOQUE_AQUI_O_MESMO_TOKEN_DO_.ENV';
+
+// Itens de acessórios/equipamentos do modelo em papel (coluna S/N/A).
+// IMPORTANTE: a ordem aqui precisa bater com _CHAVES_ACC no app.py do
+// Dashboard — cada posição desta lista vira o item correspondente na
+// mesma posição de lá. Não reordene sem também ajustar o app.py.
 const ACCESSORY_ITEMS = [
   'Calotas', 'Buzina', 'DOC. CRLV', 'Triângulo de sinalização', 'Antena', 'Sensor de ré',
   'Som/Alto-falante', 'Tapetes', 'Limpadores', 'Chave de roda', 'Vidros elétricos', 'Óleo do motor',
@@ -27,16 +37,23 @@ const ACCESSORY_ITEMS = [
   'Borracha PSG Traseira', 'Borracha MTR Traseira', 'Asa Urubu DE', 'Asa Urubu TE', 'Bagagito', 'Lingueta'
 ];
 
-// Categorias de fotos (substituem o desenho do carro para marcar avarias
-// e também servem para registrar as luzes acesas no painel)
+// Categorias de fotos. O campo `key` precisa ser exatamente um dos ângulos
+// reconhecidos pelo gerador de .docx do Dashboard (ANGULOS_FOTO em
+// services/gerar_vistoria_entrada_saida.py) — não troque as chaves, só o
+// `label` (texto exibido) se quiser.
 const PHOTO_CATEGORIES = [
-  'Painel / Hodômetro',
-  'Frente',
-  'Traseira',
-  'Lateral esquerda',
-  'Lateral direita',
-  'Interior / Bancos',
-  'Danos e avarias'
+  { key: 'frontal',     label: 'Frontal' },
+  { key: 'traseira',    label: 'Traseira' },
+  { key: 'lateral_dir', label: 'Lateral direita' },
+  { key: 'lateral_esq', label: 'Lateral esquerda' },
+  { key: 'painel',      label: 'Painel / Interior' },
+  { key: 'hodometro',   label: 'Hodômetro (com o veículo ligado, para registrar luzes acesas)' },
+  { key: 'estepe',      label: 'Estepe' },
+  { key: 'teto',        label: 'Teto / Vidros' },
+  { key: 'motor',       label: 'Motor' },
+  { key: 'mala',        label: 'Porta-malas' },
+  { key: 'dano_1',      label: 'Dano / avaria 1 (se houver)' },
+  { key: 'dano_2',      label: 'Dano / avaria 2 (se houver)' }
 ];
 
 const FUEL_LEVELS = ['Vazio', '1/4', '1/2', '3/4', 'Cheio'];
@@ -86,8 +103,30 @@ function getFormConfig() {
     clients: clients,
     accessoryItems: ACCESSORY_ITEMS,
     photoCategories: PHOTO_CATEGORIES,
-    fuelLevels: FUEL_LEVELS
+    fuelLevels: FUEL_LEVELS,
+    contratos: getContratosAtivos_()
   };
+}
+
+// Busca a lista de contratos ativos no Dashboard (para vincular a vistoria
+// a um contrato real). Se o Dashboard estiver fora do ar ou mal configurado,
+// retorna lista vazia — o formulário continua funcionando sem vínculo de
+// contrato (preenchimento manual do nome do cliente).
+function getContratosAtivos_() {
+  if (!DASHBOARD_API_URL || DASHBOARD_API_URL.indexOf('COLOQUE_AQUI') === 0) return [];
+  try {
+    const resp = UrlFetchApp.fetch(DASHBOARD_API_URL + '/api/contratos/ativos', {
+      method: 'get',
+      headers: { 'X-Vistoria-Token': DASHBOARD_API_TOKEN },
+      muteHttpExceptions: true
+    });
+    if (resp.getResponseCode() !== 200) return [];
+    const data = JSON.parse(resp.getContentText());
+    return data.contratos || [];
+  } catch (err) {
+    Logger.log('Erro ao buscar contratos ativos: ' + err.message);
+    return [];
+  }
 }
 
 // Localiza a pasta do cliente/motorista pelo nome, ou cria se não existir
@@ -203,11 +242,12 @@ function getOrCreateLogSheet_() {
   if (!sheet) {
     sheet = ss.insertSheet('Vistorias');
     sheet.appendRow([
-      'Data/Hora', 'Cliente', 'Telefone', 'Endereço', 'Preenchido por',
+      'Data/Hora', 'Etapa', 'Contrato', 'Cliente', 'Telefone', 'Endereço', 'Preenchido por',
       'Veículo', 'Placa', 'Cor', 'Ano', 'Chassi', 'Motor',
-      'Hodômetro entrega', 'Hodômetro retorno', 'Combustível',
+      'Hodômetro', 'Combustível',
       'Acessórios com problema (N/A)',
-      'Observações', 'Descrição dos sintomas', 'Qtde fotos', 'Link da pasta'
+      'Observações', 'Descrição dos sintomas', 'Qtde fotos', 'Link da pasta',
+      'Dashboard: status'
     ]);
     sheet.setFrozenRows(1);
   }
@@ -217,14 +257,15 @@ function getOrCreateLogSheet_() {
 /**
  * Função principal chamada pelo front-end.
  * payload = {
- *   clientName, phone, address, filledBy,
+ *   etapa: 'entrada' | 'saida',
+ *   contratoId (opcional), clientName, phone, address, filledBy,
  *   vehicle, plate, color, year, chassis, motorNumber,
- *   odometerDelivery, odometerReturn, fuelLevel,
+ *   odometer, fuelLevel,
  *   accessories: [{item, status}],       // status: S | N | A
  *   observations, symptoms,
  *   clientSignature: {data, mimeType},
  *   responsibleSignature: {data, mimeType},
- *   photos: [{category, name, mimeType, data}]  // data em base64
+ *   photos: [{category, name, mimeType, data}]  // category = chave de PHOTO_CATEGORIES, data em base64
  * }
  */
 function uploadVistoria(payload) {
@@ -240,7 +281,8 @@ function uploadVistoria(payload) {
 
   const now = new Date();
   const stamp = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd-MM-yyyy_HH-mm');
-  const inspectionFolder = photosRootFolder.createFolder('Vistoria ' + stamp);
+  const etapaLabel = payload.etapa === 'saida' ? 'Saida' : 'Entrada';
+  const inspectionFolder = photosRootFolder.createFolder('Vistoria ' + etapaLabel + ' ' + stamp);
 
   // Salva as fotos, prefixando com a categoria
   payload.photos.forEach(function (photo, i) {
@@ -277,9 +319,16 @@ function uploadVistoria(payload) {
     .map(function (a) { return a.item + ' (' + a.status + ')'; })
     .join('; ');
 
+  // Envia também pro Dashboard (Supabase) — gera o .docx oficial e aparece
+  // no Histórico de Vistorias. Se falhar, a vistoria continua salva no
+  // Drive/planilha normalmente; o erro só é reportado ao usuário.
+  const dashboardResult = sendToDashboard_(payload);
+
   const sheet = getOrCreateLogSheet_();
   sheet.appendRow([
     now,
+    etapaLabel,
+    payload.contratoId || '',
     payload.clientName,
     payload.phone || '',
     payload.address || '',
@@ -290,18 +339,66 @@ function uploadVistoria(payload) {
     payload.year || '',
     payload.chassis || '',
     payload.motorNumber || '',
-    payload.odometerDelivery || '',
-    payload.odometerReturn || '',
+    payload.odometer || '',
     payload.fuelLevel || '',
     problemAccessories || 'Nenhum',
     payload.observations || '',
     payload.symptoms || '',
     payload.photos.length,
-    inspectionFolder.getUrl()
+    inspectionFolder.getUrl(),
+    dashboardResult.ok ? 'OK' : ('Falhou: ' + dashboardResult.error)
   ]);
 
   return {
     ok: true,
-    folderUrl: inspectionFolder.getUrl()
+    folderUrl: inspectionFolder.getUrl(),
+    dashboard: dashboardResult
   };
+}
+
+// Envia a vistoria pro Dashboard Ativuz (Flask + Supabase). Não interrompe
+// o fluxo principal em caso de falha — só reporta o resultado.
+function sendToDashboard_(payload) {
+  if (!DASHBOARD_API_URL || DASHBOARD_API_URL.indexOf('COLOQUE_AQUI') === 0) {
+    return { ok: false, error: 'DASHBOARD_API_URL não configurado' };
+  }
+  try {
+    const resp = UrlFetchApp.fetch(DASHBOARD_API_URL + '/api/vistoria/importar', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'X-Vistoria-Token': DASHBOARD_API_TOKEN },
+      payload: JSON.stringify({
+        etapa: payload.etapa === 'saida' ? 'saida' : 'entrada',
+        contratoId: payload.contratoId || '',
+        clientName: payload.clientName,
+        phone: payload.phone,
+        address: payload.address,
+        filledBy: payload.filledBy,
+        vehicle: payload.vehicle,
+        plate: payload.plate,
+        color: payload.color,
+        year: payload.year,
+        chassis: payload.chassis,
+        motorNumber: payload.motorNumber,
+        odometer: payload.odometer,
+        fuelLevel: payload.fuelLevel,
+        observations: payload.observations,
+        symptoms: payload.symptoms,
+        accessories: payload.accessories,
+        photos: payload.photos.map(function (p) {
+          return { category: p.category, mimeType: p.mimeType, data: p.data };
+        }),
+        clientSignature: payload.clientSignature,
+        responsibleSignature: payload.responsibleSignature
+      }),
+      muteHttpExceptions: true
+    });
+    const code = resp.getResponseCode();
+    if (code >= 200 && code < 300) {
+      return { ok: true, response: JSON.parse(resp.getContentText()) };
+    }
+    return { ok: false, error: 'HTTP ' + code + ': ' + resp.getContentText() };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 }
