@@ -20,14 +20,15 @@ backup.
 3. Apague o conteúdo padrão do arquivo `Code.gs` e cole o conteúdo do arquivo `Code.gs` deste pacote.
 4. Clique no `+` ao lado de "Arquivos" → **HTML** → nomeie exatamente `Index` (sem `.html`) → cole o conteúdo do arquivo `Index.html` deste pacote.
 
-## Passo 2 — Configurar a pasta dos clientes/motoristas
-1. No Drive, entre na pasta que contém as pastas de cada cliente/motorista (a pasta "mãe").
-2. Copie o ID da pasta pela URL: `drive.google.com/drive/folders/**ESTE-TRECHO**`.
-3. No `Code.gs`, cole esse ID na linha:
-   ```
-   const PARENT_FOLDER_ID = 'COLOQUE_AQUI_O_ID_DA_PASTA_MAE';
-   ```
-4. Se o cliente já tiver pasta com esse nome exato, o app usa ela. Se digitar um nome novo, o app **cria a pasta automaticamente** dentro da pasta mãe — não precisa mais criar pasta na mão para cliente novo.
+## Passo 2 — Pasta dos contratos (já configurado)
+O `PARENT_FOLDER_ID` já está preenchido no `Code.gs` apontando pra pasta **"2. Contratos"** do Drive da Ativuz. Essa pasta tem uma subpasta por ano (`! 2023`, `! 2024`, `! 2025`, `! 2026`...) e, dentro de cada ano, uma pasta por contrato no padrão `NN/ANO_PLACA_Nome` (ex: `12/2026_QGT6I05_Matheus Sousa`).
+
+Quando o vistoriador seleciona um contrato no formulário, o app procura — em todas as pastas de ano — uma pasta cujo nome contenha a **placa** do contrato, e salva as fotos/assinaturas dentro dela (numa subpasta `Fotos Vistoria`). Se não encontrar (ex: contrato novo, pasta ainda não criada por quem organiza o Drive), o app cria uma pasta nova dentro da pasta do ano atual — **nunca apaga ou move nada que já existia**.
+
+Se a estrutura de pastas mudar de lugar no futuro, só é preciso trocar o ID em:
+```
+const PARENT_FOLDER_ID = '1srRiEPkZOGaVQoF3MQcMSy_RAkGdXkfv';
+```
 
 ## Passo 2.5 — Conectar ao Dashboard Ativuz
 Para a vistoria aparecer no Histórico de Vistorias do Dashboard (e gerar o `.docx` oficial automaticamente):
@@ -65,15 +66,15 @@ O preenchimento automático a partir do contrato em PDF usa OCR do Google Drive,
 Sempre que editar `Code.gs` ou `Index.html`, é preciso ir em **Implantar → Gerenciar implantações → editar (ícone de lápis) → Nova versão → Implantar** para o link já publicado refletir as mudanças.
 
 ## Preenchimento automático a partir do contrato
-- Quando o campo "Nome do cliente/motorista" perde o foco (ou ao clicar em "Buscar dados do contrato"), o app procura na pasta do cliente um arquivo cujo nome contenha **"Contrato"**, faz OCR do PDF e tenta extrair: telefone, endereço, veículo, placa, cor, ano, chassi e número do motor.
-- Os campos são preenchidos automaticamente, mas continuam **editáveis** — sempre confira antes de enviar, principalmente na primeira vez.
-- **Os padrões de busca (regex) foram montados com base nos rótulos do anexo de vistoria** (`Cliente:`, `Tel:`, `Endereço:`, `Placa:`, `Veículo:`, `Cor:`, `Ano:`, `Chassi:`, `Motor:`). Se o texto do contrato usar outros rótulos, o app não vai achar o valor certo. Nesse caso, me envie um exemplo do contrato (pode remover dados sensíveis) que eu ajusto a constante `CONTRACT_FIELD_PATTERNS` no `Code.gs` para bater exatamente com o layout de vocês.
+- A seleção de contrato é **obrigatória**: ao escolher um contrato na lista, o cliente/veículo/placa já vêm direto do Dashboard, e o app automaticamente localiza a pasta do contrato no Drive (pela placa) e faz OCR do arquivo cujo nome contenha **"Contrato"** ali dentro, tentando extrair: telefone, endereço, cor, ano, chassi e número do motor.
+- Os campos são preenchidos automaticamente, mas continuam **editáveis** — sempre confira antes de enviar, principalmente na primeira vez. O botão "Buscar dados do contrato novamente" repete a busca se algo não tiver vindo certo.
+- **Os padrões de busca (regex) foram montados com base nos rótulos do anexo de vistoria** (`Tel:`, `Endereço:`, `Placa:`, `Veículo:`, `Cor:`, `Ano:`, `Chassi:`, `Motor:`). Se o texto do contrato usar outros rótulos, o app não vai achar o valor certo. Nesse caso, me envie um exemplo do contrato (pode remover dados sensíveis) que eu ajusto a constante `CONTRACT_FIELD_PATTERNS` no `Code.gs` para bater exatamente com o layout de vocês.
 - O resultado do OCR fica em cache por 6 horas (por arquivo), então buscas repetidas para o mesmo contrato não recarregam toda vez — só refaz o OCR se o cache expirar.
-- Se o app não achar a pasta do cliente ou nenhum arquivo com "Contrato" no nome, ele avisa na tela e os campos continuam em branco pra preenchimento manual, sem travar o formulário.
+- Se o app não achar a pasta do contrato (pela placa) ou nenhum arquivo com "Contrato" no nome, ele avisa na tela e os campos continuam em branco pra preenchimento manual, sem travar o formulário.
 
 ## Como funciona a integração com o Dashboard
-- **Etapa**: escolha Entrada (retirada do carro) ou Saída (devolução) no topo do formulário. O Dashboard trata cada vistoria como um par entrada+saída do mesmo contrato — a etapa de Saída localiza automaticamente a entrada mais recente do contrato selecionado (ou da vistoria mais recente, se nenhum contrato for selecionado) e completa o mesmo registro, gerando o `.docx` final com os dois lados.
-- **Contrato**: o formulário busca a lista de contratos ativos direto do Dashboard. Selecionar um contrato preenche cliente/veículo/placa e vincula a vistoria a ele — isso é o que faz a vistoria aparecer corretamente ligada ao contrato certo no Histórico. Se o contrato não estiver na lista (ex: contrato novo ainda não sincronizado), pode preencher manualmente e enviar sem vínculo — a vistoria ainda aparece no Histórico, só sem o link para o contrato.
+- **Etapa**: escolha Entrada (retirada do carro) ou Saída (devolução) no topo do formulário. O Dashboard trata cada vistoria como um par entrada+saída do mesmo contrato — a etapa de Saída localiza automaticamente a entrada mais recente do contrato selecionado e completa o mesmo registro, gerando o `.docx` final com os dois lados.
+- **Contrato**: o formulário busca a lista de contratos ativos direto do Dashboard e exige que um seja selecionado antes de enviar. Selecionar um contrato preenche cliente/veículo/placa, vincula a vistoria a ele (o que faz aparecer corretamente ligada ao contrato certo no Histórico) e é o que permite localizar a pasta certa no Drive pela placa. Se o Dashboard estiver fora do ar e a lista não carregar, o formulário fica bloqueado até recarregar — não há mais preenchimento manual sem contrato.
 - **Assinaturas**: são enviadas e guardadas no Storage do Dashboard, mas por enquanto não aparecem dentro do `.docx` gerado (o modelo de documento ainda não tem esse campo) — ficam disponíveis como imagem separada para conferência.
 - **Se a chamada pro Dashboard falhar** (fora do ar, token errado, etc.): a vistoria continua sendo salva no Drive/planilha normalmente, e o app avisa na tela que só a parte do Dashboard não foi. Não é preciso preencher tudo de novo — o mais simples nesse caso é reenviar depois manualmente pelo Dashboard, ou me avisar que eu ajudo a reprocessar.
 

@@ -131,25 +131,23 @@
     </div>
 
     <div class="card">
-      <h2>Contrato</h2>
-      <label>Contrato ativo (opcional)</label>
+      <h2 class="required">Contrato</h2>
+      <label class="required">Contrato ativo</label>
       <select id="contratoSelect" onchange="onContratoSelecionado()">
-        <option value="">Nenhum / não encontrado na lista</option>
+        <option value="">Selecione o contrato...</option>
       </select>
-      <div class="hint">Selecionar um contrato preenche cliente, veículo e placa automaticamente, e vincula a vistoria a esse contrato no Dashboard.</div>
+      <div class="hint">Selecionar um contrato preenche cliente, veículo e placa, vincula a vistoria a esse contrato no Dashboard, e localiza a pasta certa no Drive pela placa.</div>
     </div>
 
     <div class="card">
       <h2>Dados do cliente / motorista</h2>
 
-      <label class="required">Nome do cliente / motorista</label>
-      <input type="text" id="clientName" list="clientList" placeholder="Digite ou selecione" onblur="tryAutofillFromContract()">
-      <datalist id="clientList"></datalist>
-      <div class="hint">Se já existir uma pasta com esse nome no Drive, os arquivos vão para dentro dela. Se não existir, uma nova pasta é criada automaticamente.</div>
+      <label>Nome do cliente / motorista</label>
+      <input type="text" id="clientName" placeholder="Selecione um contrato acima" readonly>
       <div id="contractStatus" class="hint"></div>
-      <button type="button" id="fetchContractBtn" onclick="tryAutofillFromContract(true)"
+      <button type="button" id="fetchContractBtn" onclick="fetchContractData(document.getElementById('plate').value.trim())"
         style="margin-top:6px; background:none; border:1px solid var(--cor-primaria); color:var(--cor-primaria); border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer;">
-        Buscar dados do contrato
+        Buscar dados do contrato novamente
       </button>
 
       <div class="row2">
@@ -258,13 +256,12 @@
   </div>
 
   <script>
-    let config = { clients: [], accessoryItems: [], photoCategories: [], fuelLevels: [], contratos: [] };
+    let config = { accessoryItems: [], photoCategories: [], fuelLevels: [], contratos: [] };
     let photosByCategory = {};
     let currentEtapa = 'entrada';
 
     google.script.run.withSuccessHandler(function (cfg) {
       config = cfg;
-      buildClientList();
       buildAccessories();
       buildFuelSelect();
       buildPhotoCategories();
@@ -281,22 +278,17 @@
       });
     }
 
-    function buildClientList() {
-      document.getElementById('clientList').innerHTML =
-        config.clients.map(function (c) { return '<option value="' + c + '">'; }).join('');
-    }
-
     function buildContratos() {
       const sel = document.getElementById('contratoSelect');
       const contratos = config.contratos || [];
-      sel.innerHTML = '<option value="">Nenhum / não encontrado na lista</option>' +
+      sel.innerHTML = '<option value="">Selecione o contrato...</option>' +
         contratos.map(function (c) {
           return '<option value="' + c.id + '">' + c.cliente + ' — ' + c.placa + ' (' + c.modelo + ')</option>';
         }).join('');
       if (contratos.length === 0) {
         sel.disabled = true;
         sel.insertAdjacentHTML('afterend',
-          '<div class="hint" style="color:var(--cor-erro);">Não foi possível carregar contratos do Dashboard agora — preencha os dados manualmente.</div>');
+          '<div class="hint" style="color:var(--cor-erro);">Não foi possível carregar contratos do Dashboard agora. Recarregue a página em instantes — sem isso não é possível enviar a vistoria.</div>');
       }
     }
 
@@ -305,10 +297,18 @@
       const id = sel.value;
       const contratos = config.contratos || [];
       const c = contratos.find(function (x) { return x.id === id; });
-      if (!c) return;
+      const statusEl = document.getElementById('contractStatus');
+      if (!c) {
+        document.getElementById('clientName').value = '';
+        document.getElementById('vehicle').value = '';
+        document.getElementById('plate').value = '';
+        statusEl.textContent = '';
+        return;
+      }
       document.getElementById('clientName').value = c.cliente;
       document.getElementById('vehicle').value = c.modelo;
       document.getElementById('plate').value = c.placa;
+      fetchContractData(c.placa);
     }
 
     function buildAccessories() {
@@ -331,29 +331,28 @@
       row.dataset.selected = btn.dataset.status;
     }
 
-    let lastAutofillClient = '';
-    function tryAutofillFromContract(manual) {
-      const clientName = document.getElementById('clientName').value.trim();
+    // Busca telefone/endereço/cor/ano/chassi/motor via OCR do contrato em
+    // PDF, localizado pela placa. Vehicle/plate/cliente já vêm direto do
+    // contrato selecionado (não dependem do OCR).
+    function fetchContractData(placa) {
       const statusEl = document.getElementById('contractStatus');
-      if (!clientName) return;
-      if (!manual && clientName === lastAutofillClient) return; // evita buscar de novo sem necessidade
+      if (!placa) return;
 
       statusEl.textContent = 'Buscando dados do contrato...';
       statusEl.className = 'hint';
+      statusEl.style.color = '';
 
       google.script.run
         .withSuccessHandler(function (data) {
-          lastAutofillClient = clientName;
           if (!data.found) {
-            statusEl.textContent = manual ? ('Contrato não encontrado (' + (data.reason || '') + ').') : '';
+            statusEl.textContent = 'Não foi possível preencher automaticamente (' + (data.reason || '') + '). Preencha os campos restantes manualmente.';
             return;
           }
-          const fields = ['phone', 'address', 'vehicle', 'plate', 'color', 'year', 'chassis', 'motorNumber'];
           const idMap = {
-            phone: 'phone', address: 'address', vehicle: 'vehicle', plate: 'plate',
+            phone: 'phone', address: 'address',
             color: 'color', year: 'year', chassis: 'chassis', motorNumber: 'motorNumber'
           };
-          fields.forEach(function (f) {
+          Object.keys(idMap).forEach(function (f) {
             const el = document.getElementById(idMap[f]);
             if (el && data[f]) el.value = data[f];
           });
@@ -364,7 +363,7 @@
           statusEl.textContent = 'Erro ao buscar contrato: ' + err.message;
           statusEl.style.color = 'var(--cor-erro)';
         })
-        .getContractData(clientName);
+        .getContractData(placa);
     }
 
     function buildFuelSelect() {
@@ -533,6 +532,7 @@
       const btn = document.getElementById('submitBtn');
       msg.textContent = ''; msg.className = '';
 
+      const contratoId = document.getElementById('contratoSelect').value;
       const clientName = document.getElementById('clientName').value.trim();
       const filledBy = document.getElementById('filledBy').value.trim();
 
@@ -541,6 +541,7 @@
         photosByCategory[cat].forEach(function (f) { allPhotos.push({ category: cat, file: f }); });
       });
 
+      if (!contratoId) return showError('Selecione um contrato da lista.');
       if (!clientName) return showError('Informe o nome do cliente/motorista.');
       if (!filledBy) return showError('Informe quem preencheu a vistoria.');
       if (allPhotos.length === 0) return showError('Adicione ao menos uma foto.');
@@ -560,7 +561,7 @@
 
         const payload = {
           etapa: currentEtapa,
-          contratoId: document.getElementById('contratoSelect').value,
+          contratoId: contratoId,
           clientName: clientName,
           phone: document.getElementById('phone').value.trim(),
           address: document.getElementById('address').value.trim(),

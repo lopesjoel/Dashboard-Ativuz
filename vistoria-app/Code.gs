@@ -7,9 +7,12 @@
  * antes de publicar.
  *******************************************************/
 
-// ID da pasta do Drive que contém as pastas de cada cliente/motorista.
-// Pegue o ID na URL da pasta: drive.google.com/drive/folders/ESTE_TRECHO_AQUI
-const PARENT_FOLDER_ID = 'COLOQUE_AQUI_O_ID_DA_PASTA_MAE';
+// ID da pasta "2. Contratos" no Drive. Dentro dela existe uma subpasta por
+// ano (ex: "! 2025", "! 2026"), e dentro de cada ano uma pasta por contrato,
+// no padrão "NN/ANO_PLACA_Nome" (ex: "12/2026_QGT6I05_Matheus Sousa"). O
+// script localiza a pasta certa buscando pela PLACA em todas as pastas de
+// ano — não precisa saber o ano nem o "NN" de antemão.
+const PARENT_FOLDER_ID = '1srRiEPkZOGaVQoF3MQcMSy_RAkGdXkfv';
 
 // Nome da subpasta dentro da pasta do cliente onde os arquivos da
 // vistoria serão guardados. Se não existir, o script cria.
@@ -91,16 +94,7 @@ function doGet() {
 
 // Retorna toda a configuração que o front-end precisa montar o formulário
 function getFormConfig() {
-  const parent = DriveApp.getFolderById(PARENT_FOLDER_ID);
-  const folders = parent.getFolders();
-  const clients = [];
-  while (folders.hasNext()) {
-    clients.push(folders.next().getName());
-  }
-  clients.sort(function (a, b) { return a.localeCompare(b, 'pt-BR'); });
-
   return {
-    clients: clients,
     accessoryItems: ACCESSORY_ITEMS,
     photoCategories: PHOTO_CATEGORIES,
     fuelLevels: FUEL_LEVELS,
@@ -129,14 +123,54 @@ function getContratosAtivos_() {
   }
 }
 
-// Localiza a pasta do cliente/motorista pelo nome, ou cria se não existir
-function findOrCreateClientFolder_(clientName) {
+// Remove tudo que não for letra/número e deixa maiúsculo, pra comparar placas
+// sem depender de hífen/espaço (ex: "ECZ-8C02" e "ecz8c02" batem).
+function normalizePlaca_(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Procura, em todas as subpastas de ano (ex: "! 2025") dentro de
+// PARENT_FOLDER_ID, uma pasta de contrato cujo nome contenha a placa
+// informada. Não apaga nem move nada — só lê a árvore de pastas.
+function findContractFolderByPlaca_(placa) {
+  const normPlaca = normalizePlaca_(placa);
+  if (!normPlaca) return null;
+
   const parent = DriveApp.getFolderById(PARENT_FOLDER_ID);
-  const existing = parent.getFoldersByName(clientName);
-  if (existing.hasNext()) {
-    return existing.next();
+  const yearFolders = [];
+  const it = parent.getFolders();
+  while (it.hasNext()) {
+    const f = it.next();
+    const m = f.getName().trim().match(/^!\s*(\d{4})$/);
+    if (m) yearFolders.push({ folder: f, year: parseInt(m[1], 10) });
   }
-  return parent.createFolder(clientName);
+  // Anos mais recentes primeiro (contratos ativos tendem a ser recentes)
+  yearFolders.sort(function (a, b) { return b.year - a.year; });
+
+  for (let i = 0; i < yearFolders.length; i++) {
+    const subs = yearFolders[i].folder.getFolders();
+    while (subs.hasNext()) {
+      const sub = subs.next();
+      if (normalizePlaca_(sub.getName()).indexOf(normPlaca) !== -1) {
+        return sub;
+      }
+    }
+  }
+  return null;
+}
+
+// Localiza a pasta do contrato pela placa. Se não achar (ex: contrato novo,
+// pasta ainda não criada por quem organiza o Drive), cria uma pasta nova
+// dentro do ano atual — nunca mexe em pastas/arquivos já existentes.
+function findOrCreateContractFolder_(placa, clientName) {
+  const found = findContractFolderByPlaca_(placa);
+  if (found) return found;
+
+  const parent = DriveApp.getFolderById(PARENT_FOLDER_ID);
+  const yearName = '! ' + new Date().getFullYear();
+  const yearFolder = getOrCreateSubfolder_(parent, yearName);
+  const safeName = (placa ? placa.toUpperCase() : 'SEM-PLACA') + '_' + (clientName || 'Cliente');
+  return yearFolder.createFolder(safeName);
 }
 
 function getOrCreateSubfolder_(parentFolder, name) {
@@ -148,20 +182,19 @@ function getOrCreateSubfolder_(parentFolder, name) {
 }
 
 /**
- * Busca o contrato na pasta do cliente/motorista e extrai os dados dele.
- * Chamada pelo front-end quando o usuário escolhe/confirma o nome do cliente.
+ * Busca o contrato na pasta do contrato (localizada pela placa) e extrai os
+ * dados dele via OCR. Chamada pelo front-end quando o usuário seleciona um
+ * contrato da lista.
  * Retorna { found: false } se não achar pasta/arquivo, ou
  * { found: true, phone, address, vehicle, plate, color, year, chassis, motorNumber }
  */
-function getContractData(clientName) {
-  if (!clientName) return { found: false, reason: 'Nome vazio' };
+function getContractData(placa) {
+  if (!placa) return { found: false, reason: 'Placa vazia' };
 
-  const parent = DriveApp.getFolderById(PARENT_FOLDER_ID);
-  const clientFolders = parent.getFoldersByName(clientName);
-  if (!clientFolders.hasNext()) {
-    return { found: false, reason: 'Pasta do cliente não encontrada' };
+  const clientFolder = findContractFolderByPlaca_(placa);
+  if (!clientFolder) {
+    return { found: false, reason: 'Pasta do contrato não encontrada pela placa' };
   }
-  const clientFolder = clientFolders.next();
 
   const files = clientFolder.searchFiles(
     "title contains '" + CONTRACT_FILENAME_HINT.replace(/'/g, "\\'") + "'"
@@ -269,14 +302,17 @@ function getOrCreateLogSheet_() {
  * }
  */
 function uploadVistoria(payload) {
-  if (!payload || !payload.clientName) {
-    throw new Error('Informe o cliente/motorista.');
+  if (!payload || !payload.contratoId) {
+    throw new Error('Selecione um contrato da lista.');
+  }
+  if (!payload.plate) {
+    throw new Error('Placa não encontrada — selecione o contrato novamente.');
   }
   if (!payload.photos || payload.photos.length === 0) {
     throw new Error('Adicione ao menos uma foto.');
   }
 
-  const clientFolder = findOrCreateClientFolder_(payload.clientName);
+  const clientFolder = findOrCreateContractFolder_(payload.plate, payload.clientName);
   const photosRootFolder = getOrCreateSubfolder_(clientFolder, SUBFOLDER_NAME);
 
   const now = new Date();
