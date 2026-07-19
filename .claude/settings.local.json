@@ -158,7 +158,9 @@
       "mcp__claude_ai_Google_Drive__search_files",
       "Skill(schedule)",
       "Bash(node -e \"require\\('jsdom'\\)\")",
-      "Bash(node harness.js script_3.js)"
+      "Bash(node harness.js script_3.js)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
+      "Bash(./venv/bin/python -c ' *)"
     ]
   }
 }

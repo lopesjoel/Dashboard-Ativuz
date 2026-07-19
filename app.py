@@ -1530,38 +1530,6 @@ def editar_contrato_locacao(contrato_id):
 VISTORIA_ES_TEMPLATE = DOCX_TEMPLATES / "VISTORIA_ENTRADA_SAIDA_TEMPLATE.docx"
 
 
-@app.route("/vistoria", methods=["GET"])
-def pagina_vistoria():
-    return render_template("vistoria.html", active="vistoria", vistoria=None,
-                           contrato_id=None, edit_id=None, acessorios={},
-                           usuario=session.get("usuario", "").split("@")[0].split(".")[0].upper())
-
-
-@app.route("/vistoria/<contrato_id>", methods=["GET"])
-def pagina_vistoria_contrato(contrato_id):
-    """Exibe o formulário de vistoria no estado correto (entrada / saida / completa)."""
-    sb = _supabase()
-    vistoria = None
-    if sb:
-        try:
-            res = (sb.table("vistorias")
-                     .select("*")
-                     .eq("contrato_id", contrato_id)
-                     .order("criado_em", desc=True)
-                     .limit(1)
-                     .execute())
-            if res.data:
-                vistoria = res.data[0]
-        except Exception:
-            import traceback; traceback.print_exc()
-    return render_template("vistoria.html", active="vistoria",
-                           vistoria=vistoria, contrato_id=contrato_id,
-                           edit_id=None,
-                           acessorios=(vistoria or {}).get("acessorios") or {},
-                           usuario=session.get("usuario", "").split("@")[0].split(".")[0].upper())
-
-
-
 
 @app.route("/vistoria/gerar", methods=["POST"])
 def gerar_vistoria_route():
