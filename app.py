@@ -26,6 +26,13 @@ from services.gerar_vistoria_entrada_saida import gerar_vistoria_entrada_saida, 
 app = Flask(__name__)
 app.secret_key = _os.environ.get("SECRET_KEY", "ativuz-secret-dev-2026")
 
+VISTORIA_APP_URL = _os.environ.get("VISTORIA_APP_URL", "").strip()
+
+
+@app.context_processor
+def _inject_vistoria_app_url():
+    return {"vistoria_app_url": VISTORIA_APP_URL}
+
 
 @app.errorhandler(Exception)
 def handle_any_error(e):

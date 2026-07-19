@@ -286,6 +286,38 @@
               </span>
               <span class="sb-item-label">Hist. Ct. Locação</span>
             </a>
+            {% if vistoria_app_url %}
+            <a href="{{ vistoria_app_url }}" class="sb-item" target="_blank" rel="noopener">
+              <span class="sb-item-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M9 12l2 2 4-4"/>
+                  <line x1="12" y1="18" x2="12" y2="21"/>
+                  <line x1="12" y1="3" x2="12" y2="6"/>
+                </svg>
+              </span>
+              <span class="sb-item-label">Vistorias</span>
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;opacity:0.5">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+            {% else %}
+            <a href="#" class="sb-item" style="opacity:0.5;cursor:not-allowed"
+               title="Configure VISTORIA_APP_URL no .env com o link do app publicado (veja vistoria-app/COMO-INSTALAR.md)"
+               onclick="return false">
+              <span class="sb-item-icon" aria-hidden="true">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M9 12l2 2 4-4"/>
+                  <line x1="12" y1="18" x2="12" y2="21"/>
+                  <line x1="12" y1="3" x2="12" y2="6"/>
+                </svg>
+              </span>
+              <span class="sb-item-label">Vistorias</span>
+            </a>
+            {% endif %}
             <a href="{{ url_for('historico_vistorias') }}" class="sb-item"
                data-active="{{ 'true' if active == 'hist_vistorias' else 'false' }}"
                aria-current="{{ 'page' if active == 'hist_vistorias' else 'false' }}">
