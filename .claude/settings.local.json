@@ -160,7 +160,9 @@
       "Bash(node -e \"require\\('jsdom'\\)\")",
       "Bash(node harness.js script_3.js)",
       "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
-      "Bash(./venv/bin/python -c ' *)"
+      "Bash(./venv/bin/python -c ' *)",
+      "Bash(lsof -iTCP:5001 -sTCP:LISTEN -n -P)",
+      "Bash(./venv/bin/python *)"
     ]
   }
 }
