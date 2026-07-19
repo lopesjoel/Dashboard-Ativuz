@@ -25,7 +25,7 @@ const SHEET_ID = '';
 // URL base do Dashboard Ativuz (sem barra no final) e o token de API
 // (mesmo valor da variável de ambiente VISTORIA_API_TOKEN no Dashboard).
 // Toda vistoria enviada aqui também é gravada no Dashboard/Supabase.
-const DASHBOARD_API_URL = 'https://dashboard-ativuz.vercel.app';
+const DASHBOARD_API_URL = 'https://dashboard-ativuz-two.vercel.app';
 const DASHBOARD_API_TOKEN = 'j9JpsWA-4mWZbx7OcPXrGvllo65rs50ffl4qEjDjjFQ';
 
 // Itens de acessórios/equipamentos do modelo em papel (coluna S/N/A).
