@@ -68,7 +68,7 @@ def _nh(s):
 
 _ROTAS_PUBLICAS = {
     "login", "static", "admin_novo_usuario",
-    "api_contratos_ativos", "api_vistoria_importar",
+    "api_contratos_ativos", "api_vistoria_importar", "api_contrato_dados",
 }
 
 @app.before_request
@@ -1963,6 +1963,72 @@ def api_contratos_ativos():
         return jsonify({"contratos": contratos})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/contrato/dados")
+def api_contrato_dados():
+    """
+    Busca telefone/endereço/cor/ano/chassi/nº motor de um contrato pela
+    placa, direto da planilha DADOS_CLIENTES_CONS.xlsx (mesma fonte do
+    /api/clientes). Usada pelo app de vistoria mobile pra pré-preencher o
+    formulário sem precisar ler/OCR nenhum documento do Drive.
+    """
+    if not _checar_token_vistoria():
+        return jsonify({"error": "Token inválido."}), 401
+
+    placa = request.args.get("placa", "").strip()
+    if not placa:
+        return jsonify({"found": False, "reason": "Placa vazia"})
+
+    def _norm_placa(s):
+        return "".join(c for c in str(s or "").upper() if c.isalnum())
+
+    placa_norm = _norm_placa(placa)
+
+    path = Path(__file__).parent / "planilhas" / "DADOS_CLIENTES_CONS.xlsx"
+    if not path.exists():
+        return jsonify({"found": False, "reason": "Planilha não encontrada"})
+
+    import openpyxl
+    wb = openpyxl.load_workbook(str(path), read_only=True, data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    if len(rows) < 2:
+        return jsonify({"found": False, "reason": "Planilha vazia"})
+
+    def _norm(s):
+        s = unicodedata.normalize("NFD", str(s or "").lower())
+        return "".join(c for c in s if unicodedata.category(c) != "Mn")
+    headers = [_norm(h) for h in rows[0]]
+    def _col(name):
+        n = _norm(name)
+        return next((i for i, h in enumerate(headers) if n in h), None)
+    i_tel    = _col("telefone")
+    i_ano    = _col("ano")
+    i_chassi = _col("chassi")
+    i_cor    = _col("cor")
+    i_placa  = _col("placa")
+    i_end    = _col("endereco")
+    i_motor  = _col("motor")
+    def _v(row, i): return str(row[i] or "") if i is not None and i < len(row) else ""
+
+    if i_placa is None:
+        return jsonify({"found": False, "reason": "Coluna Placa não encontrada na planilha"})
+
+    for row in rows[1:]:
+        if _norm_placa(_v(row, i_placa)) == placa_norm:
+            return jsonify({
+                "found":       True,
+                "phone":       _v(row, i_tel),
+                "address":     _v(row, i_end),
+                "color":       _v(row, i_cor),
+                "year":        str(int(row[i_ano])) if i_ano is not None and i_ano < len(row) and row[i_ano] else "",
+                "chassis":     _v(row, i_chassi),
+                "motorNumber": _v(row, i_motor),
+            })
+
+    return jsonify({"found": False, "reason": "Placa não encontrada na planilha"})
 
 
 @app.route("/api/vistoria/importar", methods=["POST"])

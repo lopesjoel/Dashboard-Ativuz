@@ -40,13 +40,7 @@ Para a vistoria aparecer no Histórico de Vistorias do Dashboard (e gerar o `.do
 2. O token é um segredo — só ele impede que qualquer pessoa na internet grave vistorias falsas no seu banco de dados. Não compartilhe fora da equipe técnica.
 3. Se o Dashboard estiver fora do ar no momento do envio, a vistoria continua sendo salva normalmente no Drive/planilha — só a parte do Dashboard falha, e isso aparece avisado na tela e na coluna "Dashboard: status" da planilha de log.
 
-## Passo 3 — Ativar o serviço de OCR (necessário para ler o contrato)
-O preenchimento automático a partir do contrato em PDF usa OCR do Google Drive, que é um "serviço avançado" e precisa ser ligado uma vez só:
-1. No editor do Apps Script, clique no `+` ao lado de **Serviços** (menu à esquerda).
-2. Procure **Drive API**, selecione e clique em **Adicionar**.
-3. Pronto — não precisa configurar mais nada, isso libera o `Drive.Files.insert(...)` usado no `Code.gs` para converter o PDF em texto.
-
-## Passo 4 — Publicar como Web App
+## Passo 3 — Publicar como Web App
 1. No editor do Apps Script, clique em **Implantar** → **Nova implantação**.
 2. Em "Tipo", escolha **App da Web**.
 3. Em "Executar como": **Eu (sua conta)**.
@@ -56,7 +50,7 @@ O preenchimento automático a partir do contrato em PDF usa OCR do Google Drive,
 5. Clique em **Implantar**, autorize as permissões (vai pedir acesso ao Drive e Planilhas — é esperado, é o que faz o app funcionar).
 6. Copie o **link do App da Web** gerado. Esse é o link que você vai usar/compartilhar (pode salvar como atalho na tela inicial do celular).
 
-## Passo 5 — Testar
+## Passo 4 — Testar
 1. Abra o link, escolha a etapa (Entrada ou Saída), selecione um contrato ativo (se aparecer na lista) ou digite o cliente manualmente, tire fotos, preencha o checklist, assine e envie.
 2. Confira se a pasta `Vistoria Entrada dd-mm-aaaa_HH-mm` (ou `Vistoria Saida ...`) apareceu dentro de `Fotos Vistoria` na pasta do motorista.
 3. Uma planilha chamada **"Registro de Vistorias"** é criada automaticamente no seu Drive na primeira vez — é o seu histórico central de todas as vistorias (agora com colunas de Etapa e status do envio pro Dashboard).
@@ -66,11 +60,10 @@ O preenchimento automático a partir do contrato em PDF usa OCR do Google Drive,
 Sempre que editar `Code.gs` ou `Index.html`, é preciso ir em **Implantar → Gerenciar implantações → editar (ícone de lápis) → Nova versão → Implantar** para o link já publicado refletir as mudanças.
 
 ## Preenchimento automático a partir do contrato
-- A seleção de contrato é **obrigatória**: ao escolher um contrato na lista, o cliente/veículo/placa já vêm direto do Dashboard, e o app automaticamente localiza a pasta do contrato no Drive (pela placa) e faz OCR do arquivo cujo nome contenha **"Contrato"** ali dentro, tentando extrair: telefone, endereço, cor, ano, chassi e número do motor.
+- A seleção de contrato é **obrigatória**: ao escolher um contrato na lista, o cliente/veículo/placa já vêm direto do Dashboard, e o app busca telefone/endereço/cor/ano/chassi/número do motor direto da planilha `planilhas/DADOS_CLIENTES_CONS.xlsx` do Dashboard (rota `/api/contrato/dados`, buscada pela placa) — sem OCR, sem depender de nenhum arquivo dentro da pasta do contrato no Drive.
 - Os campos são preenchidos automaticamente, mas continuam **editáveis** — sempre confira antes de enviar, principalmente na primeira vez. O botão "Buscar dados do contrato novamente" repete a busca se algo não tiver vindo certo.
-- **Os padrões de busca (regex) foram montados com base nos rótulos do anexo de vistoria** (`Tel:`, `Endereço:`, `Placa:`, `Veículo:`, `Cor:`, `Ano:`, `Chassi:`, `Motor:`). Se o texto do contrato usar outros rótulos, o app não vai achar o valor certo. Nesse caso, me envie um exemplo do contrato (pode remover dados sensíveis) que eu ajusto a constante `CONTRACT_FIELD_PATTERNS` no `Code.gs` para bater exatamente com o layout de vocês.
-- O resultado do OCR fica em cache por 6 horas (por arquivo), então buscas repetidas para o mesmo contrato não recarregam toda vez — só refaz o OCR se o cache expirar.
-- Se o app não achar a pasta do contrato (pela placa) ou nenhum arquivo com "Contrato" no nome, ele avisa na tela e os campos continuam em branco pra preenchimento manual, sem travar o formulário.
+- Se a placa não for encontrada nessa planilha (ex: contrato muito novo, ainda não cadastrado lá), o app avisa na tela e os campos continuam em branco pra preenchimento manual, sem travar o formulário.
+- A pasta do Drive onde ficam as fotos/assinaturas continua sendo localizada pela placa (Passo 2) — isso não muda, só o preenchimento automático dos campos é que não depende mais de nenhum documento na pasta.
 
 ## Como funciona a integração com o Dashboard
 - **Etapa**: escolha Entrada (retirada do carro) ou Saída (devolução) no topo do formulário. O Dashboard trata cada vistoria como um par entrada+saída do mesmo contrato — a etapa de Saída localiza automaticamente a entrada mais recente do contrato selecionado e completa o mesmo registro, gerando o `.docx` final com os dois lados.
