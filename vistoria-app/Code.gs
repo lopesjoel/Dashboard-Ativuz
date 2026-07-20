@@ -163,11 +163,11 @@ function getOrCreateSubfolder_(parentFolder, name) {
 }
 
 /**
- * Busca o contrato na pasta do contrato (localizada pela placa) e extrai os
- * dados dele via OCR. Chamada pelo front-end quando o usuário seleciona um
- * contrato da lista.
- * Retorna { found: false } se não achar pasta/arquivo, ou
- * { found: true, phone, address, vehicle, plate, color, year, chassis, motorNumber }
+ * Busca telefone/endereço/cor/ano/chassi/nº motor do contrato pela placa,
+ * direto da planilha do Dashboard (/api/contrato/dados). Chamada pelo
+ * front-end quando o usuário seleciona um contrato da lista.
+ * Retorna { found: false, reason } ou
+ * { found: true, phone, address, color, year, chassis, motorNumber }
  */
 function getContractData(placa) {
   if (!placa) return { found: false, reason: 'Placa vazia' };
