@@ -65,9 +65,16 @@ const FUEL_LEVELS = ['Vazio', '1/4', '1/2', '3/4', 'Cheio'];
  * Não é necessário editar nada abaixo desta linha.
  *******************************************************/
 
-function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
+// Aceita ?etapa=saida&contratoId=...&vistoriaId=... na URL (usado pelo botão
+// "Devolução" do Histórico de Vistorias do Dashboard, pra abrir o app já na
+// etapa de saída, com o contrato certo travado, vinculado à vistoria certa).
+function doGet(e) {
+  const params = (e && e.parameter) || {};
+  const tpl = HtmlService.createTemplateFromFile('Index');
+  tpl.presetEtapa = params.etapa === 'saida' ? 'saida' : '';
+  tpl.presetContratoId = params.contratoId || '';
+  tpl.presetVistoriaId = params.vistoriaId || '';
+  return tpl.evaluate()
     .setTitle('Ordem de Serviço e Vistoria')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -227,7 +234,9 @@ function getOrCreateLogSheet_() {
  * Função principal chamada pelo front-end.
  * payload = {
  *   etapa: 'entrada' | 'saida',
- *   contratoId (opcional), clientName, phone, address, filledBy,
+ *   contratoId (opcional), vistoriaId (opcional, só na saída — identifica
+ *   exatamente qual vistoria completar, em vez de depender só do contrato),
+ *   clientName, phone, address, filledBy,
  *   vehicle, plate, color, year, chassis, motorNumber,
  *   odometer, fuelLevel,
  *   accessories: [{item, status}],       // status: S | N | A
@@ -342,6 +351,7 @@ function sendToDashboard_(payload) {
       payload: JSON.stringify({
         etapa: payload.etapa === 'saida' ? 'saida' : 'entrada',
         contratoId: payload.contratoId || '',
+        vistoriaId: payload.vistoriaId || '',
         clientName: payload.clientName,
         phone: payload.phone,
         address: payload.address,

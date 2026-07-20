@@ -2267,22 +2267,6 @@ def download_vistoria_supabase(vistoria_id):
     )
 
 
-@app.route("/historico/vistorias/<vistoria_id>/editar")
-def editar_vistoria(vistoria_id):
-    sb = _supabase()
-    if not sb:
-        flash("Supabase não configurado.", "erro")
-        return redirect(url_for("historico_vistorias"))
-    try:
-        res = sb.table("vistorias").select("*").eq("id", vistoria_id).single().execute()
-        vistoria = res.data
-    except Exception as e:
-        flash(f"Erro ao buscar vistoria: {e}", "erro")
-        return redirect(url_for("historico_vistorias"))
-    return render_template("vistoria.html", active="vistoria", vistoria=vistoria,
-                           edit_id=vistoria_id, acessorios=vistoria.get("acessorios") or {})
-
-
 @app.route("/historico/vistorias/download/<vistoria_id>/pdf")
 def download_vistoria_pdf(vistoria_id):
     return redirect(url_for("visualizar_vistoria_pdf", vistoria_id=vistoria_id))

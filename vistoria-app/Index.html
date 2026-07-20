@@ -70,6 +70,8 @@
     .status-btn.active-S { background: var(--cor-ok); color: #fff; border-color: var(--cor-ok); }
     .status-btn.active-N { background: #888; color: #fff; border-color: #888; }
     .status-btn.active-A { background: var(--cor-erro); color: #fff; border-color: var(--cor-erro); }
+    .status-btn:disabled { opacity: .6; cursor: not-allowed; }
+    select:disabled { background: #f0f0f0; opacity: .8; cursor: not-allowed; }
 
     .etapa-btn { flex: 1; font-weight: 600; }
     .etapa-btn.active-etapa { background: var(--cor-primaria); color: #fff; border-color: var(--cor-primaria); }
@@ -256,9 +258,16 @@
   </div>
 
   <script>
+    // Preenchidos pelo Code.gs (doGet) quando o link vem com
+    // ?etapa=saida&contratoId=...&vistoriaId=... — usado pelo botão
+    // "Devolução" do Histórico de Vistorias do Dashboard.
+    const presetEtapa = <?!= JSON.stringify(presetEtapa) ?>;
+    const presetContratoId = <?!= JSON.stringify(presetContratoId) ?>;
+    const presetVistoriaId = <?!= JSON.stringify(presetVistoriaId) ?>;
+
     let config = { accessoryItems: [], photoCategories: [], fuelLevels: [], contratos: [] };
     let photosByCategory = {};
-    let currentEtapa = 'entrada';
+    let currentEtapa = presetEtapa === 'saida' ? 'saida' : 'entrada';
 
     google.script.run.withSuccessHandler(function (cfg) {
       config = cfg;
@@ -266,10 +275,35 @@
       buildFuelSelect();
       buildPhotoCategories();
       buildContratos();
+      aplicarPreset();
     }).withFailureHandler(function (err) {
       document.getElementById('accessoriesContainer').textContent = 'Erro ao carregar configuração.';
       console.error(err);
     }).getFormConfig();
+
+    // Quando o link vem de "Devolução" (Histórico de Vistorias): trava a
+    // etapa em Saída e o contrato já selecionado, pra essa tela servir só
+    // pra completar aquela devolução específica (evita enviar pro contrato
+    // ou etapa errada por engano).
+    function aplicarPreset() {
+      if (presetEtapa === 'saida') {
+        setEtapa('saida');
+        document.querySelectorAll('.etapa-btn').forEach(function (b) { b.disabled = true; });
+      }
+      if (!presetContratoId) return;
+      const sel = document.getElementById('contratoSelect');
+      const existe = (config.contratos || []).some(function (c) { return c.id === presetContratoId; });
+      if (!existe) {
+        document.getElementById('contractStatus').textContent =
+          'Não foi possível localizar automaticamente o contrato desta devolução. Selecione manualmente.';
+        return;
+      }
+      sel.value = presetContratoId;
+      onContratoSelecionado();
+      sel.disabled = true;
+      sel.insertAdjacentHTML('afterend',
+        '<div class="hint">Contrato travado — esta tela serve só para completar esta devolução específica.</div>');
+    }
 
     function setEtapa(etapa) {
       currentEtapa = etapa;
@@ -572,6 +606,7 @@
         const payload = {
           etapa: currentEtapa,
           contratoId: contratoId,
+          vistoriaId: presetVistoriaId || '',
           clientName: clientName,
           phone: document.getElementById('phone').value.trim(),
           address: document.getElementById('address').value.trim(),
