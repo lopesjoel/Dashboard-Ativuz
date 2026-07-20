@@ -404,17 +404,25 @@
     }
 
     // Desenha a imagem num canvas e carimba data/hora atual no canto inferior direito.
-    // Retorna um novo File (JPEG) já com a marca d'água, pronto para envio.
+    // Maior dimensão (largura ou altura) que uma foto pode ter depois de
+    // redimensionada. Fotos de celular saem com 3000-4000px e vários MB —
+    // isso não ajuda em nada a vistoria e deixa o envio lento/travado em
+    // rede móvel. 1600px já é mais que suficiente pra conferir avarias.
+    const MAX_DIMENSAO_FOTO = 1600;
+
+    // Retorna um novo File (JPEG) já redimensionado e com a marca d'água,
+    // pronto para envio (bem mais leve que o arquivo original da câmera).
     function addTimestampWatermark(file) {
       return new Promise(function (resolve, reject) {
         const url = URL.createObjectURL(file);
         const img = new Image();
         img.onload = function () {
+          const scale = Math.min(1, MAX_DIMENSAO_FOTO / Math.max(img.naturalWidth, img.naturalHeight));
           const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
+          canvas.width = Math.round(img.naturalWidth * scale);
+          canvas.height = Math.round(img.naturalHeight * scale);
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
           const text = formatTimestamp(new Date());
           const fontSize = Math.max(20, Math.round(canvas.width * 0.028));
@@ -552,12 +560,14 @@
         return { item: row.dataset.item, status: row.dataset.selected || 'S' };
       });
 
-      btn.disabled = true; btn.textContent = 'Enviando...';
+      btn.disabled = true; btn.textContent = 'Processando fotos...';
 
       try {
         const photosB64 = await Promise.all(allPhotos.map(async function (p) {
           return { category: p.category, name: p.file.name, mimeType: p.file.type || 'image/jpeg', data: await fileToBase64(p.file) };
         }));
+
+        btn.textContent = 'Enviando (' + allPhotos.length + ' fotos)...';
 
         const payload = {
           etapa: currentEtapa,
