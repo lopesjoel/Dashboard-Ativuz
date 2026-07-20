@@ -232,7 +232,10 @@ function extractField_(text, patterns) {
   return '';
 }
 
-// Converte o PDF em texto via OCR do Google Drive (usa o Advanced Drive Service).
+// Extrai o texto do arquivo do contrato. Se já for um Google Docs nativo
+// (contrato digitado direto no Docs), lê o texto direto, sem OCR — o
+// serviço de OCR só aceita PDF/imagem como entrada, não um Docs já pronto.
+// Se for PDF/imagem escaneada, converte com OCR do Google Drive.
 // Resultado fica em cache por algumas horas para não reprocessar toda hora.
 function ocrFileToText_(fileId) {
   const cache = CacheService.getScriptCache();
@@ -240,15 +243,22 @@ function ocrFileToText_(fileId) {
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  const blob = DriveApp.getFileById(fileId).getBlob();
-  const resource = { title: 'OCR_temp_' + fileId, mimeType: MimeType.GOOGLE_DOCS };
-  const ocrFile = Drive.Files.insert(resource, blob, { ocr: true, ocrLanguage: 'pt' });
+  const file = DriveApp.getFileById(fileId);
+  let text;
 
-  const doc = DocumentApp.openById(ocrFile.id);
-  const text = doc.getBody().getText();
+  if (file.getMimeType() === MimeType.GOOGLE_DOCS) {
+    text = DocumentApp.openById(fileId).getBody().getText();
+  } else {
+    const blob = file.getBlob();
+    const resource = { title: 'OCR_temp_' + fileId, mimeType: MimeType.GOOGLE_DOCS };
+    const ocrFile = Drive.Files.insert(resource, blob, { ocr: true, ocrLanguage: 'pt' });
 
-  // limpa o arquivo temporário gerado pelo OCR
-  DriveApp.getFileById(ocrFile.id).setTrashed(true);
+    const doc = DocumentApp.openById(ocrFile.id);
+    text = doc.getBody().getText();
+
+    // limpa o arquivo temporário gerado pelo OCR (não é o contrato original)
+    DriveApp.getFileById(ocrFile.id).setTrashed(true);
+  }
 
   // cache por 6 horas (21600s) — o contrato não muda com frequência
   cache.put(cacheKey, text, 21600);

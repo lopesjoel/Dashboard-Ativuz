@@ -162,7 +162,8 @@
       "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
       "Bash(./venv/bin/python -c ' *)",
       "Bash(lsof -iTCP:5001 -sTCP:LISTEN -n -P)",
-      "Bash(./venv/bin/python *)"
+      "Bash(./venv/bin/python *)",
+      "Bash(node *)"
     ]
   }
 }
