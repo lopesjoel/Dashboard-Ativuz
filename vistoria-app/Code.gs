@@ -233,9 +233,10 @@ function extractField_(text, patterns) {
 }
 
 // Extrai o texto do arquivo do contrato. Se já for um Google Docs nativo
-// (contrato digitado direto no Docs), lê o texto direto, sem OCR — o
-// serviço de OCR só aceita PDF/imagem como entrada, não um Docs já pronto.
-// Se for PDF/imagem escaneada, converte com OCR do Google Drive.
+// (contrato digitado direto no Docs), lê o texto direto, sem OCR. Se for
+// PDF ou imagem escaneada, converte com OCR do Google Drive. Se for Word
+// (.docx/.doc) ou outro formato que o Drive sabe converter, usa conversão
+// normal (sem OCR — o texto já é digital, só precisa "abrir como Docs").
 // Resultado fica em cache por algumas horas para não reprocessar toda hora.
 function ocrFileToText_(fileId) {
   const cache = CacheService.getScriptCache();
@@ -244,20 +245,23 @@ function ocrFileToText_(fileId) {
   if (cached) return cached;
 
   const file = DriveApp.getFileById(fileId);
+  const mimeType = file.getMimeType();
   let text;
 
-  if (file.getMimeType() === MimeType.GOOGLE_DOCS) {
+  if (mimeType === MimeType.GOOGLE_DOCS) {
     text = DocumentApp.openById(fileId).getBody().getText();
   } else {
+    const isPdfOuImagem = mimeType === MimeType.PDF || mimeType.indexOf('image/') === 0;
     const blob = file.getBlob();
     const resource = { title: 'OCR_temp_' + fileId, mimeType: MimeType.GOOGLE_DOCS };
-    const ocrFile = Drive.Files.insert(resource, blob, { ocr: true, ocrLanguage: 'pt' });
+    const opcoes = isPdfOuImagem ? { ocr: true, ocrLanguage: 'pt' } : { convert: true };
+    const convertido = Drive.Files.insert(resource, blob, opcoes);
 
-    const doc = DocumentApp.openById(ocrFile.id);
+    const doc = DocumentApp.openById(convertido.id);
     text = doc.getBody().getText();
 
-    // limpa o arquivo temporário gerado pelo OCR (não é o contrato original)
-    DriveApp.getFileById(ocrFile.id).setTrashed(true);
+    // limpa o arquivo temporário de conversão (não é o contrato original)
+    DriveApp.getFileById(convertido.id).setTrashed(true);
   }
 
   // cache por 6 horas (21600s) — o contrato não muda com frequência
