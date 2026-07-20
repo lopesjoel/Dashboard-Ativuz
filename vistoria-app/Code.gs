@@ -237,6 +237,8 @@ function extractField_(text, patterns) {
 // PDF ou imagem escaneada, converte com OCR do Google Drive. Se for Word
 // (.docx/.doc) ou outro formato que o Drive sabe converter, usa conversão
 // normal (sem OCR — o texto já é digital, só precisa "abrir como Docs").
+// Se o "arquivo" for na verdade um atalho (shortcut) pra outro lugar do
+// Drive, resolve pro arquivo real antes de checar o tipo.
 // Resultado fica em cache por algumas horas para não reprocessar toda hora.
 function ocrFileToText_(fileId) {
   const cache = CacheService.getScriptCache();
@@ -244,12 +246,15 @@ function ocrFileToText_(fileId) {
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
-  const file = DriveApp.getFileById(fileId);
+  let file = DriveApp.getFileById(fileId);
+  if (file.getMimeType() === 'application/vnd.google-apps.shortcut') {
+    file = DriveApp.getFileById(file.getTargetId());
+  }
   const mimeType = file.getMimeType();
   let text;
 
   if (mimeType === MimeType.GOOGLE_DOCS) {
-    text = DocumentApp.openById(fileId).getBody().getText();
+    text = DocumentApp.openById(file.getId()).getBody().getText();
   } else {
     const isPdfOuImagem = mimeType === MimeType.PDF || mimeType.indexOf('image/') === 0;
     const blob = file.getBlob();
