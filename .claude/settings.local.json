@@ -168,7 +168,8 @@
       "Bash(sips -h)",
       "Bash(screencapture -x test_shot.png)",
       "Bash(sips -s format jpeg -z 4000 3000 test_shot.png --out test_photo.jpg)",
-      "Bash(pkill -f \"http.server 8934\")"
+      "Bash(pkill -f \"http.server 8934\")",
+      "Bash(lsof -i :5001 -sTCP:LISTEN)"
     ]
   }
 }
