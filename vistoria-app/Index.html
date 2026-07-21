@@ -439,10 +439,14 @@
 
     // Desenha a imagem num canvas e carimba data/hora atual no canto inferior direito.
     // Maior dimensão (largura ou altura) que uma foto pode ter depois de
-    // redimensionada. Fotos de celular saem com 3000-4000px e vários MB —
-    // isso não ajuda em nada a vistoria e deixa o envio lento/travado em
-    // rede móvel. 1600px já é mais que suficiente pra conferir avarias.
-    const MAX_DIMENSAO_FOTO = 1600;
+    // redimensionada. O Dashboard roda em Vercel, que rejeita qualquer
+    // requisição acima de 4,5MB (erro 413/FUNCTION_PAYLOAD_TOO_LARGE) — com
+    // até 12 categorias de foto + 2 assinaturas numa única chamada, cada
+    // foto precisa ficar pequena o bastante pra somar tudo com folga.
+    // 1000px / qualidade 0.7 ainda é nítido o suficiente pra conferir
+    // avarias e mantém cada foto na faixa de 80-200KB.
+    const MAX_DIMENSAO_FOTO = 1000;
+    const QUALIDADE_FOTO = 0.7;
 
     // Retorna um novo File (JPEG) já redimensionado e com a marca d'água,
     // pronto para envio (bem mais leve que o arquivo original da câmera).
@@ -480,7 +484,7 @@
           canvas.toBlob(function (blob) {
             if (!blob) { reject(new Error('Falha ao gerar imagem')); return; }
             resolve(new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }));
-          }, 'image/jpeg', 0.88);
+          }, 'image/jpeg', QUALIDADE_FOTO);
         };
         img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Não foi possível carregar a imagem')); };
         img.src = url;
@@ -522,15 +526,27 @@
     });
     window.addEventListener('resize', function () { ['client', 'responsible'].forEach(resizeSig); });
 
+    // Redimensionar o canvas (largura/altura) apaga o desenho e reseta a
+    // transformação. Isso dispara toda vez que o teclado virtual abre/fecha
+    // no celular/tablet — sem preservar o conteúdo, uma assinatura já feita
+    // sumiria em silêncio (a validação continuaria achando que tem assinatura).
     function resizeSig(key) {
       const pad = sigPads[key];
       const ratio = window.devicePixelRatio || 1;
-      pad.canvas.width = pad.canvas.clientWidth * ratio;
-      pad.canvas.height = pad.canvas.clientHeight * ratio;
+      const prevDataUrl = pad.hasSignature ? pad.canvas.toDataURL() : null;
+      const prevWidth = pad.canvas.clientWidth;
+      const prevHeight = pad.canvas.clientHeight;
+      pad.canvas.width = prevWidth * ratio;
+      pad.canvas.height = prevHeight * ratio;
       pad.ctx.scale(ratio, ratio);
       pad.ctx.lineWidth = 2;
       pad.ctx.lineCap = 'round';
       pad.ctx.strokeStyle = '#000';
+      if (prevDataUrl) {
+        const img = new Image();
+        img.onload = function () { pad.ctx.drawImage(img, 0, 0, prevWidth, prevHeight); };
+        img.src = prevDataUrl;
+      }
     }
     function getPos(canvas, evt) {
       const rect = canvas.getBoundingClientRect();
