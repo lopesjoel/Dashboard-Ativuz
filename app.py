@@ -3138,6 +3138,43 @@ def exportar_inadimplencia():
     )
 
 
+def _commitar_arquivo_github(repo, path, conteudo, mensagem, branch="main"):
+    """
+    Sobe/atualiza um arquivo direto no repositório via API de Contents do
+    GitHub, sem depender do sistema de arquivos do Vercel (somente leitura
+    em produção — um f.save() local ali falha ou não persiste). Cada commit
+    criado aqui dispara redeploy automático, já que o Vercel está integrado
+    ao repositório. Lança exceção com o motivo em caso de falha.
+    """
+    import requests as _req
+    import base64 as _b64
+
+    token = _os.environ.get("GITHUB_TOKEN", "")
+    if not token:
+        raise Exception("GITHUB_TOKEN não configurado.")
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+    url = f"https://api.github.com/repos/{repo}/contents/{path}"
+
+    resp = _req.get(url, headers=headers, params={"ref": branch}, timeout=15)
+    sha = resp.json().get("sha") if resp.status_code == 200 else None
+
+    payload = {
+        "message": mensagem,
+        "content": _b64.b64encode(conteudo).decode(),
+        "branch": branch,
+    }
+    if sha:
+        payload["sha"] = sha
+
+    put = _req.put(url, headers=headers, json=payload, timeout=15)
+    if put.status_code not in (200, 201):
+        raise Exception(f"HTTP {put.status_code}: {put.text}")
+
+
 @app.route("/inadimplencia/upload", methods=["POST"])
 def inadimplencia_upload():
     f = request.files.get("planilha")
@@ -3147,8 +3184,26 @@ def inadimplencia_upload():
     if not f.filename.lower().endswith(".xlsx"):
         flash("Apenas arquivos .xlsx são aceitos.", "error")
         return redirect(url_for("pagina_inadimplencia"))
+
+    conteudo = f.read()
+
+    if _os.environ.get("GITHUB_TOKEN"):
+        try:
+            _commitar_arquivo_github(
+                repo="lopesjoel/Dashboard-Ativuz",
+                path="planilhas/CONTAS-A-RECEBER.xlsx",
+                conteudo=conteudo,
+                mensagem="chore: atualiza CONTAS-A-RECEBER.xlsx via upload no Dashboard",
+            )
+            flash("Planilha enviada! O Dashboard vai atualizar em cerca de 1 minuto, "
+                  "quando o novo deploy no Vercel terminar.", "success")
+        except Exception as e:
+            flash(f"Falha ao enviar a planilha pro GitHub: {e}", "error")
+        return redirect(url_for("pagina_inadimplencia"))
+
+    # Sem GITHUB_TOKEN (ex: rodando local): grava direto no disco, como antes.
     dest = Path(__file__).parent / "planilhas" / "CONTAS-A-RECEBER.xlsx"
-    f.save(str(dest))
+    dest.write_bytes(conteudo)
     flash("Planilha atualizada! Os dados abaixo refletem o arquivo enviado.", "success")
     return redirect(url_for("pagina_inadimplencia"))
 
