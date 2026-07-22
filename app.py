@@ -4586,6 +4586,9 @@ def pagina_financiamentos():
             "l_prazo":         max(restante - 12, 0) * parcela,
             "pct_quitado":     pagas / parcelas if parcelas else 0,
             "quitado":         restante == 0,
+            "tipo":            r.get("tipo") or "financiamento",
+            "valor_resgate":   float(r["valor_resgate"]) if r.get("valor_resgate") is not None else None,
+            "data_resgate":    str(r.get("data_resgate") or "")[:10] or None,
         }
 
         if r.get("vendido"):
@@ -4640,6 +4643,30 @@ def api_financiamentos_marcar_vendido(contrato_id):
         sb.table("financiamentos_contratos").update(
             {"vendido": vendido}
         ).eq("id", str(contrato_id)).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
+@app.route("/api/financiamentos/<uuid:contrato_id>/resgate", methods=["PUT"])
+def api_financiamentos_registrar_resgate(contrato_id):
+    """Registra (ou limpa) o valor e a data do resgate de um consórcio —
+    o valor que fica pendente pra sacar quando o grupo/cota é encerrado."""
+    sb = _supabase()
+    if not sb:
+        return jsonify({"ok": False, "erro": "Sem conexão com o banco."}), 500
+    body = request.get_json(silent=True) or {}
+    valor_raw = body.get("valor_resgate")
+    data_raw  = (body.get("data_resgate") or "").strip()
+    try:
+        valor = float(valor_raw) if valor_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "erro": "Valor de resgate inválido."}), 400
+    try:
+        sb.table("financiamentos_contratos").update({
+            "valor_resgate": valor,
+            "data_resgate":  data_raw or None,
+        }).eq("id", str(contrato_id)).execute()
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "erro": str(e)}), 500
