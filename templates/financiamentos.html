@@ -91,20 +91,24 @@
   border-radius: 4px; padding: 2px 6px; vertical-align: middle; margin-left: 6px;
 }
 .badge-tipo {
-  display: inline-block; font-size: 9px; font-weight: 700;
+  /* Oculto visualmente por pedido — a classificação continua existindo
+     nos dados (usada pra decidir quem tem coluna de Resgate), só não
+     aparece mais na tela. */
+  display: none;
+  font-size: 9px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em;
   border-radius: 4px; padding: 2px 6px; vertical-align: middle; margin-right: 6px;
 }
 .badge-tipo.consorcio { background: #eef2ff; color: #4338ca; }
 .badge-tipo.financiamento { background: #f1f5f9; color: #475569; }
 
-.fin-resgate-info { font-size: 10.5px; color: var(--ink-2); line-height: 1.3; }
-.fin-btn-resgate {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .04em; border: 1px solid var(--line); background: var(--surface);
-  color: var(--ink-3); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+.fin-resgate-info { font-size: 10px; color: var(--ink-3); line-height: 1.3; white-space: nowrap; }
+.fin-contrato-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: #4338ca; text-decoration: underline; font: inherit;
+  font-variant-numeric: tabular-nums;
 }
-.fin-btn-resgate:hover { color: #4338ca; border-color: #4338ca; }
+.fin-contrato-link:hover { color: #322aa0; }
 
 /* Modal de resgate */
 .fin-modal-overlay {
@@ -259,7 +263,6 @@
         <th>C. Prazo</th>
         <th>L. Prazo</th>
         <th>% Quitado</th>
-        <th>Resgate</th>
         <th></th>
       </tr>
     </thead>
@@ -273,7 +276,19 @@
           <span class="badge-tipo {{ c.tipo }}">{{ 'Consórcio' if c.tipo == 'consorcio' else 'Financiamento' }}</span>
           {% if c.quitado %}<span class="badge-quitado">Quitado</span>{% else %}{{ c.operacao }}{% endif %}
         </td>
-        <td>{{ c.contrato }}</td>
+        <td>
+          {% if c.tipo == 'consorcio' %}
+            <button class="fin-contrato-link"
+                    onclick="finAbrirResgate('{{ c.id }}', {{ c.valor_resgate if c.valor_resgate is not none else 'null' }}, '{{ c.data_resgate or '' }}')"
+                    title="Registrar resgate deste consórcio">{{ c.contrato }}</button>
+            {% if c.valor_resgate is not none %}
+              <div class="fin-resgate-info">
+                Resgate: {{ c.valor_resgate | brl }}
+                {% if c.data_resgate %}({{ c.data_resgate[8:10] }}/{{ c.data_resgate[5:7] }}/{{ c.data_resgate[:4] }}){% endif %}
+              </div>
+            {% endif %}
+          {% else %}{{ c.contrato }}{% endif %}
+        </td>
         <td>{{ c.placa }}</td>
         <td class="col-vencimento">
           {% if c.data_vencimento %}
@@ -296,20 +311,6 @@
             <span class="prog-pct">{{ pct_int }}%</span>
           </div>
         </td>
-        <td>
-          {% if c.tipo == 'consorcio' %}
-            {% if c.valor_resgate is not none %}
-              <div class="fin-resgate-info">
-                {{ c.valor_resgate | brl }}<br>
-                {% if c.data_resgate %}{{ c.data_resgate[8:10] }}/{{ c.data_resgate[5:7] }}/{{ c.data_resgate[:4] }}{% endif %}
-              </div>
-            {% endif %}
-            <button class="fin-btn-resgate"
-                    onclick="finAbrirResgate('{{ c.id }}', {{ c.valor_resgate if c.valor_resgate is not none else 'null' }}, '{{ c.data_resgate or '' }}')">
-              {{ 'Editar' if c.valor_resgate is not none else 'Registrar' }}
-            </button>
-          {% else %}—{% endif %}
-        </td>
         <td><button class="fin-btn-vender" onclick="finMarcarVendido('{{ c.id }}', true)">Vendido</button></td>
       </tr>
       {% endfor %}
@@ -327,7 +328,6 @@
         <td style="font-weight:700;color:var(--ink)">{{ contratos | sum(attribute='devedor') | brl }}</td>
         <td style="font-weight:700;color:var(--ink)">{{ contratos | sum(attribute='c_prazo') | brl }}</td>
         <td style="font-weight:700;color:var(--ink)">{{ contratos | sum(attribute='l_prazo') | brl }}</td>
-        <td></td>
         <td></td>
         <td></td>
       </tr>
@@ -350,7 +350,6 @@
           <th>R$ Parcela</th>
           <th>Total Pago</th>
           <th>Total</th>
-          <th>Resgate</th>
           <th></th>
         </tr>
       </thead>
@@ -361,30 +360,28 @@
             <span class="badge-tipo {{ c.tipo }}">{{ 'Consórcio' if c.tipo == 'consorcio' else 'Financiamento' }}</span>
             {{ c.operacao }}
           </td>
-          <td>{{ c.contrato }}</td>
+          <td>
+            {% if c.tipo == 'consorcio' %}
+              <button class="fin-contrato-link"
+                      onclick="finAbrirResgate('{{ c.id }}', {{ c.valor_resgate if c.valor_resgate is not none else 'null' }}, '{{ c.data_resgate or '' }}')"
+                      title="Registrar resgate deste consórcio">{{ c.contrato }}</button>
+              {% if c.valor_resgate is not none %}
+                <div class="fin-resgate-info">
+                  Resgate: {{ c.valor_resgate | brl }}
+                  {% if c.data_resgate %}({{ c.data_resgate[8:10] }}/{{ c.data_resgate[5:7] }}/{{ c.data_resgate[:4] }}){% endif %}
+                </div>
+              {% endif %}
+            {% else %}{{ c.contrato }}{% endif %}
+          </td>
           <td>{{ c.placa }}</td>
           <td>{{ c.parcelas_total }}</td>
           <td>{{ c.valor_parcela | brl }}</td>
           <td>{{ c.total_pago | brl }}</td>
           <td>{{ c.total | brl }}</td>
-          <td>
-            {% if c.tipo == 'consorcio' %}
-              {% if c.valor_resgate is not none %}
-                <div class="fin-resgate-info">
-                  {{ c.valor_resgate | brl }}<br>
-                  {% if c.data_resgate %}{{ c.data_resgate[8:10] }}/{{ c.data_resgate[5:7] }}/{{ c.data_resgate[:4] }}{% endif %}
-                </div>
-              {% endif %}
-              <button class="fin-btn-resgate"
-                      onclick="finAbrirResgate('{{ c.id }}', {{ c.valor_resgate if c.valor_resgate is not none else 'null' }}, '{{ c.data_resgate or '' }}')">
-                {{ 'Editar' if c.valor_resgate is not none else 'Registrar' }}
-              </button>
-            {% else %}—{% endif %}
-          </td>
           <td><button class="fin-btn-restaurar" onclick="finMarcarVendido('{{ c.id }}', false)">Restaurar</button></td>
         </tr>
         {% else %}
-        <tr><td colspan="9" style="color:var(--ink-3);">Nenhum carro vendido cadastrado.</td></tr>
+        <tr><td colspan="8" style="color:var(--ink-3);">Nenhum carro vendido cadastrado.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -476,7 +473,7 @@ function finSalvarResgate() {
     <p>Valor que ficou pendente pra sacar ao final deste consórcio.</p>
     <label for="fin-resgate-valor">Valor (R$)</label>
     <input type="number" id="fin-resgate-valor" step="0.01" min="0" placeholder="0,00">
-    <label for="fin-resgate-data">Data do resgate</label>
+    <label for="fin-resgate-data">Data de abertura do resgate</label>
     <input type="date" id="fin-resgate-data">
     <div class="fin-modal-actions">
       <button class="fin-modal-cancelar" onclick="finFecharResgate()">Cancelar</button>
